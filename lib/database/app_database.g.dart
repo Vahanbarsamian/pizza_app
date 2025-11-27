@@ -78,7 +78,7 @@ class _$AppDatabase extends AppDatabase {
     Callback? callback,
   ]) async {
     final databaseOptions = sqflite.OpenDatabaseOptions(
-      version: 1,
+      version: 2,
       onConfigure: (database) async {
         await database.execute('PRAGMA foreign_keys = ON');
         await callback?.onConfigure?.call(database);
@@ -96,11 +96,13 @@ class _$AppDatabase extends AppDatabase {
         await database.execute(
             'CREATE TABLE IF NOT EXISTS `User` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `email` TEXT NOT NULL, `password` TEXT NOT NULL, `role` TEXT NOT NULL)');
         await database.execute(
-            'CREATE TABLE IF NOT EXISTS `products` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `name` TEXT, `description` TEXT, `price` REAL, `image` TEXT, `category` TEXT)');
+            'CREATE TABLE IF NOT EXISTS `products` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `name` TEXT, `description` TEXT, `base_price` REAL, `image` TEXT, `category` TEXT, `discount_percentage` REAL, `has_global_discount` INTEGER)');
         await database.execute(
             'CREATE TABLE IF NOT EXISTS `Order` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `userId` INTEGER NOT NULL, `total` REAL NOT NULL, `status` TEXT NOT NULL, `createdAt` TEXT NOT NULL)');
         await database.execute(
             'CREATE TABLE IF NOT EXISTS `Review` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `userId` INTEGER NOT NULL, `note` INTEGER NOT NULL, `comment` TEXT, `createdAt` TEXT NOT NULL)');
+        await database.execute(
+            'CREATE TABLE IF NOT EXISTS `options` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `product_id` INTEGER NOT NULL, `name` TEXT NOT NULL, `price` REAL NOT NULL, `type` TEXT NOT NULL, `is_active` INTEGER NOT NULL)');
 
         await callback?.onCreate?.call(database, version);
       },
