@@ -2,7 +2,7 @@ import 'package:floor/floor.dart';
 
 @entity
 class Order {
-  @primaryKey
+  @PrimaryKey(autoGenerate: true)
   final int? id;
   final int userId;
   final double total;

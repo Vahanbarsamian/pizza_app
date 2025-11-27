@@ -2,7 +2,7 @@ import 'package:floor/floor.dart';
 
 @entity
 class Review {
-  @primaryKey
+  @PrimaryKey(autoGenerate: true)
   final int? id;
   final int userId;
   final int note;

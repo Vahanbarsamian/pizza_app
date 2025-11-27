@@ -2,11 +2,11 @@ import 'package:floor/floor.dart';
 
 @entity
 class User {
-  @primaryKey
+  @PrimaryKey(autoGenerate: true)
   final int? id; // AUTO INCREMENT sera géré par Floor avec int? nullable
   final String email;
   final String password;
   final String role;
 
-  User({this.id, required this.email, required this.password, this.role = 'client'});
+  User({this.id,  this.email,  this.password, this.role });
 }
