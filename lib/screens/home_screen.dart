@@ -1,7 +1,9 @@
+import '../../main.dart';
 import 'package:flutter/material.dart';
 import '../database/app_database.dart';  // ✅ REMPLACE ApiService
-import '../product.dart';
-import '../option.dart';
+import '../database/product.dart';
+import '../database/option.dart';
+import 'package:flutter/material.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -68,8 +70,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     leading: product.image != null
                         ? Image.network(product.image!,
                         width: 50, height: 50, fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const Icon(Icons.pizza))
-                        : const Icon(Icons.pizza, size: 50),
+                        errorBuilder: (_, __, ___) => const Icon(Icons.local_pizza))
+                        : const Icon(Icons.local_pizza, size: 50),
                     title: Text(product.name ?? 'Sans nom'),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,

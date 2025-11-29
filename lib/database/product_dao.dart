@@ -1,5 +1,5 @@
 import 'package:floor/floor.dart';
-import '../product.dart';
+import 'product.dart';
 
 @dao
 abstract class ProductDao {
@@ -55,5 +55,5 @@ abstract class ProductDao {
 
   // ✅ NOUVEAU : Compter produits avec remise
   @Query('SELECT COUNT(*) FROM products WHERE has_global_discount = 1')
-  Future<int> countProductsWithDiscount();
+  Future<int?> countProductsWithDiscount();
 }

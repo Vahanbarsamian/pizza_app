@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import '../../main.dart';
 import '../database/app_database.dart';
 import '../product.dart';
 import '../option.dart';
@@ -19,28 +20,27 @@ class _AdminDashboardState extends State<AdminDashboard> {
   @override
   void initState() {
     super.initState();
-    loadStats();
     productsFuture = database.productDao.getAllProducts();
     promoProductsFuture = database.productDao.getProductsWithDiscount();
-    avgPriceFuture = database.productDao.getAveragePrice() ?? Future.value(0.0);
+    avgPriceFuture = database.productDao.getAveragePrice();
+    loadStats();
   }
 
   Future<void> loadStats() async {
-    // Stats calculées depuis DB Floor
     final allProducts = await database.productDao.getAllProducts();
     final promoProducts = await database.productDao.getProductsWithDiscount();
+    final avgPrice = await database.productDao.getAveragePrice();
 
     setState(() {
       stats = {
         'totalProducts': allProducts.length,
         'promoProducts': promoProducts.length,
-        'totalRevenue': allProducts.fold(0.0, (sum, p) => sum + (p.discountedPrice)),
-        'avgPrice': avgPriceFuture,
+        'totalRevenue': allProducts.fold(0.0, (sum, p) => sum + (p.price * (p.hasGlobalDiscount ? (1 - p.discountPercentage! / 100) : 1))),
+        'avgPrice': avgPrice ?? 0.0,
       };
     });
   }
 
-  // ✅ REMISE GLOBALE 20% sur TOUS les produits
   Future<void> applyGlobalDiscount() async {
     final percentage = double.tryParse(discountController.text) ?? 0.0;
     if (percentage > 0) {
@@ -48,19 +48,18 @@ class _AdminDashboardState extends State<AdminDashboard> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('✅ Remise globale $percentage% appliquée !')),
       );
-      loadStats(); // Refresh stats
+      await loadStats();
       discountController.clear();
     }
   }
 
-  // ✅ Créer OPTION pour produit
   Future<void> createOptionForProduct(int productId) async {
-    final name = 'Extra fromage'; // Exemple
+    final name = 'Extra fromage';
     await database.optionDao.insertOption(Option(
       productId: productId,
       name: name,
       price: 2.5,
-      type: 'add', // ou 'replace'
+      type: 'add',
     ));
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('✅ Option "$name" créée !')),
@@ -74,7 +73,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // ✅ Cards stats avec Floor DB
             Row(
               children: [
                 Expanded(child: StatCard(title: "Produits", value: stats['totalProducts']?.toString() ?? '0')),
@@ -88,7 +86,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
               ],
             ),
 
-            // ✅ SECTION REMISES GLOBALES
             Card(
               margin: EdgeInsets.all(16),
               child: Padding(
@@ -102,7 +99,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       decoration: InputDecoration(
                         labelText: 'Pourcentage % (ex: 20)',
                         suffixIcon: IconButton(
-                          icon: Icon(Icons.apply_discount),
+                          icon: Icon(Icons.percent),
                           onPressed: applyGlobalDiscount,
                         ),
                       ),
@@ -112,7 +109,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
               ),
             ),
 
-            // ✅ Graphique ventes (inchangé)
             Container(
               height: 200,
               padding: EdgeInsets.all(20),
@@ -130,7 +126,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
               ),
             ),
 
-            // ✅ Boutons navigation admin + NOUVEAUX
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -160,7 +155,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 }
 
-// Widget StatCard (inchangé)
 class StatCard extends StatelessWidget {
   final String title;
   final String value;

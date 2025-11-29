@@ -1,12 +1,12 @@
 import 'package:floor/floor.dart';
-import '../review.dart';
+import 'review.dart';
 
 @dao
 abstract class ReviewDao {
-  @Query('SELECT * FROM Review')
+  @Query('SELECT * FROM review')
   Future<List<Review>> getAllReviews();
 
-  @Query('SELECT * FROM Review WHERE userId = :userId')
+  @Query('SELECT * FROM review WHERE userId = :userId')
   Future<List<Review>> findReviewsByUserId(int userId);
 
   @insert

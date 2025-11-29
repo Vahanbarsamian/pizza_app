@@ -1,12 +1,12 @@
 import 'package:floor/floor.dart';
-import '../order.dart';
+import 'order.dart';
 
 @dao
 abstract class OrderDao {
-  @Query('SELECT * FROM Order')
+  @Query('SELECT * FROM order')
   Future<List<Order>> getAllOrders();
 
-  @Query('SELECT * FROM Order WHERE userId = :userId')
+  @Query('SELECT * FROM order WHERE userId = :userId')
   Future<List<Order>> findOrdersByUserId(int userId);
 
   @insert

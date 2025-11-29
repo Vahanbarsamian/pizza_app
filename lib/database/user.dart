@@ -8,5 +8,5 @@ class User {
   final String password;
   final String role;
 
-  User({this.id,  this.email,  this.password, this.role });
+  User({this.id, required this.email, required this.password, required this.role });
 }

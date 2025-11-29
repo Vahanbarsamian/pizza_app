@@ -1,6 +1,6 @@
 import 'package:floor/floor.dart';
 import 'option.dart';
-import 'app_database.dart';
+//import 'dao/app_database.dart';
 
 @dao
 abstract class OptionDao {
@@ -23,5 +23,5 @@ abstract class OptionDao {
   Future<void> deleteOptionsForProduct(int productId);
   // ✅ BONUS : Compter options par produit (utile pour UI)
   @Query('SELECT COUNT(*) FROM options WHERE product_id = :productId AND is_active = 1')
-  Future<int> countOptionsForProduct(int productId);
+  Future<int?> countOptionsForProduct(int productId);
 }
