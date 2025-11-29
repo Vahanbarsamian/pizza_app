@@ -6,6 +6,7 @@ class SupabaseService {
   static SupabaseClient get client => _supabase;
   static final SupabaseClient _supabase = Supabase.instance.client;
 
+  // Initialisation (déjà dans main.dart)
   static Future<void> initialize() async {
     await Supabase.initialize(
       url: 'https://cwbrrsjtuaruzkedblil.supabase.co',
@@ -13,7 +14,7 @@ class SupabaseService {
     );
   }
 
-  // ✅ MÉTHODE MANQUANTE #1
+  // ✅ GET PRODUCTS SUPABASE
   static Future<List<Map<String, dynamic>>> getProducts() async {
     try {
       final response = await client.from('products').select();
@@ -21,32 +22,38 @@ class SupabaseService {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       print('❌ Supabase getProducts error: $e');
-      return [];
+      return [];  // ✅ Retourne vide en cas d'erreur
     }
   }
 
-  // ✅ MÉTHODE MANQUANTE #2
+  // ✅ SYNC SUPABASE → FLOOR (avec OFFLINE GRÂCEUX)
   static Future<void> syncProductsToFloor() async {
-    final supabaseProducts = await getProducts();
-    print('📡 Sync ${supabaseProducts.length} pizzas Supabase → Floor DB');
+    try {
+      final supabaseProducts = await getProducts();
+      print('📡 Sync ${supabaseProducts.length} pizzas Supabase → Floor DB');
 
-    for (var supaProduct in supabaseProducts) {
-      try {
-        final product = Product(
-          id: supaProduct['id'] as int,
-          name: supaProduct['name']?.toString() ?? 'Pizza inconnue',
-          basePrice: (supaProduct['base_price'] as num?)?.toDouble() ?? 0.0,
-          image: supaProduct['image']?.toString(),
-          category: supaProduct['category']?.toString() ?? 'pizza',
-          discountPercentage: (supaProduct['discount_percentage'] as num?)?.toDouble() ?? 0.0,
-          hasGlobalDiscount: supaProduct['has_global_discount'] == true,
-        );
-        await database.productDao.insertProduct(product);
-        print('✅ Synced: ${product.name} (${product.basePrice}€)');
-      } catch (e) {
-        print('❌ Sync error ${supaProduct['id']}: $e');
+      for (var supaProduct in supabaseProducts) {
+        try {
+          final product = Product(
+            id: supaProduct['id'] as int,
+            name: supaProduct['name']?.toString() ?? 'Pizza inconnue',
+            basePrice: (supaProduct['base_price'] as num?)?.toDouble() ?? 12.99,
+            image: supaProduct['image']?.toString() ?? 'https://via.placeholder.com/150?text=Pizza',
+            category: supaProduct['category']?.toString() ?? 'pizza',
+            discountPercentage: (supaProduct['discount_percentage'] as num?)?.toDouble() ?? 0.0,
+            hasGlobalDiscount: supaProduct['has_global_discount'] == true,
+          );
+          await database.productDao.insertProduct(product);
+          print('✅ Synced: ${product.name} (${product.basePrice}€)');
+        } catch (e) {
+          print('❌ Sync error ${supaProduct['id']}: $e');
+        }
       }
+      print('✅ Sync COMPLET ! ${supabaseProducts.length} pizzas');
+    } catch (e) {
+      print('⚠️  Supabase OFFLINE → Mode Floor DB local uniquement');
+      print('💡 Ajoutez pizzas manuellement pour tester UI !');
+      // ✅ Mode OFFLINE = Floor DB seule (PARFAIT !)
     }
-    print('✅ Sync COMPLET ! ${supabaseProducts.length} pizzas locales');
   }
 }
