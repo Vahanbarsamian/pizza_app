@@ -195,44 +195,12 @@ class _$UserDao extends UserDao {
 
   @override
   Future<List<User>> getAllUsers() async {
-    return _queryAdapter.queryList('SELECT * FROM users',
+    return _queryAdapter.queryList('SELECT * FROM `User`',
         mapper: (Map<String, Object?> row) => User(
             id: row['id'] as int?,
             email: row['email'] as String,
             password: row['password'] as String,
             role: row['role'] as String));
-  }
-
-  @override
-  Future<User?> findUserByEmail(String email) async {
-    return _queryAdapter.query('SELECT * FROM users WHERE email = ?1',
-        mapper: (Map<String, Object?> row) => User(
-            id: row['id'] as int?,
-            email: row['email'] as String,
-            password: row['password'] as String,
-            role: row['role'] as String),
-        arguments: [email]);
-  }
-
-  @override
-  Future<User?> authenticate(
-    String email,
-    String password,
-  ) async {
-    return _queryAdapter.query(
-        'SELECT * FROM users WHERE email = ?1 AND password = ?2',
-        mapper: (Map<String, Object?> row) => User(
-            id: row['id'] as int?,
-            email: row['email'] as String,
-            password: row['password'] as String,
-            role: row['role'] as String),
-        arguments: [email, password]);
-  }
-
-  @override
-  Future<int?> countUsers() async {
-    return _queryAdapter.query('SELECT COUNT(*) FROM users',
-        mapper: (Map<String, Object?> row) => row.values.first as int);
   }
 
   @override
@@ -242,13 +210,14 @@ class _$UserDao extends UserDao {
   }
 
   @override
-  Future<void> updateUser(User user) async {
-    await _userUpdateAdapter.update(user, OnConflictStrategy.abort);
+  Future<int> updateUser(User user) {
+    return _userUpdateAdapter.updateAndReturnChangedRows(
+        user, OnConflictStrategy.abort);
   }
 
   @override
-  Future<void> deleteUser(User user) async {
-    await _userDeletionAdapter.delete(user);
+  Future<int> deleteUser(User user) {
+    return _userDeletionAdapter.deleteAndReturnChangedRows(user);
   }
 }
 
@@ -351,70 +320,20 @@ class _$ProductDao extends ProductDao {
   }
 
   @override
-  Future<void> applyGlobalDiscount(
-    double percentage,
-    bool applyDiscount,
-  ) async {
-    await _queryAdapter.queryNoReturn(
-        'UPDATE products      SET discount_percentage = ?1,          has_global_discount = ?2',
-        arguments: [percentage, applyDiscount ? 1 : 0]);
+  Future<int> insertProduct(Product product) {
+    return _productInsertionAdapter.insertAndReturnId(
+        product, OnConflictStrategy.abort);
   }
 
   @override
-  Future<void> updateProductDiscount(
-    int productId,
-    double percentage,
-    bool applyDiscount,
-  ) async {
-    await _queryAdapter.queryNoReturn(
-        'UPDATE products      SET discount_percentage = ?2,          has_global_discount = ?3     WHERE id = ?1',
-        arguments: [productId, percentage, applyDiscount ? 1 : 0]);
+  Future<int> updateProduct(Product product) {
+    return _productUpdateAdapter.updateAndReturnChangedRows(
+        product, OnConflictStrategy.abort);
   }
 
   @override
-  Future<List<Product>> getProductsWithDiscount() async {
-    return _queryAdapter.queryList(
-        'SELECT * FROM products WHERE has_global_discount = 1',
-        mapper: (Map<String, Object?> row) => Product(
-            id: row['id'] as int?,
-            name: row['name'] as String?,
-            description: row['description'] as String?,
-            basePrice: row['base_price'] as double?,
-            image: row['image'] as String?,
-            category: row['category'] as String?,
-            discountPercentage: row['discount_percentage'] as double?,
-            hasGlobalDiscount: row['has_global_discount'] == null
-                ? null
-                : (row['has_global_discount'] as int) != 0));
-  }
-
-  @override
-  Future<double?> getAveragePrice() async {
-    return _queryAdapter.query(
-        'SELECT AVG(       CASE          WHEN has_global_discount = 1 AND discount_percentage IS NOT NULL          THEN price * (1 - discount_percentage / 100)         ELSE price        END     ) as averagePrice FROM products',
-        mapper: (Map<String, Object?> row) => row.values.first as double);
-  }
-
-  @override
-  Future<int?> countProductsWithDiscount() async {
-    return _queryAdapter.query(
-        'SELECT COUNT(*) FROM products WHERE has_global_discount = 1',
-        mapper: (Map<String, Object?> row) => row.values.first as int);
-  }
-
-  @override
-  Future<void> insertProduct(Product product) async {
-    await _productInsertionAdapter.insert(product, OnConflictStrategy.abort);
-  }
-
-  @override
-  Future<void> updateProduct(Product product) async {
-    await _productUpdateAdapter.update(product, OnConflictStrategy.abort);
-  }
-
-  @override
-  Future<void> deleteProduct(Product product) async {
-    await _productDeletionAdapter.delete(product);
+  Future<int> deleteProduct(Product product) {
+    return _productDeletionAdapter.deleteAndReturnChangedRows(product);
   }
 }
 
@@ -470,7 +389,7 @@ class _$OrderDao extends OrderDao {
 
   @override
   Future<List<Order>> getAllOrders() async {
-    return _queryAdapter.queryList('SELECT * FROM order',
+    return _queryAdapter.queryList('SELECT * FROM `Order`',
         mapper: (Map<String, Object?> row) => Order(
             id: row['id'] as int?,
             userId: row['userId'] as int,
@@ -480,30 +399,20 @@ class _$OrderDao extends OrderDao {
   }
 
   @override
-  Future<List<Order>> findOrdersByUserId(int userId) async {
-    return _queryAdapter.queryList('SELECT * FROM order WHERE userId = ?1',
-        mapper: (Map<String, Object?> row) => Order(
-            id: row['id'] as int?,
-            userId: row['userId'] as int,
-            total: row['total'] as double,
-            status: row['status'] as String,
-            createdAt: row['createdAt'] as String),
-        arguments: [userId]);
+  Future<int> insertOrder(Order order) {
+    return _orderInsertionAdapter.insertAndReturnId(
+        order, OnConflictStrategy.abort);
   }
 
   @override
-  Future<void> insertOrder(Order order) async {
-    await _orderInsertionAdapter.insert(order, OnConflictStrategy.abort);
+  Future<int> updateOrder(Order order) {
+    return _orderUpdateAdapter.updateAndReturnChangedRows(
+        order, OnConflictStrategy.abort);
   }
 
   @override
-  Future<void> updateOrder(Order order) async {
-    await _orderUpdateAdapter.update(order, OnConflictStrategy.abort);
-  }
-
-  @override
-  Future<void> deleteOrder(Order order) async {
-    await _orderDeletionAdapter.delete(order);
+  Future<int> deleteOrder(Order order) {
+    return _orderDeletionAdapter.deleteAndReturnChangedRows(order);
   }
 }
 

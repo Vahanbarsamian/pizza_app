@@ -1,5 +1,5 @@
 import 'package:floor/floor.dart';
-import 'option.dart';
+import '../option.dart';
 //import 'dao/app_database.dart';
 
 @dao

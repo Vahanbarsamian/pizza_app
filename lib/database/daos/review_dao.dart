@@ -1,5 +1,5 @@
 import 'package:floor/floor.dart';
-import 'review.dart';
+import '../review.dart';
 
 @dao
 abstract class ReviewDao {

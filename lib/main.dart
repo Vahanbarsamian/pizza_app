@@ -1,17 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:floor/floor.dart';
 import 'database/app_database.dart';
-import 'database/migrations.dart';  // ✅ AJOUTER CET IMPORT
+import 'services/supabase_service.dart';
+import 'database/migrations.dart';
 import 'screens/home_screen.dart';
 
-late final AppDatabase database;
+late final AppDatabase database;  // ✅ GLOBAL
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  await SupabaseService.initialize();  // ✅ Static OK
+  await dotenv.load(fileName: ".env");
+
   database = await $FloorAppDatabase
       .databaseBuilder('pizza_app.db')
-      .addMigrations([migration1to2])  // ✅ Maintenant migration1to2 existe
+      .addMigrations([migration1to2])
       .build();
+
+  // ✅ SYNC AUTO au démarrage (static !)
+  await SupabaseService.syncProductsToFloor();  // ← STATIC !
 
   runApp(const PizzaApp());
 }
@@ -22,10 +31,13 @@ class PizzaApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'PizzaApp',
-      theme: ThemeData(primarySwatch: Colors.red),
+      title: '🍕 PizzaApp',
+      theme: ThemeData(
+        primarySwatch: Colors.red,
+        useMaterial3: true,
+      ),
       home: const HomeScreen(),
+      debugShowCheckedModeBanner: false,
     );
   }
 }
-
