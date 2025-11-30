@@ -14,12 +14,6 @@ Future<void> main() async {
   try {
     await dotenv.load(fileName: ".env");
 
-    // ✅ Ligne de débogage TEMPORAIRE
-    debugPrint("--- VÉRIFICATION DES CLÉS SUPABASE ---");
-    debugPrint("URL LUE : ${dotenv.env['SUPABASE_URL']}");
-    debugPrint("CLÉ LUE : ${dotenv.env['SUPABASE_ANON_KEY']}");
-    debugPrint("---------------------------------------");
-
     await Supabase.initialize(
       url: dotenv.env['SUPABASE_URL']!,
       anonKey: dotenv.env['SUPABASE_ANON_KEY']!,

@@ -15,35 +15,33 @@ class SyncService {
 
     final response = await supabase.from('products').select();
 
-    debugPrint("[SyncService] Données brutes reçues de Supabase:");
-    debugPrint(response.toString());
+    // La ligne qui affichait les données brutes a été supprimée.
+    // debugPrint("[SyncService] Données brutes reçues de Supabase:");
+    // debugPrint(response.toString());
 
     final List<local_db.ProductsCompanion> products = [];
     for (final json in response) {
       try {
-        // ✅ CORRECTION FINALE: Utilisation des bons noms de colonnes de Supabase
         products.add(local_db.ProductsCompanion.insert(
           name: json['name'] as String,
-          basePrice: (json['price'] as num).toDouble(), // <= Utilise 'price'
-          image: Value(json['image_url'] as String?),   // <= Utilise 'image_url'
-          // La catégorie n'est pas dans le JSON, donc elle sera null, ce qui est ok.
+          basePrice: (json['price'] as num).toDouble(),
+          image: Value(json['image_url'] as String?),
           category: const Value(null),
         ));
       } catch (e) {
-        debugPrint("--- ERREUR DE PARSING ---");
-        debugPrint("  Ligne JSON qui a échoué: $json");
-        debugPrint("  Erreur spécifique: $e");
-        debugPrint("-------------------------");
+        // En cas d'erreur de parsing, on reste discret en production.
+        debugPrint("[SyncService] Erreur de parsing sur une ligne: $e");
       }
     }
 
-    debugPrint("[SyncService] ${products.length} produits ont été parsés avec succès.");
+    debugPrint("[SyncService] ${products.length} produits reçus de Supabase.");
 
     if (products.isEmpty) {
-      debugPrint("[SyncService] Aucun produit à insérer. Fin de la synchronisation.");
+      debugPrint("[SyncService] Aucun nouveau produit à synchroniser.");
       return;
     }
 
+    // Remplacer les anciennes données par les nouvelles
     await db.delete(db.products).go();
     await db.batch((batch) {
       batch.insertAll(db.products, products);
