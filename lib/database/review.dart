@@ -1,4 +1,6 @@
+/*
 import 'package:floor/floor.dart';
+
 
 @entity
 class Review {
@@ -17,3 +19,4 @@ class Review {
     required this.createdAt,
   });
 }
+*/

@@ -1,3 +1,4 @@
+/*
 import 'package:floor/floor.dart';
 
 @entity
@@ -10,3 +11,4 @@ class User {
 
   User({this.id, required this.email, required this.password, required this.role });
 }
+*/

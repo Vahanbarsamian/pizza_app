@@ -1,4 +1,6 @@
+/*
 import 'package:floor/floor.dart';
+
 
 @entity
 class Order {
@@ -17,3 +19,4 @@ class Order {
     required this.createdAt,
   });
 }
+*/

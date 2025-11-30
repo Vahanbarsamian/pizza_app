@@ -1,4 +1,4 @@
-import 'package:floor/floor.dart';
+/*import 'package:floor/floor.dart';
 import '../review.dart';
 
 @dao
@@ -18,3 +18,5 @@ abstract class ReviewDao {
   @delete
   Future<void> deleteReview(Review review);
 }
+
+ */

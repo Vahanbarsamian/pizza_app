@@ -1,28 +1,51 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:floor/floor.dart';
-import 'database/app_database.dart';
-import 'services/supabase_service.dart';
-import 'database/migrations.dart';
-import 'screens/home_screen.dart';
+import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-late final AppDatabase database;  // ✅ GLOBAL
+import 'database/app_database.dart';
+import 'screens/home_screen.dart';
+import 'services/admin_service.dart';
+import 'services/sync_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await SupabaseService.initialize();  // ✅ Static OK
-  await dotenv.load(fileName: ".env");
+  try {
+    await dotenv.load(fileName: ".env");
 
-  database = await $FloorAppDatabase
-      .databaseBuilder('pizza_app.db')
-      .addMigrations([migration1to2])
-      .build();
+    // ✅ Ligne de débogage TEMPORAIRE
+    debugPrint("--- VÉRIFICATION DES CLÉS SUPABASE ---");
+    debugPrint("URL LUE : ${dotenv.env['SUPABASE_URL']}");
+    debugPrint("CLÉ LUE : ${dotenv.env['SUPABASE_ANON_KEY']}");
+    debugPrint("---------------------------------------");
 
-  // ✅ SYNC AUTO au démarrage (static !)
-  await SupabaseService.syncProductsToFloor();  // ← STATIC !
+    await Supabase.initialize(
+      url: dotenv.env['SUPABASE_URL']!,
+      anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
+    );
 
-  runApp(const PizzaApp());
+    runApp(
+      MultiProvider(
+        providers: [
+          Provider<AppDatabase>(
+            create: (_) => AppDatabase(),
+            dispose: (_, db) => db.close(),
+          ),
+          ProxyProvider<AppDatabase, AdminService>(
+            update: (_, db, __) => AdminService(db: db),
+          ),
+          ProxyProvider<AppDatabase, SyncService>(
+            update: (_, db, __) => SyncService(db: db),
+          ),
+        ],
+        child: const PizzaApp(),
+      ),
+    );
+  } catch (e) {
+    debugPrint('🚨 ERREUR: $e');
+    runApp(ErrorApp(error: e.toString()));
+  }
 }
 
 class PizzaApp extends StatelessWidget {
@@ -33,11 +56,41 @@ class PizzaApp extends StatelessWidget {
     return MaterialApp(
       title: '🍕 PizzaApp',
       theme: ThemeData(
-        primarySwatch: Colors.red,
         useMaterial3: true,
+        colorSchemeSeed: Colors.orange,
       ),
       home: const HomeScreen(),
-      debugShowCheckedModeBanner: false,
+    );
+  }
+}
+
+class ErrorApp extends StatelessWidget {
+  final String error;
+  const ErrorApp({super.key, required this.error});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      home: Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error, size: 64, color: Colors.red),
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Text(error, textAlign: TextAlign.center),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  main();
+                },
+                child: const Text('🔄 Réessayer'),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

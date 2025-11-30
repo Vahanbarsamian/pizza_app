@@ -6,7 +6,6 @@ class SupabaseService {
   static SupabaseClient get client => _supabase;
   static final SupabaseClient _supabase = Supabase.instance.client;
 
-  // Initialisation (déjà dans main.dart)
   static Future<void> initialize() async {
     await Supabase.initialize(
       url: 'https://cwbrrsjtuaruzkedblil.supabase.co',
@@ -14,7 +13,6 @@ class SupabaseService {
     );
   }
 
-  // ✅ GET PRODUCTS SUPABASE
   static Future<List<Map<String, dynamic>>> getProducts() async {
     try {
       final response = await client.from('products').select();
@@ -26,7 +24,6 @@ class SupabaseService {
     }
   }
 
-  // ✅ SYNC SUPABASE → FLOOR (avec OFFLINE GRÂCEUX)
   static Future<void> syncProductsToFloor() async {
     try {
       final supabaseProducts = await getProducts();

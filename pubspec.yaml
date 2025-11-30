@@ -4,37 +4,39 @@ publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.2.0 <4.0.0'  # ✅ Compatible Flutter 3.24+
+  sdk: '>=3.2.0 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8
   supabase_flutter: ^2.5.0
-
-  # Paiements
   flutter_stripe: ^10.0.0
-  webview_flutter: ^4.8.0    # ✅ Remplace paypal_sdk
-
-  # Réseau
+  webview_flutter: ^4.8.0
   http: ^1.1.0
   url_launcher: ^6.2.1
-
-  # Base de données (Floor uniquement)
-  floor: ^1.5.0
-
-  # Environnement
-  flutter_dotenv: ^5.1.0     # ✅ Pour .env
+  drift: ^2.17.0
+  sqlite3_flutter_libs: ^0.5.21
+  path_provider: ^2.0.0
+  path: ^1.9.0
+  flutter_dotenv: ^5.1.0
+  # ✅ Pour une architecture plus propre
+  provider: ^6.1.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
-  floor_generator: ^1.5.0
+  drift_dev: ^2.17.0
   build_runner: ^2.4.7
 
 flutter:
   uses-material-design: true
   assets:
-    - .env                  # ✅ Variables d'environnement
+    - .env
     - assets/images/
+
+# NOTE: Ce hack est nécessaire pour contourner un bug de build_runner.
+# Il faudra le réévaluer lors des futures mises à jour de Flutter.
+dependency_overrides:
+  analyzer: '6.4.1'

@@ -1,4 +1,4 @@
-import 'package:floor/floor.dart';
+/*import 'package:floor/floor.dart';
 import '../option.dart';
 //import 'dao/app_database.dart';
 
@@ -25,3 +25,5 @@ abstract class OptionDao {
   @Query('SELECT COUNT(*) FROM options WHERE product_id = :productId AND is_active = 1')
   Future<int?> countOptionsForProduct(int productId);
 }
+
+ */

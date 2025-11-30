@@ -1,4 +1,4 @@
-import 'package:floor/floor.dart';
+/*import 'package:floor/floor.dart';
 import '../user.dart';
 
 @dao
@@ -15,3 +15,5 @@ abstract class UserDao {
   @delete
   Future<int> deleteUser(User user);
 }
+
+ */

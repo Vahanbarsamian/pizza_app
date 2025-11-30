@@ -1,26 +1,46 @@
-import 'dart:async';
-import 'package:floor/floor.dart';
-import 'package:sqflite/sqflite.dart' as sqflite;
-import 'user.dart';
+import 'dart:io';
+
+import 'package:drift/drift.dart';
+import 'package:drift/native.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
+
 import 'product.dart';
-import 'order.dart';
-import 'review.dart';
-import 'option.dart';
-import 'daos/user_dao.dart';
-import 'daos/product_dao.dart';
-import 'daos/order_dao.dart';
-import 'daos/review_dao.dart';
-import 'daos/option_dao.dart';
 
-part 'app_database.g.dart'; // ← OBLIGATOIRE
+part 'app_database.g.dart';
 
-@Database(version: 2, entities: [User, Product, Order, Review, Option])
-abstract class AppDatabase extends FloorDatabase {
-  // ← EXACTEMENT FloorDatabase (pas autre chose !)
+@DriftDatabase(tables: [Products])
+class AppDatabase extends _$AppDatabase {
+  AppDatabase() : super(_openConnection());
 
-  UserDao get userDao;
-  ProductDao get productDao;
-  OrderDao get orderDao;
-  ReviewDao get reviewDao;
-  OptionDao get optionDao;
+  @override
+  int get schemaVersion => 1;
+
+  // Ancienne méthode qui ne renvoie les données qu'une seule fois
+  Future<List<Product>> getAllProducts() => select(products).get();
+
+  // ✅ NOUVEAU: Renvoie un flux de données qui se met à jour automatiquement
+  Stream<List<Product>> watchAllProducts() => select(products).watch();
+
+  Future<int> countProducts() async {
+    final all = await getAllProducts();
+    return all.length;
+  }
+
+  Future<void> insertProduct(ProductsCompanion product) =>
+      into(products).insert(product);
+
+  Future<void> updateProduct(ProductsCompanion product) =>
+      update(products).replace(product);
+
+  Future<void> deleteProduct(ProductsCompanion product) =>
+      delete(products).delete(product);
+}
+
+LazyDatabase _openConnection() {
+  return LazyDatabase(() async {
+    final dbFolder = await getApplicationDocumentsDirectory();
+    final file = File(p.join(dbFolder.path, 'pizza_app.db'));
+    return NativeDatabase(file);
+  });
 }

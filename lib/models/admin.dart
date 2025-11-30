@@ -19,8 +19,14 @@ class Admin {
   );
 
   Map<String, dynamic> toJson() => {
+    'id': id,
     'email': email,
     'password': password,
     'role': role,
   };
+
+  // ✅ AUTH SIMPLE (admin@pizza.com / admin123)
+  static bool authenticate(String email, String password) {
+    return email == 'admin@pizza.com' && password == 'admin123';
+  }
 }

@@ -1,4 +1,4 @@
-import 'package:floor/floor.dart';
+/*import 'package:floor/floor.dart';
 
 @Entity(tableName: 'options')
 class Option {
@@ -27,3 +27,4 @@ class Option {
     this.isActive = true,
   });
 }
+*/
