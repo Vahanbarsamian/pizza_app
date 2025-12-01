@@ -1,164 +1,84 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../services/admin_service.dart';
-import '../database/app_database.dart';
 
-// NOTE: Les imports pour admin_auth et le modèle admin sont conservés
-// en supposant qu'ils sont toujours nécessaires pour la logique d'authentification.
-import '../services/admin_auth.dart';
-import '../models/admin.dart';
+import '../services/auth_service.dart';
+import 'admin_menu_tab.dart';
+import 'admin_announcements_tab.dart';
+import 'admin_info_tab.dart';
 
 class AdminScreen extends StatefulWidget {
   const AdminScreen({super.key});
+
   @override
   State<AdminScreen> createState() => _AdminScreenState();
 }
 
 class _AdminScreenState extends State<AdminScreen> {
-  final _nameController = TextEditingController();
-  final _priceController = TextEditingController();
-  bool _isLoading = false;
+  int _selectedIndex = 0;
 
-  // La méthode accède maintenant au service via le Provider
-  Future<void> _addPizza(AdminService adminService) async {
-    if (_nameController.text.isEmpty || _priceController.text.isEmpty) return;
-    setState(() => _isLoading = true);
+  static const List<Widget> _widgetOptions = <Widget>[
+    AdminMenuTab(),
+    AdminAnnouncementsTab(),
+    AdminInfoTab(),
+  ];
 
-    await adminService.addPizza(
-      name: _nameController.text,
-      price: double.tryParse(_priceController.text) ?? 0.0,
-    );
+  static const List<String> _titles = <String>[
+    'Admin / Menu',
+    'Admin / Annonces',
+    'Admin / Infos',
+  ];
 
-    setState(() => _isLoading = false);
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('✅ Pizza "${_nameController.text}" ajoutée !')),
-      );
-    }
-    _nameController.clear();
-    _priceController.clear();
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    // Récupère l'AdminService et la DB depuis le Provider
-    final adminService = Provider.of<AdminService>(context);
-    final db = Provider.of<AppDatabase>(context);
+    final authService = Provider.of<AuthService>(context, listen: false);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('🔧 Admin ${AdminAuthService.currentUser?.email ?? ''}'),
-        backgroundColor: Colors.orange,
-        foregroundColor: Colors.white,
+        title: Text(_titles.elementAt(_selectedIndex)),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          tooltip: 'Retour au site',
+          onPressed: () => Navigator.of(context).pop(),
+        ),
         actions: [
+          // ✅ CORRIGÉ: Remplace l'icône de déconnexion par l'icône utilisateur verte.
           IconButton(
-            icon: const Icon(Icons.logout, color: Colors.white),
+            icon: const Icon(Icons.person, color: Colors.lightGreenAccent),
+            tooltip: 'Déconnexion complète',
             onPressed: () {
-              // La logique d'authentification est conservée
-              AdminAuthService.logout();
-              Navigator.pop(context);
+              authService.signOut();
+              // Navigue vers la page d'accueil après la déconnexion
+              Navigator.of(context).popUntil((route) => route.isFirst);
             },
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  children: [
-                    const Text('➕ Nouvelle Pizza',
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: _nameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Nom',
-                        prefixIcon: Icon(Icons.local_pizza),
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: _priceController,
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
-                      decoration: const InputDecoration(
-                        labelText: 'Prix (€)',
-                        prefixIcon: Icon(Icons.euro),
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: _isLoading ? null : () => _addPizza(adminService),
-                        icon: _isLoading
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                        Colors.white)))
-                            : const Icon(Icons.add),
-                        label: Text(_isLoading ? 'Ajout...' : '➕ Ajouter'),
-                        style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
-                            foregroundColor: Colors.white),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            // ✅ Le compteur de pizzas est maintenant réactif en temps réel
-            StreamBuilder<List<Product>>(
-              stream: db.watchAllProducts(),
-              builder: (context, snapshot) {
-                final count = snapshot.data?.length ?? 0;
-                return Card(
-                  color: Colors.red.shade50,
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        const Icon(Icons.local_pizza, size: 48, color: Colors.red),
-                        Column(
-                          children: [
-                            Text('$count',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .headlineMedium
-                                    ?.copyWith(
-                                        color: Colors.red.shade700,
-                                        fontWeight: FontWeight.bold)),
-                            const Text('Pizzas total', style: TextStyle(color: Colors.grey)),
-                          ],
-                        ),
-                        const Icon(Icons.trending_up, size: 48, color: Colors.green),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: () => Navigator.pop(context),
-              icon: const Icon(Icons.home),
-              label: const Text('🏠 Menu Client'),
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.grey, foregroundColor: Colors.white),
-            ),
-          ],
-        ),
+      body: Center(
+        child: _widgetOptions.elementAt(_selectedIndex),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.restaurant_menu),
+            label: 'Menu',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.campaign),
+            label: 'Annonces',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.business),
+            label: 'Infos',
+          ),
+        ],
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
       ),
     );
   }

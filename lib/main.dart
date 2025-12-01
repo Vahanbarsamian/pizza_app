@@ -4,8 +4,10 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'database/app_database.dart';
-import 'screens/home_screen.dart';
+import 'screens/main_screen.dart';
 import 'services/admin_service.dart';
+import 'services/auth_service.dart';
+import 'services/cart_service.dart';
 import 'services/sync_service.dart';
 
 Future<void> main() async {
@@ -19,25 +21,27 @@ Future<void> main() async {
       anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
     );
 
+    final db = AppDatabase();
+    final syncService = SyncService(db: db);
+
+    await syncService.syncAll();
+
     runApp(
       MultiProvider(
         providers: [
-          Provider<AppDatabase>(
-            create: (_) => AppDatabase(),
-            dispose: (_, db) => db.close(),
-          ),
+          Provider.value(value: db),
+          // ✅ CORRIGÉ: Utilise ChangeNotifierProvider pour que l'UI réagisse à la déconnexion.
+          ChangeNotifierProvider(create: (_) => AuthService()),
+          ChangeNotifierProvider(create: (_) => CartService()),
+          Provider.value(value: syncService),
           ProxyProvider<AppDatabase, AdminService>(
             update: (_, db, __) => AdminService(db: db),
-          ),
-          ProxyProvider<AppDatabase, SyncService>(
-            update: (_, db, __) => SyncService(db: db),
           ),
         ],
         child: const PizzaApp(),
       ),
     );
   } catch (e) {
-    debugPrint('🚨 ERREUR: $e');
     runApp(ErrorApp(error: e.toString()));
   }
 }
@@ -48,12 +52,14 @@ class PizzaApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: '🍕 PizzaApp',
       theme: ThemeData(
         useMaterial3: true,
         colorSchemeSeed: Colors.orange,
+        brightness: Brightness.light,
       ),
-      home: const HomeScreen(),
+      home: const MainScreen(),
     );
   }
 }
@@ -74,12 +80,6 @@ class ErrorApp extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.all(20),
                 child: Text(error, textAlign: TextAlign.center),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  main();
-                },
-                child: const Text('🔄 Réessayer'),
               ),
             ],
           ),

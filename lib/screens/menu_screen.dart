@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../database/app_database.dart' hide User;
 import '../services/auth_service.dart';
@@ -33,7 +32,7 @@ class MenuScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final db = Provider.of<AppDatabase>(context);
-    final authService = Provider.of<AuthService>(context);
+    final authService = context.watch<AuthService>();
     final cartService = Provider.of<CartService>(context, listen: false);
 
     return RefreshIndicator(
@@ -59,8 +58,13 @@ class MenuScreen extends StatelessWidget {
                   pizza.discountPercentage! > 0;
               final finalPrice = _calculateFinalPrice(pizza);
 
-              // ✅ NOUVEAU: Logique pour déterminer si un produit est nouveau
-              final bool isNew = DateTime.now().difference(pizza.createdAt).inDays <= 15;
+              // ✅ CORRIGÉ: Comparaison des dates en UTC pour éviter les problèmes de fuseau horaire.
+              final nowUtc = DateTime.now().toUtc();
+              final pizzaCreatedAtUtc = pizza.createdAt.toUtc();
+              final bool isNew = nowUtc.difference(pizzaCreatedAtUtc).inDays <= 15;
+
+              debugPrint(
+                  "[MenuScreen] Pizza: ${pizza.name} | Date création: ${pizza.createdAt} (UTC: $pizzaCreatedAtUtc) | Now UTC: $nowUtc | estNouveau: $isNew");
 
               return GestureDetector(
                 onTap: () => Navigator.of(context).push(
@@ -136,26 +140,19 @@ class MenuScreen extends StatelessWidget {
                                           ),
                                         ],
                                       ),
-                                      StreamBuilder<User?>(
-                                        stream: authService.authStateChanges,
-                                        builder: (context, snapshot) {
-                                          if (snapshot.hasData) {
-                                            return IconButton(
-                                              icon: const Icon(Icons.add_shopping_cart, color: Colors.orange),
-                                              onPressed: () {
-                                                cartService.addToCart(pizza);
-                                                ScaffoldMessenger.of(context).showSnackBar(
-                                                  const SnackBar(
-                                                    content: Text('Pizza ajoutée au panier !'),
-                                                    duration: Duration(seconds: 1),
-                                                  ),
-                                                );
-                                              },
+                                      if (authService.currentUser != null)
+                                        IconButton(
+                                          icon: const Icon(Icons.add_shopping_cart, color: Colors.orange),
+                                          onPressed: () {
+                                            cartService.addToCart(pizza);
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              const SnackBar(
+                                                content: Text('Pizza ajoutée au panier !'),
+                                                duration: Duration(seconds: 1),
+                                              ),
                                             );
-                                          }
-                                          return const SizedBox.shrink();
-                                        },
-                                      ),
+                                          },
+                                        ),
                                     ],
                                   ),
                                 ],
@@ -165,7 +162,6 @@ class MenuScreen extends StatelessWidget {
                         ],
                       ),
                     ),
-                    // ✅ NOUVEAU: Affiche le bandeau "Nouveau" si nécessaire
                     if (isNew)
                       Positioned(
                         top: 0,

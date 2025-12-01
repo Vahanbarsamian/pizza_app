@@ -7,14 +7,12 @@ class CartScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // On utilise un Consumer pour que l'écran se reconstruise à chaque changement du panier
     return Consumer<CartService>(
       builder: (context, cart, child) {
         return Scaffold(
           appBar: AppBar(
             title: const Text('Mon Panier'),
             actions: [
-              // Bouton pour vider le panier
               if (cart.items.isNotEmpty)
                 IconButton(
                   icon: const Icon(Icons.delete_forever),
@@ -38,7 +36,8 @@ class CartScreen extends StatelessWidget {
                           child: Text(cartItem.quantity.toString()),
                         ),
                         title: Text(cartItem.product.name),
-                        subtitle: Text('€${cartItem.subtotal.toStringAsFixed(2)}'),
+                        // ✅ CORRIGÉ: Format du sous-total
+                        subtitle: Text('${cartItem.subtotal.toStringAsFixed(2)} €'),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -56,7 +55,6 @@ class CartScreen extends StatelessWidget {
                     );
                   },
                 ),
-          // Affiche le total et le bouton de commande en bas de l'écran
           bottomNavigationBar: cart.items.isEmpty
               ? null
               : BottomAppBar(
@@ -66,12 +64,12 @@ class CartScreen extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: <Widget>[
                         Text(
-                          'Total: €${cart.totalPrice.toStringAsFixed(2)}',
+                          // ✅ CORRIGÉ: Format du prix total
+                          'Total: ${cart.totalPrice.toStringAsFixed(2)} € TTC',
                           style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                         ),
                         ElevatedButton.icon(
                           onPressed: () {
-                            // Logique pour passer la commande à implémenter ici
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(content: Text('Commande passée (simulation) !')),
                             );

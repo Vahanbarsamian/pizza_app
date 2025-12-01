@@ -1,14 +1,15 @@
-/*
-import 'package:floor/floor.dart';
+import 'package:drift/drift.dart';
 
-@entity
-class User {
-  @PrimaryKey(autoGenerate: true)
-  final int? id; // AUTO INCREMENT sera géré par Floor avec int? nullable
-  final String email;
-  final String password;
-  final String role;
+// La table Users est maintenant liée aux utilisateurs de Supabase Auth
+class Users extends Table {
+  // L'ID est maintenant un UUID (Texte) de Supabase, et non plus un entier auto-incrémenté.
+  TextColumn get id => text()();
 
-  User({this.id, required this.email, required this.password, required this.role });
+  TextColumn get name => text().nullable()();
+  TextColumn get email => text().unique()();
+  TextColumn get postalCode => text().named('postal_code').nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column> get primaryKey => {id};
 }
-*/

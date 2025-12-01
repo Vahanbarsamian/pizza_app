@@ -1,22 +1,11 @@
-/*
-import 'package:floor/floor.dart';
+import 'package:drift/drift.dart';
+import 'user.dart';
 
-
-@entity
-class Order {
-  @PrimaryKey(autoGenerate: true)
-  final int? id;
-  final int userId;
-  final double total;
-  final String status;
-  final String createdAt; // Stocker en String ISO date, car Floor ne gère pas TIMESTAMP
-
-  Order({
-    this.id,
-    required this.userId,
-    required this.total,
-    required this.status,
-    required this.createdAt,
-  });
+class Orders extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  // ✅ L'ID utilisateur est maintenant un texte pour correspondre à l'UUID de Supabase
+  TextColumn get userId => text().references(Users, #id)();
+  RealColumn get total => real()();
+  TextColumn get status => text()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
-*/
