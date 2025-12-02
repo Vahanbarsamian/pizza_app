@@ -1,14 +1,14 @@
 import 'package:drift/drift.dart';
-import 'product.dart';
+import 'product.dart'; // ✅ CORRIGÉ: L'import manquant a été ajouté.
 
-// ✅ Renommée pour éviter le conflit avec le nom réservé 'options' de Drift
+@DataClassName('ProductOption')
 class ProductOptions extends Table {
   IntColumn get id => integer().autoIncrement()();
-  IntColumn get productId => integer().references(Products, #id)();
+  // La référence à 'Products' est maintenant comprise grâce à l'import.
+  IntColumn get productId => integer().nullable().references(Products, #id)();
   TextColumn get name => text()();
   RealColumn get price => real()();
 
-  // On renomme la table dans la base de données pour garder le nom 'options'
-  @override
-  String get tableName => 'options';
+  BoolColumn get isGlobal => boolean().withDefault(const Constant(false))();
+  TextColumn get category => text().nullable()();
 }

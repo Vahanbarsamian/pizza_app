@@ -11,124 +11,128 @@ class SyncService {
   SyncService({required this.db});
 
   Future<void> syncAll() async {
-    await Future.wait([
-      syncProducts(),
-      syncUsers(),
-      syncOrders(),
-      syncReviews(),
-      syncProductOptions(),
-      syncAdmins(),
-    ]);
+    await _syncTable('products', db.products, (data) async {
+      await db.batch((batch) {
+        batch.insertAll(db.products, data.map((row) => local_db.ProductsCompanion(
+          id: Value(row['id'] as int),
+          name: Value(row['name'] as String),
+          description: Value(row['description'] as String?),
+          basePrice: Value((row['base_price'] as num).toDouble()),
+          image: Value(row['image'] as String?),
+          category: Value(row['category'] as String),
+          discountPercentage: Value((row['discount_percentage'] as num?)?.toDouble() ?? 0.0),
+          hasGlobalDiscount: Value(row['has_global_discount'] as bool? ?? false),
+          createdAt: Value(DateTime.parse(row['created_at'])),
+          maxSupplements: Value(row['max_supplements'] as int?),
+        )));
+      });
+    });
+    await _syncTable('ingredients', db.ingredients, (data) async {
+      await db.batch((batch) {
+         batch.insertAll(db.ingredients, data.map((row) => local_db.IngredientsCompanion(
+            id: Value(row['id'] as int),
+            name: Value(row['name'] as String),
+            price: Value((row['price'] as num).toDouble()),
+            category: Value(row['category'] as String?),
+         )));
+      });
+    });
+    await _syncTable('product_ingredient_links', db.productIngredientLinks, (data) async {
+       await db.batch((batch) {
+          batch.insertAll(db.productIngredientLinks, data.map((row) => local_db.ProductIngredientLinksCompanion(
+            productId: Value(row['product_id'] as int),
+            ingredientId: Value(row['ingredient_id'] as int),
+          )));
+       });
+    });
+    await _syncTable('announcements', db.announcements, (data) async {
+        await db.batch((batch) {
+          batch.insertAll(db.announcements, data.map((row) => local_db.AnnouncementsCompanion(
+              id: Value(row['id'] as int),
+              title: Value(row['title'] as String),
+              announcementText: Value(row['announcement_text'] as String?),
+              description: Value(row['description'] as String?),
+              imageUrl: Value(row['image_url'] as String?),
+              conclusion: Value(row['conclusion'] as String?),
+              isActive: Value(row['is_active'] as bool? ?? true),
+              createdAt: Value(DateTime.parse(row['created_at'])),
+          )));
+        });
+    });
+    await _syncTable('company_info', db.companyInfo, (data) async {
+        await db.batch((batch) {
+           batch.insertAll(db.companyInfo, data.map((row) => local_db.CompanyInfoCompanion(
+              id: Value(row['id'] as int),
+              name: Value(row['name'] as String?),
+              presentation: Value(row['presentation'] as String?),
+              address: Value(row['address'] as String?),
+              phone: Value(row['phone'] as String?),
+              email: Value(row['email'] as String?),
+              facebookUrl: Value(row['facebook_url'] as String?),
+              instagramUrl: Value(row['instagram_url'] as String?),
+              xUrl: Value(row['x_url'] as String?),
+              whatsappPhone: Value(row['whatsapp_phone'] as String?),
+              latitude: Value((row['latitude'] as num?)?.toDouble()),
+              longitude: Value((row['longitude'] as num?)?.toDouble()),
+           )));
+        });
+    });
+    await _syncTable('reviews', db.reviews, (data) async {
+      await db.batch((batch) {
+        batch.insertAll(db.reviews, data.map((row) => local_db.ReviewsCompanion(
+            id: Value(row['id'] as int),
+            productId: Value(row['product_id'] as int),
+            userId: Value(row['user_id'] as String),
+            rating: Value(row['rating'] as int),
+            comment: Value(row['comment'] as String?),
+            createdAt: Value(DateTime.parse(row['created_at'])),
+        )));
+      });
+    });
+    await _syncTable('users', db.users, (data) async {
+      await db.batch((batch) {
+        batch.insertAll(db.users, data.map((row) => local_db.UsersCompanion(
+            id: Value(row['id'] as String),
+            name: Value(row['name'] as String?),
+            email: Value(row['email'] as String),
+            postalCode: Value(row['postal_code'] as String?),
+            createdAt: Value(DateTime.parse(row['created_at'])),
+        )));
+      });
+    });
+    await _syncTable('admins', db.admins, (data) async {
+      await db.batch((batch) {
+        batch.insertAll(db.admins, data.map((row) => local_db.AdminsCompanion(
+            id: Value(row['id'] as String),
+            email: Value(row['email'] as String),
+            role: Value(row['role'] as String),
+            createdAt: Value(DateTime.parse(row['created_at'])),
+        )));
+      });
+    });
   }
 
-  Future<void> _syncTable(String tableName, TableInfo table, Function(Map<String, dynamic>) fromJson) async {
+  Future<void> _syncTable(String tableName, TableInfo table, Function(List<Map<String, dynamic>>) inserter) async {
     if (kDebugMode) {
       debugPrint("[SyncService] 🔄 Sync $tableName...");
     }
     try {
       final response = await supabase.from(tableName).select();
-
-      // ✅ LOG DE DÉBOGAGE: Affiche les données brutes reçues de Supabase
-      if (kDebugMode && (tableName == 'admins' || tableName == 'products')) {
-        debugPrint("--- [SyncService] Données brutes pour '$tableName' ---");
-        debugPrint(response.toString());
-        debugPrint("---------------------------------------------------");
-      }
-
-      final companions = response.map((json) => fromJson(json)).toList();
-
+      final data = (response as List).cast<Map<String, dynamic>>();
       await db.transaction(() async {
         await db.delete(table).go();
-        if (companions.isNotEmpty) {
-          await db.batch((batch) {
-            batch.insertAll(table, companions.cast<Insertable>());
-          });
+        if (data.isNotEmpty) {
+          await inserter(data);
         }
       });
-
       if (kDebugMode) {
-        debugPrint("[SyncService] ✅ ${companions.length} $tableName synchronisés (Miroir)");
+        debugPrint("[SyncService] ✅ ${data.length} $tableName synchronisés.");
       }
     } catch (e) {
       if (kDebugMode) {
         debugPrint("[SyncService] ❌ Erreur sync $tableName: $e");
       }
-       rethrow;
+      rethrow;
     }
   }
-
-  Future<void> syncProducts() => _syncTable('products', db.products, (json) {
-        return local_db.ProductsCompanion(
-          id: Value(json['id'] as int),
-          name: Value(json['name'] as String),
-          description: Value(json['description'] as String?),
-          basePrice: Value((json['base_price'] ?? 0 as num).toDouble()),
-          image: Value(json['image'] as String?),
-          category: Value(json['category'] as String? ?? 'pizza'),
-          discountPercentage:
-              Value((json['discount_percentage'] as num?)?.toDouble() ?? 0.0),
-          hasGlobalDiscount: Value(json['has_global_discount'] as bool? ?? false),
-          createdAt: Value(
-              DateTime.tryParse(json['created_at']?.toString() ?? '') ??
-                  DateTime.now()),
-        );
-      });
-
-  Future<void> syncUsers() => _syncTable('users', db.users, (json) {
-        return local_db.UsersCompanion(
-          id: Value(json['id'] as String),
-          name: Value(json['name'] as String? ?? 'Utilisateur'),
-          email: Value(json['email'] as String),
-          postalCode: Value(json['postal_code'] as String?),
-          createdAt: Value(
-              DateTime.tryParse(json['created_at']?.toString() ?? '') ??
-                  DateTime.now()),
-        );
-      });
-
-  Future<void> syncOrders() => _syncTable('orders', db.orders, (json) {
-    return local_db.OrdersCompanion(
-      id: Value(json['id'] as int),
-      userId: Value(json['user_id'] as String),
-      total: Value((json['total'] ?? 0 as num).toDouble()),
-      status: Value(json['status'] as String? ?? 'pending'),
-      createdAt: Value(
-          DateTime.tryParse(json['created_at']?.toString() ?? '') ??
-              DateTime.now()),
-    );
-  });
-
-  Future<void> syncReviews() => _syncTable('reviews', db.reviews, (json) {
-    return local_db.ReviewsCompanion(
-      id: Value(json['id'] as int),
-      productId: Value((json['product_id'] ?? 0) as int),
-      userId: Value(json['user_id'] as String),
-      rating: Value((json['rating'] ?? 0) as int),
-      comment: Value(json['comment'] as String?),
-      createdAt: Value(
-          DateTime.tryParse(json['created_at']?.toString() ?? '') ??
-              DateTime.now()),
-    );
-  });
-
-  Future<void> syncProductOptions() => _syncTable('options', db.productOptions, (json) {
-    return local_db.ProductOptionsCompanion(
-      id: Value(json['id'] as int),
-      productId: Value((json['product_id'] ?? 0) as int),
-      name: Value(json['name'] as String? ?? ''),
-      price: Value((json['price'] ?? 0 as num).toDouble()),
-    );
-  });
-
-  Future<void> syncAdmins() => _syncTable('admins', db.admins, (json) {
-    return local_db.AdminsCompanion(
-      id: Value(json['id'] as String),
-      email: Value(json['email'] as String),
-      role: Value(json['role'] as String? ?? 'admin'),
-      createdAt: Value(
-          DateTime.tryParse(json['created_at']?.toString() ?? '') ??
-              DateTime.now()),
-    );
-  });
-
 }

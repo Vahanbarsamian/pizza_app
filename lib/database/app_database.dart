@@ -1,25 +1,38 @@
 import 'dart:io';
-
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 
+// Import des modèles de table
 import 'product.dart';
 import 'user.dart';
 import 'order.dart';
 import 'review.dart';
-import 'option.dart';
+import 'ingredient.dart'; // Renommé
 import 'admin.dart';
+import 'announcement.dart';
+import 'company_info.dart';
+import 'product_ingredient_link.dart'; // Renommé
 
 part 'app_database.g.dart';
 
-@DriftDatabase(tables: [Products, Users, Orders, Reviews, ProductOptions, Admins])
+@DriftDatabase(tables: [
+  Products,
+  Users,
+  Orders,
+  Reviews,
+  Ingredients, // Renommé
+  Admins,
+  Announcements,
+  CompanyInfo,
+  ProductIngredientLinks, // Renommé
+])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 13; // Version incrémentée pour forcer la recréation
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -27,39 +40,33 @@ class AppDatabase extends _$AppDatabase {
           await m.createAll();
         },
         onUpgrade: (m, from, to) async {
-          if (from < 6) {
-            await m.addColumn(products, products.createdAt);
+          // Stratégie simple pour le développement : on efface tout et on recrée.
+          for (final table in allTables) {
+            await m.deleteTable(table.actualTableName);
           }
+          await m.createAll();
         },
       );
 
-  /// ✅ CORRIGÉ: La liste des produits est maintenant triée par date de création descendante.
-  Stream<List<Product>> watchAllProducts() {
-    return (select(products)..orderBy([ (p) => OrderingTerm(expression: p.createdAt, mode: OrderingMode.desc)])).watch();
+  // --- Requêtes --- 
+
+  Stream<List<Product>> watchAllProducts() => (select(products)..orderBy([(p) => OrderingTerm(expression: p.createdAt, mode: OrderingMode.desc)])).watch();
+  
+  Stream<List<Ingredient>> watchAllIngredients() => select(ingredients).watch();
+
+  Stream<List<Ingredient>> watchIngredientsForProduct(int productId) {
+    final query = select(productIngredientLinks).join([
+      innerJoin(ingredients, ingredients.id.equalsExp(productIngredientLinks.ingredientId))
+    ])
+      ..where(productIngredientLinks.productId.equals(productId));
+    return query.map((row) => row.readTable(ingredients)).watch();
   }
-
-  Future<List<Product>> getAllProducts() => select(products).get();
-  Future<int> countProducts() => select(products).get().then((x) => x.length);
-  Future<void> insertProduct(ProductsCompanion product) =>
-      into(products).insert(product);
-  Future<void> updateProduct(ProductsCompanion product) =>
-      update(products).replace(product);
-  Future<void> deleteProduct(ProductsCompanion product) =>
-      delete(products).delete(product);
-
-  Stream<List<User>> watchAllUsers() => select(users).watch();
-  Future<List<User>> getAllUsers() => select(users).get();
-
-  Stream<List<Order>> watchUserOrders(String userId) =>
-      (select(orders)..where((o) => o.userId.equals(userId))).watch();
-  Future<List<Order>> getUserOrders(String userId) =>
-      (select(orders)..where((o) => o.userId.equals(userId))).get();
-
-  Stream<List<Review>> watchProductReviews(int productId) =>
-      (select(reviews)..where((r) => r.productId.equals(productId))).watch();
-
-  Stream<List<ProductOption>> watchProductOptions(int productId) =>
-      (select(productOptions)..where((opt) => opt.productId.equals(productId))).watch();
+  
+  Stream<List<Announcement>> watchAllAnnouncements() => (select(announcements)..where((a) => a.isActive.equals(true))..orderBy([(a) => OrderingTerm(expression: a.createdAt, mode: OrderingMode.desc)])).watch();
+  
+  Stream<CompanyInfoData> watchCompanyInfo() => select(companyInfo).watchSingle();
+  
+  Stream<List<Review>> watchProductReviews(int productId) => (select(reviews)..where((r) => r.productId.equals(productId))).watch();
 
   Future<bool> isAdmin(String userId) async {
     final admin = await (select(admins)..where((a) => a.id.equals(userId))).getSingleOrNull();

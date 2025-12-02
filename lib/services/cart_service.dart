@@ -1,60 +1,50 @@
 import 'package:flutter/material.dart';
 import '../database/app_database.dart';
+import '../models/cart_item.dart';
 
-/// Représente un article dans le panier
-class CartItem {
-  final Product product;
-  int quantity;
-
-  CartItem({required this.product, this.quantity = 1});
-
-  double get subtotal => product.basePrice * quantity;
-}
-
-/// Gère l'état du panier d'achat
 class CartService extends ChangeNotifier {
-  final List<CartItem> _items = [];
+  final Map<String, CartItem> _items = {};
 
-  // Permet de lire la liste des articles sans pouvoir la modifier de l'extérieur
-  List<CartItem> get items => _items;
+  Map<String, CartItem> get items => _items;
 
-  // Calcule le prix total du panier
-  double get totalPrice {
-    return _items.fold(0.0, (sum, item) => sum + item.subtotal);
-  }
+  void addToCart(Product product, {List<Ingredient> ingredients = const []}) {
+    final newItem = CartItem(product: product, selectedIngredients: ingredients);
+    final itemId = newItem.uniqueId;
 
-  // Ajoute un produit au panier ou incrémente sa quantité
-  void addToCart(Product product) {
-    // Vérifie si le produit est déjà dans le panier
-    final existingIndex = _items.indexWhere((item) => item.product.id == product.id);
-
-    if (existingIndex != -1) {
-      // Si oui, on incrémente juste la quantité
-      _items[existingIndex].quantity++;
+    if (_items.containsKey(itemId)) {
+      _items.update(itemId, (existingItem) {
+        existingItem.quantity++;
+        return existingItem;
+      });
     } else {
-      // Sinon, on ajoute un nouvel article
-      _items.add(CartItem(product: product));
+      _items[itemId] = newItem;
     }
-
-    // Notifie les widgets qui écoutent que l'état a changé
     notifyListeners();
   }
 
-  // Retire un article du panier ou décrémente sa quantité
-  void removeFromCart(CartItem cartItem) {
-    final existingIndex = _items.indexWhere((item) => item.product.id == cartItem.product.id);
-
-    if (existingIndex != -1) {
-      if (_items[existingIndex].quantity > 1) {
-        _items[existingIndex].quantity--;
+  void updateQuantity(String itemId, int newQuantity) {
+    if (_items.containsKey(itemId)) {
+      if (newQuantity > 0) {
+        _items.update(itemId, (item) {
+          item.quantity = newQuantity;
+          return item;
+        });
       } else {
-        _items.removeAt(existingIndex);
+        _items.remove(itemId);
       }
       notifyListeners();
     }
   }
 
-  // Vide complètement le panier
+  void removeFromCart(String itemId) {
+    _items.remove(itemId);
+    notifyListeners();
+  }
+
+  double get totalPrice {
+    return _items.values.fold(0, (total, item) => total + (item.finalPrice * item.quantity));
+  }
+
   void clearCart() {
     _items.clear();
     notifyListeners();

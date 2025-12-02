@@ -21,32 +21,17 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
 
-  @override
-  void initState() {
-    super.initState();
-    Provider.of<AuthService>(context, listen: false).addListener(_onAuthStateChanged);
-  }
-
-  @override
-  void dispose() {
-    Provider.of<AuthService>(context, listen: false).removeListener(_onAuthStateChanged);
-    super.dispose();
-  }
-
-  void _onAuthStateChanged() {
-    setState(() {});
-  }
-
   static const List<Widget> _pages = <Widget>[
     MenuScreen(),
     PromotionsScreen(),
     AboutUsScreen(),
   ];
 
+  // ✅ CORRIGÉ: L'emoji a été retiré pour être remplacé par une icône.
   static const List<String> _titles = <String>[
     '🍕 Menu',
     '🎉 Promotions',
-    'ℹ️ Qui sommes-nous',
+    'Qui sommes-nous',
   ];
 
   void _onItemTapped(int index) {
@@ -61,7 +46,20 @@ class _MainScreenState extends State<MainScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_titles[_selectedIndex]),
+        // ✅ CORRIGÉ: Le titre affiche une icône personnalisée pour la page "Qui sommes-nous"
+        title: _selectedIndex == 2
+            ? Row(
+                children: [
+                  CircleAvatar(
+                    radius: 12,
+                    backgroundColor: Colors.blue.shade800,
+                    child: const Icon(Icons.info_outline, color: Colors.white, size: 15),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(_titles[_selectedIndex]),
+                ],
+              )
+            : Text(_titles[_selectedIndex]),
         backgroundColor: Colors.orange,
         foregroundColor: Colors.white,
         actions: [
