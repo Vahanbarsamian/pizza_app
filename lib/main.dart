@@ -10,7 +10,9 @@ import 'services/cart_service.dart';
 import 'services/sync_service.dart';
 import 'services/admin_service.dart';
 import 'services/order_service.dart';
-import 'services/review_service.dart'; // ✅ NOUVEAU
+import 'services/review_service.dart';
+import 'services/public_review_service.dart';
+
 import 'screens/main_screen.dart';
 
 Future<void> main() async {
@@ -53,7 +55,11 @@ class MyApp extends StatelessWidget {
         ProxyProvider<AppDatabase, OrderService>(
           update: (_, db, __) => OrderService(db: db),
         ),
-        Provider(create: (_) => ReviewService()), // ✅ NOUVEAU
+        Provider(create: (_) => ReviewService()),
+        ChangeNotifierProxyProvider<AppDatabase, PublicReviewService>(
+          create: (context) => PublicReviewService(context.read<AppDatabase>()),
+          update: (_, db, service) => service!,
+        ),
       ],
       child: MaterialApp(
         title: 'Pizza App',

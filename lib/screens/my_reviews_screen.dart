@@ -105,14 +105,14 @@ class ReviewCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ✅ CORRIGÉ: Nouvelle structure d'affichage
             Text.rich(
               TextSpan(
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey.shade700),
                 children: [
                   const TextSpan(text: 'Avis de '),
                   TextSpan(text: order.referenceName ?? 'Anonyme', style: const TextStyle(fontWeight: FontWeight.bold)),
-                  TextSpan(text: ', déposé le ${DateFormat('dd/MM/yyyy').format(review.createdAt)}, suite à sa commande du ${DateFormat('dd/MM/yyyy').format(order.createdAt)}.'),
+                  // ✅ CORRIGÉ: Retrait du "sa"
+                  TextSpan(text: ', déposé le ${DateFormat('dd/MM/yyyy').format(review.createdAt)}, suite à commande du ${DateFormat('dd/MM/yyyy').format(order.createdAt)}.'),
                 ],
               ),
             ),

@@ -40,7 +40,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 20;
+  int get schemaVersion => 21;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -58,6 +58,7 @@ class AppDatabase extends _$AppDatabase {
   // --- REQUÊTES PANIER LOCAL ---
   Future<List<SavedCartItem>> getAllSavedCartItems() => select(savedCartItems).get();
   Future<void> saveCartItem(SavedCartItemsCompanion item) => into(savedCartItems).insert(item, mode: InsertMode.replace);
+  // ✅ CORRIGÉ: Renommage de la fonction pour correspondre aux appels
   Future<void> deleteCartItem(String uniqueId) => (delete(savedCartItems)..where((tbl) => tbl.uniqueId.equals(uniqueId))).go();
   Future<void> clearSavedCart() => delete(savedCartItems).go();
 
@@ -80,11 +81,22 @@ class AppDatabase extends _$AppDatabase {
     return (select(reviews)..where((r) => r.orderId.equals(orderId))).watchSingleOrNull();
   }
 
+  Stream<List<ReviewWithOrder>> watchAllPublicReviews() {
+    final query = select(reviews).join([
+      innerJoin(orders, orders.id.equalsExp(reviews.orderId))
+    ])..orderBy([OrderingTerm(expression: reviews.createdAt, mode: OrderingMode.desc)]);
+
+    return query.watch().map((rows) => rows.map((row) {
+      return ReviewWithOrder(
+        review: row.readTable(reviews),
+        order: row.readTable(orders),
+      );
+    }).toList());
+  }
+
   // --- AUTRES REQUÊTES ---
   Stream<List<Product>> watchAllProducts() => (select(products)..orderBy([(p) => OrderingTerm(expression: p.createdAt, mode: OrderingMode.desc)])).watch();
   Stream<List<Ingredient>> watchAllIngredients() => select(ingredients).watch();
-
-  // ✅ CORRIGÉ: Réintégration de la méthode manquante
   Stream<List<Ingredient>> watchIngredientsForProduct(int productId) {
     final specificIngredientsQuery = select(productIngredientLinks).join([
       innerJoin(ingredients, ingredients.id.equalsExp(productIngredientLinks.ingredientId))

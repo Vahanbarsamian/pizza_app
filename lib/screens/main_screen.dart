@@ -12,6 +12,7 @@ import 'login_screen.dart';
 import 'admin_login_screen.dart';
 import 'admin_screen.dart';
 import 'client_area_screen.dart';
+import 'public_reviews_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -49,6 +50,7 @@ class _MainScreenState extends State<MainScreen> {
   static const List<Widget> _widgetOptions = <Widget>[
     MenuScreen(),
     PromotionsScreen(),
+    PublicReviewsScreen(),
     AboutUsScreen(),
   ];
 
@@ -71,13 +73,12 @@ class _MainScreenState extends State<MainScreen> {
         ),
         title: const Text('Pizza App'),
         actions: <Widget>[
-          // ✅ CORRIGÉ: Offset ajusté pour un effet de chevauchement plus prononcé
           Badge(
             label: Text(cartService.itemCount.toString()),
             isLabelVisible: cartService.itemCount > 0,
             backgroundColor: Colors.green,
             alignment: AlignmentDirectional.bottomEnd, 
-            offset: const Offset(-6, -12), // Remonte davantage le badge
+            offset: const Offset(-6, -12), 
             child: IconButton(
               icon: const Icon(Icons.shopping_cart),
               onPressed: () {
@@ -151,10 +152,12 @@ class _MainScreenState extends State<MainScreen> {
               child: _widgetOptions.elementAt(_selectedIndex),
             ),
       bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(icon: Icon(Icons.local_pizza), label: 'Menu'),
-          BottomNavigationBarItem(icon: Icon(Icons.campaign), label: 'Promotions'),
-          BottomNavigationBarItem(icon: Icon(Icons.info_outline), label: 'Qui sommes-nous'),
+          BottomNavigationBarItem(icon: Icon(Icons.campaign), label: 'Promotions/Annonces'),
+          BottomNavigationBarItem(icon: Icon(Icons.rate_review), label: 'Avis'),
+          BottomNavigationBarItem(icon: Icon(Icons.info_outline), label: 'Info'),
         ],
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
