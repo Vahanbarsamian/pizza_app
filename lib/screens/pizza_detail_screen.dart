@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -35,6 +36,14 @@ class _PizzaDetailScreenState extends State<PizzaDetailScreen> with SingleTicker
   }
 
   void _onIngredientSelected(bool? selected, Ingredient ingredient) {
+    final maxSupplements = widget.product.maxSupplements ?? 0;
+    if (selected == true && maxSupplements > 0 && _selectedIngredients.length >= maxSupplements) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Vous ne pouvez pas ajouter plus de $maxSupplements supplément(s).'))
+        );
+        return;
+    }
+
     setState(() {
       if (selected == true) {
         _selectedIngredients.add(ingredient);
@@ -55,11 +64,20 @@ class _PizzaDetailScreenState extends State<PizzaDetailScreen> with SingleTicker
       body: Column(
         children: [
           if (widget.product.image != null && widget.product.image!.isNotEmpty)
-            Image.network(widget.product.image!, height: 250, width: double.infinity, fit: BoxFit.cover),
+            CachedNetworkImage(
+                imageUrl: widget.product.image!,
+                height: 250,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                placeholder: (context, url) => const SizedBox(height: 250, child: Center(child: CircularProgressIndicator())),
+                errorWidget: (context, url, error) => const SizedBox(height: 250, child: Icon(Icons.error, size: 50)),
+            ),
+          const SizedBox(height: 16),
           Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Text(widget.product.name, style: Theme.of(context).textTheme.headlineMedium),
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Text(widget.product.name, style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold)),
           ),
+          const SizedBox(height: 8),
           TabBar(
             controller: _tabController,
             tabs: const [
@@ -132,50 +150,42 @@ class _PizzaDetailScreenState extends State<PizzaDetailScreen> with SingleTicker
   }
 
   Widget _buildIngredientsTab(AppDatabase db) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(widget.product.description ?? '', style: Theme.of(context).textTheme.bodyLarge),
-          const Divider(height: 32),
-          Text('Ingrédients supplémentaires', style: Theme.of(context).textTheme.titleLarge),
-          StreamBuilder<List<Ingredient>>(
-            stream: db.watchIngredientsForProduct(widget.product.id),
-            builder: (context, snapshot) {
-              if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                return const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 16.0),
-                  child: Text('Aucun supplément disponible pour cette pizza.'),
-                );
-              }
-              final ingredients = snapshot.data!;
-              return ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: ingredients.length,
-                itemBuilder: (context, index) {
-                  final ingredient = ingredients[index];
-                  return CheckboxListTile(
-                    title: Text(ingredient.name),
-                    subtitle: RichText(
-                      text: TextSpan(
-                        style: Theme.of(context).textTheme.bodySmall,
-                        children: <TextSpan>[
-                          TextSpan(text: '+ ${ingredient.price.toStringAsFixed(2)} '),
-                          const TextSpan(text: '€ TTC', style: TextStyle(fontSize: 12)),
-                        ],
-                      ),
-                    ),
-                    value: _selectedIngredients.contains(ingredient),
-                    onChanged: (selected) => _onIngredientSelected(selected, ingredient),
-                  );
-                },
-              );
-            },
-          ),
-        ],
-      ),
+    return StreamBuilder<List<Ingredient>>(
+      stream: db.watchIngredientsForProduct(widget.product.id),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final ingredients = snapshot.data ?? [];
+        if (ingredients.isEmpty) {
+          return const Center(child: Padding(padding: EdgeInsets.all(16), child: Text('Aucun supplément disponible pour cette pizza.')));
+        }
+        
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: ingredients.length,
+          itemBuilder: (context, index) {
+            final ingredient = ingredients[index];
+            return Card(
+              margin: const EdgeInsets.symmetric(vertical: 4.0),
+              child: CheckboxListTile(
+                title: Text(ingredient.name),
+                subtitle: RichText(
+                  text: TextSpan(
+                    style: Theme.of(context).textTheme.bodySmall,
+                    children: <TextSpan>[
+                      TextSpan(text: '+ ${ingredient.price.toStringAsFixed(2)} '),
+                      const TextSpan(text: '€ TTC', style: TextStyle(fontSize: 12)),
+                    ],
+                  ),
+                ),
+                value: _selectedIngredients.contains(ingredient),
+                onChanged: (selected) => _onIngredientSelected(selected, ingredient),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 

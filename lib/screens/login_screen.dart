@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../services/auth_service.dart';
-import 'admin_login_screen.dart'; // ✅ L'import est de retour
+import 'admin_login_screen.dart';
+import 'admin_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -12,14 +13,13 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _formKey = GlobalKey<FormState>();
   bool _isLogin = true;
-  bool _isLoading = false;
-  bool _isPasswordVisible = false;
-
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _nameController = TextEditingController();
   final _postalCodeController = TextEditingController();
+  bool _isLoading = false;
+  bool _isPasswordVisible = false;
 
   @override
   void initState() {
@@ -32,17 +32,19 @@ class _LoginScreenState extends State<LoginScreen> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _nameController.dispose();
     _postalCodeController.dispose();
     super.dispose();
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
+    final successMessage = _isLogin ? 'Connexion réussie !' : 'Inscription réussie ! Un email de confirmation a été envoyé.';
+
     try {
       final authService = Provider.of<AuthService>(context, listen: false);
       if (_isLogin) {
-        await authService.signIn(
+        await authService.signInWithPassword(
           email: _emailController.text,
           password: _passwordController.text,
         );
@@ -50,202 +52,161 @@ class _LoginScreenState extends State<LoginScreen> {
         await authService.signUp(
           email: _emailController.text,
           password: _passwordController.text,
+          name: _nameController.text,
           postalCode: _postalCodeController.text,
         );
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Inscription réussie ! Vous pouvez vous connecter.')),
-          );
-        }
       }
-      if (mounted) Navigator.of(context).pop();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(successMessage), backgroundColor: Colors.green));
+        await Future.delayed(const Duration(seconds: 1)); // Laisse le temps de voir le message
+        Navigator.of(context).pop();
+      }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur: ${e.toString()}'), backgroundColor: Colors.red),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  Future<void> _showPasswordResetDialog() async {
-    final emailController = TextEditingController();
-    return showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Réinitialiser le mot de passe'),
-        content: TextField(
-          controller: emailController,
-          decoration: const InputDecoration(hintText: "Entrez votre email"),
-          keyboardType: TextInputType.emailAddress,
-        ),
-        actions: <Widget>[
-          TextButton(child: const Text('Annuler'), onPressed: () => Navigator.of(context).pop()),
-          TextButton(
-            child: const Text('Envoyer'),
-            onPressed: () async {
-              try {
-                final authService =
-                    Provider.of<AuthService>(context, listen: false);
-                await authService.sendPasswordReset(
-                    email: emailController.text);
-                if (mounted) {
-                  Navigator.of(context).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text('Email de réinitialisation envoyé !')),
-                  );
-                }
-              } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                        content: Text('Erreur: ${e.toString()}'),
-                        backgroundColor: Colors.red),
-                  );
-                }
-              }
-            },
-          ),
-        ],
-      ),
-    );
+  Future<void> _resetPassword() async {
+    if (_emailController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Veuillez entrer votre email pour réinitialiser le mot de passe.'), backgroundColor: Colors.amber));
+      return;
+    }
+    try {
+      await Provider.of<AuthService>(context, listen: false).sendPasswordReset(email: _emailController.text);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Un email de réinitialisation a été envoyé.'), backgroundColor: Colors.blue));
+      }
+    } catch (e) {
+       if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e')));
+      }
+    }
   }
-
+  
   @override
   Widget build(BuildContext context) {
-    final authService = Provider.of<AuthService>(context);
+    final authService = context.watch<AuthService>();
 
     return Scaffold(
       appBar: AppBar(
         title: Text(_isLogin ? 'Connexion' : 'Inscription'),
-        // ✅ RESTAURÉ: Le bouton pour accéder à la section admin est de retour.
         actions: [
-          IconButton(
-            icon: const Icon(Icons.security),
-            tooltip: 'Accès Administrateur',
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const AdminLoginScreen()),
-            ),
-          )
+          if (authService.isAdmin)
+            IconButton(
+              icon: const Icon(Icons.arrow_forward),
+              tooltip: 'Retour au Panneau Admin',
+              onPressed: () {
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(builder: (_) => const AdminScreen()),
+                );
+              },
+            )
+          else
+            IconButton(
+              icon: const Icon(Icons.admin_panel_settings_outlined),
+              tooltip: 'Accès Administrateur',
+              onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AdminLoginScreen())),
+            )
         ],
       ),
-      body: StreamBuilder<User?>(
-        stream: authService.authStateChanges,
-        builder: (context, snapshot) {
-          final user = snapshot.data;
-          if (user != null) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.check_circle_outline, color: Colors.green, size: 80),
-                    const SizedBox(height: 24),
-                    Text(
-                      'Vous êtes déjà connecté.',
-                      style: Theme.of(context).textTheme.headlineSmall,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      user.email ?? '',
-                      style: Theme.of(context).textTheme.bodyLarge,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 32),
-                    ElevatedButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('Retour à l\'accueil'),
-                    )
-                  ],
-                ),
-              ),
-            );
-          }
-          return Center(
+      body: Stack(
+        children: [
+          Center(
+            child: Icon(Icons.person_outline, size: 300, color: Colors.grey.withOpacity(0.1)),
+          ),
+          Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: <Widget>[
-                    Text(_isLogin ? 'Bienvenue !' : 'Créez votre compte', style: Theme.of(context).textTheme.headlineMedium),
-                    const SizedBox(height: 32),
-                    TextFormField(
-                      controller: _emailController,
-                      decoration: InputDecoration(
-                        labelText: 'Email',
-                        suffixIcon: _emailController.text.isNotEmpty
-                            ? IconButton(
-                                icon: const Icon(Icons.clear),
-                                onPressed: () => _emailController.clear(),
-                              )
-                            : null,
-                      ),
-                      validator: (value) => value!.isEmpty ? 'Veuillez entrer un email' : null,
-                      keyboardType: TextInputType.emailAddress,
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _passwordController,
-                      obscureText: !_isPasswordVisible,
-                      decoration: InputDecoration(
-                        labelText: 'Mot de passe',
-                        suffixIcon: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (_passwordController.text.isNotEmpty)
-                              IconButton(
-                                icon: const Icon(Icons.clear),
-                                onPressed: () => _passwordController.clear(),
-                              ),
-                            IconButton(
-                              icon: Icon(_isPasswordVisible ? Icons.visibility_off : Icons.visibility),
-                              onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
-                            ),
-                          ],
-                        ),
-                      ),
-                      validator: (value) => value!.length < 6 ? 'Le mot de passe doit faire 6+ caractères' : null,
-                    ),
-                    if (!_isLogin) ...[
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _postalCodeController,
-                        decoration: const InputDecoration(labelText: 'Code Postal'),
-                        validator: (value) => value!.isEmpty ? 'Veuillez entrer votre code postal' : null,
-                        keyboardType: TextInputType.number,
-                      ),
-                    ],
-                    const SizedBox(height: 12),
-                    if (_isLogin)
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton(onPressed: _showPasswordResetDialog, child: const Text('Mot de passe oublié ?')),
-                      ),
-                    const SizedBox(height: 12),
-                    _isLoading
-                        ? const CircularProgressIndicator()
-                        : ElevatedButton(
-                            onPressed: _submit,
-                            child: Text(_isLogin ? 'Se connecter' : 'S\'inscrire'),
+              padding: const EdgeInsets.all(32.0),
+              child: Card(
+                elevation: 8,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 350),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        Icon(Icons.person, size: 40, color: Theme.of(context).primaryColor),
+                        const SizedBox(height: 16),
+                        Text(_isLogin ? 'Bon retour !' : 'Bienvenue !', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+                        const SizedBox(height: 24),
+                        if (!_isLogin)
+                          TextField(
+                            controller: _nameController,
+                            decoration: const InputDecoration(labelText: 'Nom', border: OutlineInputBorder()),
                           ),
-                    const SizedBox(height: 16),
-                    TextButton(
-                      onPressed: () => setState(() => _isLogin = !_isLogin),
-                      child: Text(_isLogin ? 'Pas de compte ? S\'inscrire' : 'Déjà un compte ? Se connecter'),
+                        if (!_isLogin) const SizedBox(height: 16),
+                        TextField(
+                          controller: _emailController,
+                          decoration: InputDecoration(
+                            labelText: 'Email',
+                            border: const OutlineInputBorder(),
+                            suffixIcon: _emailController.text.isNotEmpty
+                                ? IconButton(icon: const Icon(Icons.clear), onPressed: () => _emailController.clear())
+                                : null,
+                          ),
+                          keyboardType: TextInputType.emailAddress,
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: _passwordController,
+                          decoration: InputDecoration(
+                            labelText: 'Mot de passe',
+                            border: const OutlineInputBorder(),
+                            suffixIcon: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (_passwordController.text.isNotEmpty)
+                                  IconButton(icon: const Icon(Icons.clear), onPressed: () => _passwordController.clear()),
+                                IconButton(
+                                  icon: Icon(_isPasswordVisible ? Icons.visibility_off : Icons.visibility),
+                                  onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
+                                ),
+                              ],
+                            ),
+                          ),
+                          obscureText: !_isPasswordVisible,
+                        ),
+                        if (!_isLogin) const SizedBox(height: 16),
+                        if (!_isLogin)
+                          TextField(
+                            controller: _postalCodeController,
+                            decoration: const InputDecoration(labelText: 'Code Postal', border: OutlineInputBorder()),
+                          ),
+                        const SizedBox(height: 8),
+                        if (_isLogin)
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton(
+                              onPressed: _resetPassword,
+                              child: const Text('Mot de passe oublié ?'),
+                            ),
+                          ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: _isLoading ? null : _submit,
+                          style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
+                          child: _isLoading ? const CircularProgressIndicator() : Text(_isLogin ? 'Se connecter' : 'S\'inscrire'),
+                        ),
+                        TextButton(
+                          onPressed: () => setState(() => _isLogin = !_isLogin),
+                          child: Text(_isLogin ? 'Créer un compte' : 'J\'ai déjà un compte'),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
-          );
-        },
+          ),
+        ],
       ),
     );
   }

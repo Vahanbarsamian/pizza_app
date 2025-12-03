@@ -8,7 +8,7 @@ class AdminService {
 
   AdminService({required this.db});
 
-  Future<Product> saveProduct({
+  Future<Map<String, dynamic>> saveProduct({
     int? id,
     required String name,
     required double price,
@@ -26,7 +26,7 @@ class AdminService {
       'max_supplements': maxSupplements,
       'discount_percentage': discountPercentage,
     }).select();
-    return Product.fromJson(response.first);
+    return response.first;
   }
 
   Future<void> deletePizza(int id) async {
@@ -38,13 +38,19 @@ class AdminService {
     required String name,
     required double price,
     String? category,
+    bool isGlobal = false, // ✅ NOUVEAU
   }) async {
-    await _supabase.from('ingredients').upsert({
-      'id': id,
+    final data = {
       'name': name,
       'price': price,
       'category': category,
-    });
+      'is_global': isGlobal, // ✅ NOUVEAU
+    };
+    if (id == null) {
+      await _supabase.from('ingredients').insert(data);
+    } else {
+      await _supabase.from('ingredients').update(data).eq('id', id);
+    }
   }
 
   Future<void> deleteIngredient(int id) async {

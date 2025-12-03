@@ -34,6 +34,7 @@ class SyncService {
             name: Value(row['name'] as String),
             price: Value((row['price'] as num).toDouble()),
             category: Value(row['category'] as String?),
+            createdAt: Value(DateTime.parse(row['created_at'])),
          )));
       });
     });
@@ -112,7 +113,7 @@ class SyncService {
     });
   }
 
-  Future<void> _syncTable(String tableName, TableInfo table, Function(List<Map<String, dynamic>>) inserter) async {
+  Future<void> _syncTable(String tableName, TableInfo table, Future<void> Function(List<Map<String, dynamic>>) inserter) async {
     if (kDebugMode) {
       debugPrint("[SyncService] 🔄 Sync $tableName...");
     }

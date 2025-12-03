@@ -11,6 +11,5 @@ class Products extends Table {
   RealColumn get discountPercentage => real().named('discount_percentage').withDefault(const Constant(0.0))();
   BoolColumn get hasGlobalDiscount => boolean().named('has_global_discount').withDefault(const Constant(false))();
   DateTimeColumn get createdAt => dateTime().named('created_at').withDefault(currentDateAndTime)();
-  // ✅ NOUVEAU: Limite de suppléments pour une pizza
   IntColumn get maxSupplements => integer().named('max_supplements').nullable()();
 }

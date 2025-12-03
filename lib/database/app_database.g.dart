@@ -1499,8 +1499,27 @@ class $IngredientsTable extends Ingredients
   late final GeneratedColumn<String> category = GeneratedColumn<String>(
       'category', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _isGlobalMeta =
+      const VerificationMeta('isGlobal');
   @override
-  List<GeneratedColumn> get $columns => [id, name, price, category];
+  late final GeneratedColumn<bool> isGlobal = GeneratedColumn<bool>(
+      'is_global', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_global" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [id, name, price, category, isGlobal, createdAt];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -1530,6 +1549,14 @@ class $IngredientsTable extends Ingredients
       context.handle(_categoryMeta,
           category.isAcceptableOrUnknown(data['category']!, _categoryMeta));
     }
+    if (data.containsKey('is_global')) {
+      context.handle(_isGlobalMeta,
+          isGlobal.isAcceptableOrUnknown(data['is_global']!, _isGlobalMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
     return context;
   }
 
@@ -1547,6 +1574,10 @@ class $IngredientsTable extends Ingredients
           .read(DriftSqlType.double, data['${effectivePrefix}price'])!,
       category: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}category']),
+      isGlobal: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_global'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
     );
   }
 
@@ -1561,11 +1592,15 @@ class Ingredient extends DataClass implements Insertable<Ingredient> {
   final String name;
   final double price;
   final String? category;
+  final bool isGlobal;
+  final DateTime createdAt;
   const Ingredient(
       {required this.id,
       required this.name,
       required this.price,
-      this.category});
+      this.category,
+      required this.isGlobal,
+      required this.createdAt});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -1575,6 +1610,8 @@ class Ingredient extends DataClass implements Insertable<Ingredient> {
     if (!nullToAbsent || category != null) {
       map['category'] = Variable<String>(category);
     }
+    map['is_global'] = Variable<bool>(isGlobal);
+    map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
 
@@ -1586,6 +1623,8 @@ class Ingredient extends DataClass implements Insertable<Ingredient> {
       category: category == null && nullToAbsent
           ? const Value.absent()
           : Value(category),
+      isGlobal: Value(isGlobal),
+      createdAt: Value(createdAt),
     );
   }
 
@@ -1597,6 +1636,8 @@ class Ingredient extends DataClass implements Insertable<Ingredient> {
       name: serializer.fromJson<String>(json['name']),
       price: serializer.fromJson<double>(json['price']),
       category: serializer.fromJson<String?>(json['category']),
+      isGlobal: serializer.fromJson<bool>(json['isGlobal']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
   @override
@@ -1607,6 +1648,8 @@ class Ingredient extends DataClass implements Insertable<Ingredient> {
       'name': serializer.toJson<String>(name),
       'price': serializer.toJson<double>(price),
       'category': serializer.toJson<String?>(category),
+      'isGlobal': serializer.toJson<bool>(isGlobal),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
 
@@ -1614,12 +1657,16 @@ class Ingredient extends DataClass implements Insertable<Ingredient> {
           {int? id,
           String? name,
           double? price,
-          Value<String?> category = const Value.absent()}) =>
+          Value<String?> category = const Value.absent(),
+          bool? isGlobal,
+          DateTime? createdAt}) =>
       Ingredient(
         id: id ?? this.id,
         name: name ?? this.name,
         price: price ?? this.price,
         category: category.present ? category.value : this.category,
+        isGlobal: isGlobal ?? this.isGlobal,
+        createdAt: createdAt ?? this.createdAt,
       );
   Ingredient copyWithCompanion(IngredientsCompanion data) {
     return Ingredient(
@@ -1627,6 +1674,8 @@ class Ingredient extends DataClass implements Insertable<Ingredient> {
       name: data.name.present ? data.name.value : this.name,
       price: data.price.present ? data.price.value : this.price,
       category: data.category.present ? data.category.value : this.category,
+      isGlobal: data.isGlobal.present ? data.isGlobal.value : this.isGlobal,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
 
@@ -1636,13 +1685,16 @@ class Ingredient extends DataClass implements Insertable<Ingredient> {
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('price: $price, ')
-          ..write('category: $category')
+          ..write('category: $category, ')
+          ..write('isGlobal: $isGlobal, ')
+          ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, name, price, category);
+  int get hashCode =>
+      Object.hash(id, name, price, category, isGlobal, createdAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1650,7 +1702,9 @@ class Ingredient extends DataClass implements Insertable<Ingredient> {
           other.id == this.id &&
           other.name == this.name &&
           other.price == this.price &&
-          other.category == this.category);
+          other.category == this.category &&
+          other.isGlobal == this.isGlobal &&
+          other.createdAt == this.createdAt);
 }
 
 class IngredientsCompanion extends UpdateCompanion<Ingredient> {
@@ -1658,17 +1712,23 @@ class IngredientsCompanion extends UpdateCompanion<Ingredient> {
   final Value<String> name;
   final Value<double> price;
   final Value<String?> category;
+  final Value<bool> isGlobal;
+  final Value<DateTime> createdAt;
   const IngredientsCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
     this.price = const Value.absent(),
     this.category = const Value.absent(),
+    this.isGlobal = const Value.absent(),
+    this.createdAt = const Value.absent(),
   });
   IngredientsCompanion.insert({
     this.id = const Value.absent(),
     required String name,
     required double price,
     this.category = const Value.absent(),
+    this.isGlobal = const Value.absent(),
+    this.createdAt = const Value.absent(),
   })  : name = Value(name),
         price = Value(price);
   static Insertable<Ingredient> custom({
@@ -1676,12 +1736,16 @@ class IngredientsCompanion extends UpdateCompanion<Ingredient> {
     Expression<String>? name,
     Expression<double>? price,
     Expression<String>? category,
+    Expression<bool>? isGlobal,
+    Expression<DateTime>? createdAt,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (name != null) 'name': name,
       if (price != null) 'price': price,
       if (category != null) 'category': category,
+      if (isGlobal != null) 'is_global': isGlobal,
+      if (createdAt != null) 'created_at': createdAt,
     });
   }
 
@@ -1689,12 +1753,16 @@ class IngredientsCompanion extends UpdateCompanion<Ingredient> {
       {Value<int>? id,
       Value<String>? name,
       Value<double>? price,
-      Value<String?>? category}) {
+      Value<String?>? category,
+      Value<bool>? isGlobal,
+      Value<DateTime>? createdAt}) {
     return IngredientsCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
       price: price ?? this.price,
       category: category ?? this.category,
+      isGlobal: isGlobal ?? this.isGlobal,
+      createdAt: createdAt ?? this.createdAt,
     );
   }
 
@@ -1713,6 +1781,12 @@ class IngredientsCompanion extends UpdateCompanion<Ingredient> {
     if (category.present) {
       map['category'] = Variable<String>(category.value);
     }
+    if (isGlobal.present) {
+      map['is_global'] = Variable<bool>(isGlobal.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
     return map;
   }
 
@@ -1722,7 +1796,9 @@ class IngredientsCompanion extends UpdateCompanion<Ingredient> {
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('price: $price, ')
-          ..write('category: $category')
+          ..write('category: $category, ')
+          ..write('isGlobal: $isGlobal, ')
+          ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
   }
@@ -4602,6 +4678,8 @@ typedef $$IngredientsTableCreateCompanionBuilder = IngredientsCompanion
   required String name,
   required double price,
   Value<String?> category,
+  Value<bool> isGlobal,
+  Value<DateTime> createdAt,
 });
 typedef $$IngredientsTableUpdateCompanionBuilder = IngredientsCompanion
     Function({
@@ -4609,6 +4687,8 @@ typedef $$IngredientsTableUpdateCompanionBuilder = IngredientsCompanion
   Value<String> name,
   Value<double> price,
   Value<String?> category,
+  Value<bool> isGlobal,
+  Value<DateTime> createdAt,
 });
 
 final class $$IngredientsTableReferences
@@ -4656,6 +4736,12 @@ class $$IngredientsTableFilterComposer
   ColumnFilters<String> get category => $composableBuilder(
       column: $table.category, builder: (column) => ColumnFilters(column));
 
+  ColumnFilters<bool> get isGlobal => $composableBuilder(
+      column: $table.isGlobal, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
   Expression<bool> productIngredientLinksRefs(
       Expression<bool> Function($$ProductIngredientLinksTableFilterComposer f)
           f) {
@@ -4700,6 +4786,12 @@ class $$IngredientsTableOrderingComposer
 
   ColumnOrderings<String> get category => $composableBuilder(
       column: $table.category, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get isGlobal => $composableBuilder(
+      column: $table.isGlobal, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
 }
 
 class $$IngredientsTableAnnotationComposer
@@ -4722,6 +4814,12 @@ class $$IngredientsTableAnnotationComposer
 
   GeneratedColumn<String> get category =>
       $composableBuilder(column: $table.category, builder: (column) => column);
+
+  GeneratedColumn<bool> get isGlobal =>
+      $composableBuilder(column: $table.isGlobal, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
   Expression<T> productIngredientLinksRefs<T extends Object>(
       Expression<T> Function($$ProductIngredientLinksTableAnnotationComposer a)
@@ -4774,24 +4872,32 @@ class $$IngredientsTableTableManager extends RootTableManager<
             Value<String> name = const Value.absent(),
             Value<double> price = const Value.absent(),
             Value<String?> category = const Value.absent(),
+            Value<bool> isGlobal = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
           }) =>
               IngredientsCompanion(
             id: id,
             name: name,
             price: price,
             category: category,
+            isGlobal: isGlobal,
+            createdAt: createdAt,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
             required String name,
             required double price,
             Value<String?> category = const Value.absent(),
+            Value<bool> isGlobal = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
           }) =>
               IngredientsCompanion.insert(
             id: id,
             name: name,
             price: price,
             category: category,
+            isGlobal: isGlobal,
+            createdAt: createdAt,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) => (

@@ -9,11 +9,11 @@ import 'product.dart';
 import 'user.dart';
 import 'order.dart';
 import 'review.dart';
-import 'ingredient.dart'; // Renommé
+import 'ingredient.dart';
 import 'admin.dart';
 import 'announcement.dart';
 import 'company_info.dart';
-import 'product_ingredient_link.dart'; // Renommé
+import 'product_ingredient_link.dart';
 
 part 'app_database.g.dart';
 
@@ -22,17 +22,17 @@ part 'app_database.g.dart';
   Users,
   Orders,
   Reviews,
-  Ingredients, // Renommé
+  Ingredients,
   Admins,
   Announcements,
   CompanyInfo,
-  ProductIngredientLinks, // Renommé
+  ProductIngredientLinks,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 13; // Version incrémentée pour forcer la recréation
+  int get schemaVersion => 15; // Version incrémentée
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -40,7 +40,6 @@ class AppDatabase extends _$AppDatabase {
           await m.createAll();
         },
         onUpgrade: (m, from, to) async {
-          // Stratégie simple pour le développement : on efface tout et on recrée.
           for (final table in allTables) {
             await m.deleteTable(table.actualTableName);
           }
@@ -55,13 +54,24 @@ class AppDatabase extends _$AppDatabase {
   Stream<List<Ingredient>> watchAllIngredients() => select(ingredients).watch();
 
   Stream<List<Ingredient>> watchIngredientsForProduct(int productId) {
-    final query = select(productIngredientLinks).join([
+    final specificIngredients = select(productIngredientLinks).join([
       innerJoin(ingredients, ingredients.id.equalsExp(productIngredientLinks.ingredientId))
     ])
       ..where(productIngredientLinks.productId.equals(productId));
-    return query.map((row) => row.readTable(ingredients)).watch();
+
+    final globalIngredients = select(ingredients)..where((i) => i.isGlobal.equals(true));
+
+    final specificStream = specificIngredients.map((row) => row.readTable(ingredients)).watch();
+    final globalStream = globalIngredients.watch();
+
+    return specificStream.asyncMap((specific) async {
+      final globals = await globalStream.first;
+      // Combine and remove duplicates
+      final all = {...specific, ...globals}.toList();
+      return all;
+    });
   }
-  
+
   Stream<List<Announcement>> watchAllAnnouncements() => (select(announcements)..where((a) => a.isActive.equals(true))..orderBy([(a) => OrderingTerm(expression: a.createdAt, mode: OrderingMode.desc)])).watch();
   
   Stream<CompanyInfoData> watchCompanyInfo() => select(companyInfo).watchSingle();

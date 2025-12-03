@@ -4,86 +4,56 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'database/app_database.dart';
-import 'screens/main_screen.dart';
-import 'services/admin_service.dart';
 import 'services/auth_service.dart';
 import 'services/cart_service.dart';
 import 'services/sync_service.dart';
+import 'services/admin_service.dart';
+import 'screens/main_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  try {
-    await dotenv.load(fileName: ".env");
+  // ✅ CORRIGÉ DÉFINITIF: Chargement du fichier .env au démarrage de l'application
+  await dotenv.load(fileName: ".env");
 
-    await Supabase.initialize(
-      url: dotenv.env['SUPABASE_URL']!,
-      anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
-    );
+  await Supabase.initialize(
+    url: dotenv.env['SUPABASE_URL']!,
+    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
+  );
 
-    final db = AppDatabase();
-    final syncService = SyncService(db: db);
+  final db = AppDatabase();
+  final syncService = SyncService(db: db);
+  // Synchronisation initiale au démarrage
+  await syncService.syncAll();
 
-    await syncService.syncAll();
-
-    runApp(
-      MultiProvider(
-        providers: [
-          Provider.value(value: db),
-          // ✅ CORRIGÉ: Utilise ChangeNotifierProvider pour que l'UI réagisse à la déconnexion.
-          ChangeNotifierProvider(create: (_) => AuthService()),
-          ChangeNotifierProvider(create: (_) => CartService()),
-          Provider.value(value: syncService),
-          ProxyProvider<AppDatabase, AdminService>(
-            update: (_, db, __) => AdminService(db: db),
-          ),
-        ],
-        child: const PizzaApp(),
-      ),
-    );
-  } catch (e) {
-    runApp(ErrorApp(error: e.toString()));
-  }
+  runApp(MyApp(database: db));
 }
 
-class PizzaApp extends StatelessWidget {
-  const PizzaApp({super.key});
+class MyApp extends StatelessWidget {
+  final AppDatabase database;
+  const MyApp({super.key, required this.database});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: '🍕 PizzaApp',
-      theme: ThemeData(
-        useMaterial3: true,
-        colorSchemeSeed: Colors.orange,
-        brightness: Brightness.light,
-      ),
-      home: const MainScreen(),
-    );
-  }
-}
-
-class ErrorApp extends StatelessWidget {
-  final String error;
-  const ErrorApp({super.key, required this.error});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error, size: 64, color: Colors.red),
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Text(error, textAlign: TextAlign.center),
-              ),
-            ],
-          ),
+    return MultiProvider(
+      providers: [
+        Provider<AppDatabase>.value(value: database),
+        ChangeNotifierProvider(create: (_) => AuthService()),
+        ChangeNotifierProvider(create: (_) => CartService()),
+        ProxyProvider<AppDatabase, SyncService>(
+          update: (_, db, __) => SyncService(db: db),
         ),
+        ProxyProvider<AppDatabase, AdminService>(
+          update: (_, db, __) => AdminService(db: db),
+        ),
+      ],
+      child: MaterialApp(
+        title: 'Pizza App',
+        theme: ThemeData(
+          primarySwatch: Colors.orange,
+          visualDensity: VisualDensity.adaptivePlatformDensity,
+        ),
+        home: const MainScreen(),
       ),
     );
   }
