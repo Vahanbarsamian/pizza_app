@@ -67,7 +67,8 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  Future<void> signUp({required String email, required String password, required String name, String? postalCode}) async {
+  Future<void> signUp({required String email, required String password, String? name, String? postalCode}) async {
+    // ✅ CORRIGÉ: Le nom n'est plus obligatoire à l'inscription
     try {
       await _supabase.auth.signUp(
         email: email,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../services/auth_service.dart';
+import '../services/sync_service.dart'; // ✅ NOUVEAU
 import 'menu_screen.dart';
 import 'promotions_screen.dart';
 import 'about_us_screen.dart';
@@ -20,6 +21,29 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
+  bool _isSyncing = true; // ✅ NOUVEAU: État pour gérer la synchronisation initiale
+
+  @override
+  void initState() {
+    super.initState();
+    _performInitialSync();
+  }
+
+  Future<void> _performInitialSync() async {
+    try {
+      await context.read<SyncService>().syncAll();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur de synchronisation: $e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSyncing = false;
+        });
+      }
+    }
+  }
 
   static const List<Widget> _widgetOptions = <Widget>[
     MenuScreen(),
@@ -79,7 +103,6 @@ class _MainScreenState extends State<MainScreen> {
                       enabled: false,
                       child: Text('Connecté: ${authService.currentUser!.email}'),
                     ),
-                    // ✅ CORRIGÉ: Le bouton Admin n'apparaît que si l'utilisateur est admin
                     if (authService.isAdmin)
                       const PopupMenuItem<String>(
                         value: 'admin',
@@ -103,9 +126,21 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ],
       ),
-      body: Center(
-        child: _widgetOptions.elementAt(_selectedIndex),
-      ),
+      // ✅ NOUVEAU: Affiche un loader pendant la synchro, puis le contenu
+      body: _isSyncing
+          ? const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Synchronisation des données...'),
+                ],
+              ),
+            )
+          : Center(
+              child: _widgetOptions.elementAt(_selectedIndex),
+            ),
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(icon: Icon(Icons.local_pizza), label: 'Menu'),

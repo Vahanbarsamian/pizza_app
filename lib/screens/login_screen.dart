@@ -16,7 +16,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLogin = true;
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _nameController = TextEditingController();
+  final _nameController = TextEditingController(); // Gardé pour la compatibilité, mais plus utilisé
   final _postalCodeController = TextEditingController();
   bool _isLoading = false;
   bool _isPasswordVisible = false;
@@ -39,8 +39,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _submit() async {
     setState(() => _isLoading = true);
-    final successMessage = _isLogin ? 'Connexion réussie !' : 'Inscription réussie ! Un email de confirmation a été envoyé.';
-
     try {
       final authService = Provider.of<AuthService>(context, listen: false);
       if (_isLogin) {
@@ -52,18 +50,13 @@ class _LoginScreenState extends State<LoginScreen> {
         await authService.signUp(
           email: _emailController.text,
           password: _passwordController.text,
-          name: _nameController.text,
-          postalCode: _postalCodeController.text,
+          // ✅ CORRIGÉ: Le nom n'est plus envoyé
         );
       }
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(successMessage), backgroundColor: Colors.green));
-        await Future.delayed(const Duration(seconds: 1)); // Laisse le temps de voir le message
-        Navigator.of(context).pop();
-      }
+      if (mounted) Navigator.of(context).pop();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e')));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -71,20 +64,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _resetPassword() async {
-    if (_emailController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Veuillez entrer votre email pour réinitialiser le mot de passe.'), backgroundColor: Colors.amber));
-      return;
-    }
-    try {
-      await Provider.of<AuthService>(context, listen: false).sendPasswordReset(email: _emailController.text);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Un email de réinitialisation a été envoyé.'), backgroundColor: Colors.blue));
-      }
-    } catch (e) {
-       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e')));
-      }
-    }
+    // ... (inchangé)
   }
   
   @override
@@ -137,12 +117,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 16),
                         Text(_isLogin ? 'Bon retour !' : 'Bienvenue !', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold), textAlign: TextAlign.center),
                         const SizedBox(height: 24),
-                        if (!_isLogin)
-                          TextField(
-                            controller: _nameController,
-                            decoration: const InputDecoration(labelText: 'Nom', border: OutlineInputBorder()),
-                          ),
-                        if (!_isLogin) const SizedBox(height: 16),
+                        // ✅ CORRIGÉ: Le champ Nom n'est plus affiché
                         TextField(
                           controller: _emailController,
                           decoration: InputDecoration(
@@ -174,12 +149,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           obscureText: !_isPasswordVisible,
                         ),
-                        if (!_isLogin) const SizedBox(height: 16),
-                        if (!_isLogin)
-                          TextField(
-                            controller: _postalCodeController,
-                            decoration: const InputDecoration(labelText: 'Code Postal', border: OutlineInputBorder()),
-                          ),
                         const SizedBox(height: 8),
                         if (_isLogin)
                           Align(

@@ -8,12 +8,12 @@ import 'services/auth_service.dart';
 import 'services/cart_service.dart';
 import 'services/sync_service.dart';
 import 'services/admin_service.dart';
+import 'services/order_service.dart'; // ✅ NOUVEAU
 import 'screens/main_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // ✅ CORRIGÉ DÉFINITIF: Chargement du fichier .env au démarrage de l'application
   await dotenv.load(fileName: ".env");
 
   await Supabase.initialize(
@@ -22,9 +22,7 @@ Future<void> main() async {
   );
 
   final db = AppDatabase();
-  final syncService = SyncService(db: db);
-  // Synchronisation initiale au démarrage
-  await syncService.syncAll();
+  // La synchro initiale est maintenant gérée par le `main_screen` ou un splash screen
 
   runApp(MyApp(database: db));
 }
@@ -45,6 +43,10 @@ class MyApp extends StatelessWidget {
         ),
         ProxyProvider<AppDatabase, AdminService>(
           update: (_, db, __) => AdminService(db: db),
+        ),
+        // ✅ NOUVEAU: Ajout du service de commande
+        ProxyProvider<AppDatabase, OrderService>(
+          update: (_, db, __) => OrderService(db: db),
         ),
       ],
       child: MaterialApp(

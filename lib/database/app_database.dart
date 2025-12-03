@@ -21,6 +21,7 @@ part 'app_database.g.dart';
   Products,
   Users,
   Orders,
+  OrderItems,
   Reviews,
   Ingredients,
   Admins,
@@ -32,7 +33,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 15; // Version incrémentée
+  int get schemaVersion => 17; // Version incrémentée
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -47,7 +48,7 @@ class AppDatabase extends _$AppDatabase {
         },
       );
 
-  // --- Requêtes --- 
+  // --- Requêtes ---
 
   Stream<List<Product>> watchAllProducts() => (select(products)..orderBy([(p) => OrderingTerm(expression: p.createdAt, mode: OrderingMode.desc)])).watch();
   
@@ -61,15 +62,19 @@ class AppDatabase extends _$AppDatabase {
 
     final globalIngredients = select(ingredients)..where((i) => i.isGlobal.equals(true));
 
-    final specificStream = specificIngredients.map((row) => row.readTable(ingredients)).watch();
-    final globalStream = globalIngredients.watch();
-
-    return specificStream.asyncMap((specific) async {
-      final globals = await globalStream.first;
-      // Combine and remove duplicates
+    return specificIngredients.map((row) => row.readTable(ingredients)).watch().asyncMap((specific) async {
+      final globals = await globalIngredients.watch().first;
       final all = {...specific, ...globals}.toList();
       return all;
     });
+  }
+
+  Stream<List<Order>> watchUserOrders(String userId) {
+    return (select(orders)..where((o) => o.userId.equals(userId))..orderBy([(o) => OrderingTerm(expression: o.createdAt, mode: OrderingMode.desc)])).watch();
+  }
+
+  Future<List<OrderItem>> getOrderItems(int orderId) {
+    return (select(orderItems)..where((item) => item.orderId.equals(orderId))).get();
   }
 
   Stream<List<Announcement>> watchAllAnnouncements() => (select(announcements)..where((a) => a.isActive.equals(true))..orderBy([(a) => OrderingTerm(expression: a.createdAt, mode: OrderingMode.desc)])).watch();

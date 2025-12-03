@@ -18,11 +18,11 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
   final _nameController = TextEditingController();
   final _priceController = TextEditingController();
   final _descriptionController = TextEditingController();
-  final _maxSupplementsController = TextEditingController();
-
+  
   late bool _isEditing;
   List<int> _selectedIngredientIds = [];
   bool _isLoading = false;
+  int _maxSupplementsValue = 4;
 
   @override
   void initState() {
@@ -33,17 +33,26 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
       _nameController.text = product.name;
       _priceController.text = product.basePrice.toString();
       _descriptionController.text = product.description ?? '';
-      _maxSupplementsController.text = product.maxSupplements?.toString() ?? '4'; 
+      _maxSupplementsValue = product.maxSupplements ?? 4;
 
       final db = Provider.of<AppDatabase>(context, listen: false);
-      db.watchIngredientsForProduct(product.id).first.then((links) {
-        if (mounted) {
-          setState(() {
-            _selectedIngredientIds = links.map((l) => l.id).toList();
-          });
-        }
+      final query = db.select(db.productIngredientLinks)..where((link) => link.productId.equals(product.id));
+      query.get().then((links) {
+          if (mounted) {
+              setState(() {
+                  _selectedIngredientIds = links.map((l) => l.ingredientId).toList();
+              });
+          }
       });
     }
+  }
+  
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _priceController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
   }
 
   Future<void> _save() async {
@@ -57,7 +66,7 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
         name: _nameController.text,
         price: double.tryParse(_priceController.text) ?? 0.0,
         description: _descriptionController.text,
-        maxSupplements: int.tryParse(_maxSupplementsController.text),
+        maxSupplements: _maxSupplementsValue,
       );
       final savedProductId = savedProductData['id'] as int;
 
@@ -104,7 +113,6 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // ✅ CORRIGÉ: En-tête de carte stylisé
                         _CardHeader(title: 'Informations de la Pizza', icon: Icons.info_outline),
                         Padding(
                           padding: const EdgeInsets.all(16.0),
@@ -116,8 +124,32 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
                               TextField(controller: _priceController, decoration: const InputDecoration(labelText: 'Prix (€)', border: OutlineInputBorder()), keyboardType: TextInputType.number),
                               const SizedBox(height: 12),
                               TextField(controller: _descriptionController, decoration: const InputDecoration(labelText: 'Description', border: OutlineInputBorder()), maxLines: 3),
-                              const SizedBox(height: 12),
-                              TextField(controller: _maxSupplementsController, decoration: const InputDecoration(labelText: 'Nombre max. de suppléments', border: OutlineInputBorder()), keyboardType: TextInputType.number),
+                              const SizedBox(height: 20),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text('Nombre max. de suppléments:', style: TextStyle(fontSize: 16)),
+                                  Row(
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(Icons.remove_circle_outline),
+                                        onPressed: () {
+                                          if (_maxSupplementsValue > 0) {
+                                            setState(() => _maxSupplementsValue--);
+                                          }
+                                        },
+                                      ),
+                                      Text(_maxSupplementsValue.toString(), style: Theme.of(context).textTheme.titleLarge),
+                                      IconButton(
+                                        icon: const Icon(Icons.add_circle_outline),
+                                        onPressed: () {
+                                          setState(() => _maxSupplementsValue++);
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
                             ],
                           ),
                         ),
@@ -139,11 +171,13 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
                         itemCount: allIngredients.length,
                         itemBuilder: (context, index) {
                           final ingredient = allIngredients[index];
-                          return Card(
-                            margin: const EdgeInsets.symmetric(vertical: 4.0),
+                          return Container(
+                            decoration: BoxDecoration(
+                              border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+                            ),
                             child: CheckboxListTile(
                               title: Text(ingredient.name),
-                              subtitle: Text('${ingredient.price.toStringAsFixed(2)} €'),
+                              subtitle: Text('+ ${ingredient.price.toStringAsFixed(2)} €'),
                               value: _selectedIngredientIds.contains(ingredient.id),
                               onChanged: (bool? selected) {
                                 setState(() {
@@ -172,8 +206,6 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
   }
 }
 
-// --- Widgets d'en-tête réutilisables ---
-
 class _CardHeader extends StatelessWidget {
   final String title;
   final IconData icon;
@@ -195,6 +227,7 @@ class _CardHeader extends StatelessWidget {
   }
 }
 
+// ✅ CORRIGÉ: Ajout de Expanded pour éviter l'overflow
 class _ListHeader extends StatelessWidget {
   final String title;
   final IconData icon;
@@ -208,7 +241,9 @@ class _ListHeader extends StatelessWidget {
         children: [
           Icon(icon, color: Colors.grey.shade700, size: 22),
           const SizedBox(width: 8),
-          Text(title, style: Theme.of(context).textTheme.titleLarge),
+          Expanded(
+            child: Text(title, style: Theme.of(context).textTheme.titleLarge),
+          ),
         ],
       ),
     );
