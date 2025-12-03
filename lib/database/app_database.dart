@@ -17,6 +17,12 @@ import 'saved_cart_item.dart';
 
 part 'app_database.g.dart';
 
+class ReviewWithOrder {
+  final Review review;
+  final Order order;
+  ReviewWithOrder({required this.review, required this.order});
+}
+
 @DriftDatabase(tables: [
   Products,
   Users,
@@ -34,7 +40,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 19; // ✅ Version incrémentée
+  int get schemaVersion => 20;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -42,8 +48,6 @@ class AppDatabase extends _$AppDatabase {
           await m.createAll();
         },
         onUpgrade: (m, from, to) async {
-          // Pour le développement, nous recréons simplement tout.
-          // Pour la production, une migration plus fine serait nécessaire.
           for (final table in allTables) {
             await m.deleteTable(table.actualTableName);
           }
@@ -57,11 +61,30 @@ class AppDatabase extends _$AppDatabase {
   Future<void> deleteCartItem(String uniqueId) => (delete(savedCartItems)..where((tbl) => tbl.uniqueId.equals(uniqueId))).go();
   Future<void> clearSavedCart() => delete(savedCartItems).go();
 
+  // --- REQUÊTES AVIS ---
+  Stream<List<ReviewWithOrder>> watchUserReviews(String userId) {
+    final query = select(reviews).join([
+      innerJoin(orders, orders.id.equalsExp(reviews.orderId))
+    ])..where(reviews.userId.equals(userId))
+      ..orderBy([OrderingTerm(expression: reviews.createdAt, mode: OrderingMode.desc)]);
+
+    return query.watch().map((rows) => rows.map((row) {
+      return ReviewWithOrder(
+        review: row.readTable(reviews),
+        order: row.readTable(orders),
+      );
+    }).toList());
+  }
+
+  Stream<Review?> watchReviewForOrder(int orderId) {
+    return (select(reviews)..where((r) => r.orderId.equals(orderId))).watchSingleOrNull();
+  }
+
   // --- AUTRES REQUÊTES ---
   Stream<List<Product>> watchAllProducts() => (select(products)..orderBy([(p) => OrderingTerm(expression: p.createdAt, mode: OrderingMode.desc)])).watch();
-  
   Stream<List<Ingredient>> watchAllIngredients() => select(ingredients).watch();
 
+  // ✅ CORRIGÉ: Réintégration de la méthode manquante
   Stream<List<Ingredient>> watchIngredientsForProduct(int productId) {
     final specificIngredientsQuery = select(productIngredientLinks).join([
       innerJoin(ingredients, ingredients.id.equalsExp(productIngredientLinks.ingredientId))
@@ -76,10 +99,11 @@ class AppDatabase extends _$AppDatabase {
     return specificStream.asyncMap((specific) async {
       final globals = await globalStream.first;
       final all = {...specific, ...globals}.toList();
+      all.sort((a, b) => a.name.compareTo(b.name));
       return all;
     });
   }
-
+  
   Stream<List<Order>> watchUserOrders(String userId) {
     return (select(orders)..where((o) => o.userId.equals(userId))..orderBy([(o) => OrderingTerm(expression: o.createdAt, mode: OrderingMode.desc)])).watch();
   }
@@ -89,11 +113,7 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Stream<List<Announcement>> watchAllAnnouncements() => (select(announcements)..where((a) => a.isActive.equals(true))..orderBy([(a) => OrderingTerm(expression: a.createdAt, mode: OrderingMode.desc)])).watch();
-  
   Stream<CompanyInfoData> watchCompanyInfo() => select(companyInfo).watchSingle();
-  
-  Stream<List<Review>> watchProductReviews(int productId) => (select(reviews)..where((r) => r.productId.equals(productId))).watch();
-
   Future<bool> isAdmin(String userId) async {
     final admin = await (select(admins)..where((a) => a.id.equals(userId))).getSingleOrNull();
     return admin != null;

@@ -17,6 +17,26 @@ class SyncService {
     await _syncCompanyInfo();
     await _syncOrders();
     await _syncOrderItems();
+    await _syncReviews();
+  }
+
+  Future<void> _syncReviews() async {
+    final response = await _supabase.from('reviews').select();
+    final reviewsToSync = response.map((item) => ReviewsCompanion.insert(
+        id: Value(item['id']),
+        orderId: item['order_id'],
+        userId: item['user_id'],
+        rating: item['rating'],
+        comment: Value(item['comment']),
+        createdAt: Value(DateTime.parse(item['created_at'])),
+    )).toList();
+
+    await db.transaction(() async {
+      await db.delete(db.reviews).go();
+      await db.batch((batch) {
+        batch.insertAll(db.reviews, reviewsToSync);
+      });
+    });
   }
 
   Future<void> _syncProducts() async {
@@ -30,7 +50,7 @@ class SyncService {
         discountPercentage: Value(item['discount_percentage'] ?? 0.0),
         maxSupplements: Value(item['max_supplements'] ?? 4),
         category: Value(item['category']),
-        createdAt: DateTime.parse(item['created_at']),
+        createdAt: DateTime.parse(item['created_at']), // No Value()
     )).toList();
 
     await db.transaction(() async {
@@ -49,7 +69,7 @@ class SyncService {
         price: item['price'],
         category: Value(item['category']),
         isGlobal: Value(item['is_global'] ?? false),
-        createdAt: Value(DateTime.parse(item['created_at'])),
+        createdAt: Value(DateTime.parse(item['created_at'])), // Needs Value()
     )).toList();
 
     await db.transaction(() async {
@@ -83,8 +103,8 @@ class SyncService {
         total: item['total'] is int ? (item['total'] as int).toDouble() : item['total'],
         referenceName: Value(item['reference_name']),
         pickupTime: Value(item['pickup_time']),
-        paymentMethod: Value(item['payment_method']), // ✅ CORRIGÉ
-        createdAt: DateTime.parse(item['created_at']),
+        paymentMethod: Value(item['payment_method']),
+        createdAt: DateTime.parse(item['created_at']), // No Value()
     )).toList();
 
     await db.transaction(() async {
@@ -125,7 +145,7 @@ class SyncService {
         imageUrl: Value(item['image_url']),
         conclusion: Value(item['conclusion']),
         isActive: Value(item['is_active'] ?? true),
-        createdAt: Value(DateTime.parse(item['created_at'])),
+        createdAt: Value(DateTime.parse(item['created_at'])), // Needs Value()
     )).toList();
 
     await db.transaction(() async {

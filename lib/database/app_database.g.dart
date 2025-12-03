@@ -1578,15 +1578,15 @@ class $ReviewsTable extends Reviews with TableInfo<$ReviewsTable, Review> {
       requiredDuringInsert: false,
       defaultConstraints:
           GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
-  static const VerificationMeta _productIdMeta =
-      const VerificationMeta('productId');
+  static const VerificationMeta _orderIdMeta =
+      const VerificationMeta('orderId');
   @override
-  late final GeneratedColumn<int> productId = GeneratedColumn<int>(
-      'product_id', aliasedName, false,
+  late final GeneratedColumn<int> orderId = GeneratedColumn<int>(
+      'order_id', aliasedName, false,
       type: DriftSqlType.int,
       requiredDuringInsert: true,
       defaultConstraints:
-          GeneratedColumn.constraintIsAlways('REFERENCES products (id)'));
+          GeneratedColumn.constraintIsAlways('REFERENCES orders (id)'));
   static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
   @override
   late final GeneratedColumn<String> userId = GeneratedColumn<String>(
@@ -1616,7 +1616,7 @@ class $ReviewsTable extends Reviews with TableInfo<$ReviewsTable, Review> {
       defaultValue: currentDateAndTime);
   @override
   List<GeneratedColumn> get $columns =>
-      [id, productId, userId, rating, comment, createdAt];
+      [id, orderId, userId, rating, comment, createdAt];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -1630,11 +1630,11 @@ class $ReviewsTable extends Reviews with TableInfo<$ReviewsTable, Review> {
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
     }
-    if (data.containsKey('product_id')) {
-      context.handle(_productIdMeta,
-          productId.isAcceptableOrUnknown(data['product_id']!, _productIdMeta));
+    if (data.containsKey('order_id')) {
+      context.handle(_orderIdMeta,
+          orderId.isAcceptableOrUnknown(data['order_id']!, _orderIdMeta));
     } else if (isInserting) {
-      context.missing(_productIdMeta);
+      context.missing(_orderIdMeta);
     }
     if (data.containsKey('user_id')) {
       context.handle(_userIdMeta,
@@ -1667,8 +1667,8 @@ class $ReviewsTable extends Reviews with TableInfo<$ReviewsTable, Review> {
     return Review(
       id: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
-      productId: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}product_id'])!,
+      orderId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}order_id'])!,
       userId: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}user_id'])!,
       rating: attachedDatabase.typeMapping
@@ -1688,14 +1688,14 @@ class $ReviewsTable extends Reviews with TableInfo<$ReviewsTable, Review> {
 
 class Review extends DataClass implements Insertable<Review> {
   final int id;
-  final int productId;
+  final int orderId;
   final String userId;
   final int rating;
   final String? comment;
   final DateTime createdAt;
   const Review(
       {required this.id,
-      required this.productId,
+      required this.orderId,
       required this.userId,
       required this.rating,
       this.comment,
@@ -1704,7 +1704,7 @@ class Review extends DataClass implements Insertable<Review> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
-    map['product_id'] = Variable<int>(productId);
+    map['order_id'] = Variable<int>(orderId);
     map['user_id'] = Variable<String>(userId);
     map['rating'] = Variable<int>(rating);
     if (!nullToAbsent || comment != null) {
@@ -1717,7 +1717,7 @@ class Review extends DataClass implements Insertable<Review> {
   ReviewsCompanion toCompanion(bool nullToAbsent) {
     return ReviewsCompanion(
       id: Value(id),
-      productId: Value(productId),
+      orderId: Value(orderId),
       userId: Value(userId),
       rating: Value(rating),
       comment: comment == null && nullToAbsent
@@ -1732,7 +1732,7 @@ class Review extends DataClass implements Insertable<Review> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Review(
       id: serializer.fromJson<int>(json['id']),
-      productId: serializer.fromJson<int>(json['productId']),
+      orderId: serializer.fromJson<int>(json['orderId']),
       userId: serializer.fromJson<String>(json['userId']),
       rating: serializer.fromJson<int>(json['rating']),
       comment: serializer.fromJson<String?>(json['comment']),
@@ -1744,7 +1744,7 @@ class Review extends DataClass implements Insertable<Review> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
-      'productId': serializer.toJson<int>(productId),
+      'orderId': serializer.toJson<int>(orderId),
       'userId': serializer.toJson<String>(userId),
       'rating': serializer.toJson<int>(rating),
       'comment': serializer.toJson<String?>(comment),
@@ -1754,14 +1754,14 @@ class Review extends DataClass implements Insertable<Review> {
 
   Review copyWith(
           {int? id,
-          int? productId,
+          int? orderId,
           String? userId,
           int? rating,
           Value<String?> comment = const Value.absent(),
           DateTime? createdAt}) =>
       Review(
         id: id ?? this.id,
-        productId: productId ?? this.productId,
+        orderId: orderId ?? this.orderId,
         userId: userId ?? this.userId,
         rating: rating ?? this.rating,
         comment: comment.present ? comment.value : this.comment,
@@ -1770,7 +1770,7 @@ class Review extends DataClass implements Insertable<Review> {
   Review copyWithCompanion(ReviewsCompanion data) {
     return Review(
       id: data.id.present ? data.id.value : this.id,
-      productId: data.productId.present ? data.productId.value : this.productId,
+      orderId: data.orderId.present ? data.orderId.value : this.orderId,
       userId: data.userId.present ? data.userId.value : this.userId,
       rating: data.rating.present ? data.rating.value : this.rating,
       comment: data.comment.present ? data.comment.value : this.comment,
@@ -1782,7 +1782,7 @@ class Review extends DataClass implements Insertable<Review> {
   String toString() {
     return (StringBuffer('Review(')
           ..write('id: $id, ')
-          ..write('productId: $productId, ')
+          ..write('orderId: $orderId, ')
           ..write('userId: $userId, ')
           ..write('rating: $rating, ')
           ..write('comment: $comment, ')
@@ -1793,13 +1793,13 @@ class Review extends DataClass implements Insertable<Review> {
 
   @override
   int get hashCode =>
-      Object.hash(id, productId, userId, rating, comment, createdAt);
+      Object.hash(id, orderId, userId, rating, comment, createdAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Review &&
           other.id == this.id &&
-          other.productId == this.productId &&
+          other.orderId == this.orderId &&
           other.userId == this.userId &&
           other.rating == this.rating &&
           other.comment == this.comment &&
@@ -1808,14 +1808,14 @@ class Review extends DataClass implements Insertable<Review> {
 
 class ReviewsCompanion extends UpdateCompanion<Review> {
   final Value<int> id;
-  final Value<int> productId;
+  final Value<int> orderId;
   final Value<String> userId;
   final Value<int> rating;
   final Value<String?> comment;
   final Value<DateTime> createdAt;
   const ReviewsCompanion({
     this.id = const Value.absent(),
-    this.productId = const Value.absent(),
+    this.orderId = const Value.absent(),
     this.userId = const Value.absent(),
     this.rating = const Value.absent(),
     this.comment = const Value.absent(),
@@ -1823,17 +1823,17 @@ class ReviewsCompanion extends UpdateCompanion<Review> {
   });
   ReviewsCompanion.insert({
     this.id = const Value.absent(),
-    required int productId,
+    required int orderId,
     required String userId,
     required int rating,
     this.comment = const Value.absent(),
     this.createdAt = const Value.absent(),
-  })  : productId = Value(productId),
+  })  : orderId = Value(orderId),
         userId = Value(userId),
         rating = Value(rating);
   static Insertable<Review> custom({
     Expression<int>? id,
-    Expression<int>? productId,
+    Expression<int>? orderId,
     Expression<String>? userId,
     Expression<int>? rating,
     Expression<String>? comment,
@@ -1841,7 +1841,7 @@ class ReviewsCompanion extends UpdateCompanion<Review> {
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
-      if (productId != null) 'product_id': productId,
+      if (orderId != null) 'order_id': orderId,
       if (userId != null) 'user_id': userId,
       if (rating != null) 'rating': rating,
       if (comment != null) 'comment': comment,
@@ -1851,14 +1851,14 @@ class ReviewsCompanion extends UpdateCompanion<Review> {
 
   ReviewsCompanion copyWith(
       {Value<int>? id,
-      Value<int>? productId,
+      Value<int>? orderId,
       Value<String>? userId,
       Value<int>? rating,
       Value<String?>? comment,
       Value<DateTime>? createdAt}) {
     return ReviewsCompanion(
       id: id ?? this.id,
-      productId: productId ?? this.productId,
+      orderId: orderId ?? this.orderId,
       userId: userId ?? this.userId,
       rating: rating ?? this.rating,
       comment: comment ?? this.comment,
@@ -1872,8 +1872,8 @@ class ReviewsCompanion extends UpdateCompanion<Review> {
     if (id.present) {
       map['id'] = Variable<int>(id.value);
     }
-    if (productId.present) {
-      map['product_id'] = Variable<int>(productId.value);
+    if (orderId.present) {
+      map['order_id'] = Variable<int>(orderId.value);
     }
     if (userId.present) {
       map['user_id'] = Variable<String>(userId.value);
@@ -1894,7 +1894,7 @@ class ReviewsCompanion extends UpdateCompanion<Review> {
   String toString() {
     return (StringBuffer('ReviewsCompanion(')
           ..write('id: $id, ')
-          ..write('productId: $productId, ')
+          ..write('orderId: $orderId, ')
           ..write('userId: $userId, ')
           ..write('rating: $rating, ')
           ..write('comment: $comment, ')
@@ -4078,21 +4078,6 @@ final class $$ProductsTableReferences
     extends BaseReferences<_$AppDatabase, $ProductsTable, Product> {
   $$ProductsTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
-  static MultiTypedResultKey<$ReviewsTable, List<Review>> _reviewsRefsTable(
-          _$AppDatabase db) =>
-      MultiTypedResultKey.fromTable(db.reviews,
-          aliasName:
-              $_aliasNameGenerator(db.products.id, db.reviews.productId));
-
-  $$ReviewsTableProcessedTableManager get reviewsRefs {
-    final manager = $$ReviewsTableTableManager($_db, $_db.reviews)
-        .filter((f) => f.productId.id.sqlEquals($_itemColumn<int>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(_reviewsRefsTable($_db));
-    return ProcessedTableManager(
-        manager.$state.copyWith(prefetchedData: cache));
-  }
-
   static MultiTypedResultKey<$ProductIngredientLinksTable,
       List<ProductIngredientLink>> _productIngredientLinksRefsTable(
           _$AppDatabase db) =>
@@ -4150,27 +4135,6 @@ class $$ProductsTableFilterComposer
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnFilters(column));
-
-  Expression<bool> reviewsRefs(
-      Expression<bool> Function($$ReviewsTableFilterComposer f) f) {
-    final $$ReviewsTableFilterComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.id,
-        referencedTable: $db.reviews,
-        getReferencedColumn: (t) => t.productId,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$ReviewsTableFilterComposer(
-              $db: $db,
-              $table: $db.reviews,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
-    return f(composer);
-  }
 
   Expression<bool> productIngredientLinksRefs(
       Expression<bool> Function($$ProductIngredientLinksTableFilterComposer f)
@@ -4271,27 +4235,6 @@ class $$ProductsTableAnnotationComposer
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
-  Expression<T> reviewsRefs<T extends Object>(
-      Expression<T> Function($$ReviewsTableAnnotationComposer a) f) {
-    final $$ReviewsTableAnnotationComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.id,
-        referencedTable: $db.reviews,
-        getReferencedColumn: (t) => t.productId,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$ReviewsTableAnnotationComposer(
-              $db: $db,
-              $table: $db.reviews,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
-    return f(composer);
-  }
-
   Expression<T> productIngredientLinksRefs<T extends Object>(
       Expression<T> Function($$ProductIngredientLinksTableAnnotationComposer a)
           f) {
@@ -4327,8 +4270,7 @@ class $$ProductsTableTableManager extends RootTableManager<
     $$ProductsTableUpdateCompanionBuilder,
     (Product, $$ProductsTableReferences),
     Product,
-    PrefetchHooks Function(
-        {bool reviewsRefs, bool productIngredientLinksRefs})> {
+    PrefetchHooks Function({bool productIngredientLinksRefs})> {
   $$ProductsTableTableManager(_$AppDatabase db, $ProductsTable table)
       : super(TableManagerState(
           db: db,
@@ -4387,29 +4329,15 @@ class $$ProductsTableTableManager extends RootTableManager<
               .map((e) =>
                   (e.readTable(table), $$ProductsTableReferences(db, table, e)))
               .toList(),
-          prefetchHooksCallback: (
-              {reviewsRefs = false, productIngredientLinksRefs = false}) {
+          prefetchHooksCallback: ({productIngredientLinksRefs = false}) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [
-                if (reviewsRefs) db.reviews,
                 if (productIngredientLinksRefs) db.productIngredientLinks
               ],
               addJoins: null,
               getPrefetchedDataCallback: (items) async {
                 return [
-                  if (reviewsRefs)
-                    await $_getPrefetchedData<Product, $ProductsTable, Review>(
-                        currentTable: table,
-                        referencedTable:
-                            $$ProductsTableReferences._reviewsRefsTable(db),
-                        managerFromTypedResult: (p0) =>
-                            $$ProductsTableReferences(db, table, p0)
-                                .reviewsRefs,
-                        referencedItemsForCurrentItem:
-                            (item, referencedItems) => referencedItems
-                                .where((e) => e.productId == item.id),
-                        typedResults: items),
                   if (productIngredientLinksRefs)
                     await $_getPrefetchedData<Product, $ProductsTable,
                             ProductIngredientLink>(
@@ -4441,8 +4369,7 @@ typedef $$ProductsTableProcessedTableManager = ProcessedTableManager<
     $$ProductsTableUpdateCompanionBuilder,
     (Product, $$ProductsTableReferences),
     Product,
-    PrefetchHooks Function(
-        {bool reviewsRefs, bool productIngredientLinksRefs})>;
+    PrefetchHooks Function({bool productIngredientLinksRefs})>;
 typedef $$UsersTableCreateCompanionBuilder = UsersCompanion Function({
   required String id,
   Value<String?> name,
@@ -4726,6 +4653,20 @@ final class $$OrdersTableReferences
     return ProcessedTableManager(
         manager.$state.copyWith(prefetchedData: cache));
   }
+
+  static MultiTypedResultKey<$ReviewsTable, List<Review>> _reviewsRefsTable(
+          _$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(db.reviews,
+          aliasName: $_aliasNameGenerator(db.orders.id, db.reviews.orderId));
+
+  $$ReviewsTableProcessedTableManager get reviewsRefs {
+    final manager = $$ReviewsTableTableManager($_db, $_db.reviews)
+        .filter((f) => f.orderId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_reviewsRefsTable($_db));
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: cache));
+  }
 }
 
 class $$OrdersTableFilterComposer
@@ -4771,6 +4712,27 @@ class $$OrdersTableFilterComposer
             $$OrderItemsTableFilterComposer(
               $db: $db,
               $table: $db.orderItems,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return f(composer);
+  }
+
+  Expression<bool> reviewsRefs(
+      Expression<bool> Function($$ReviewsTableFilterComposer f) f) {
+    final $$ReviewsTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $db.reviews,
+        getReferencedColumn: (t) => t.orderId,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ReviewsTableFilterComposer(
+              $db: $db,
+              $table: $db.reviews,
               $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
               joinBuilder: joinBuilder,
               $removeJoinBuilderFromRootComposer:
@@ -4863,6 +4825,27 @@ class $$OrdersTableAnnotationComposer
             ));
     return f(composer);
   }
+
+  Expression<T> reviewsRefs<T extends Object>(
+      Expression<T> Function($$ReviewsTableAnnotationComposer a) f) {
+    final $$ReviewsTableAnnotationComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $db.reviews,
+        getReferencedColumn: (t) => t.orderId,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ReviewsTableAnnotationComposer(
+              $db: $db,
+              $table: $db.reviews,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return f(composer);
+  }
 }
 
 class $$OrdersTableTableManager extends RootTableManager<
@@ -4876,7 +4859,7 @@ class $$OrdersTableTableManager extends RootTableManager<
     $$OrdersTableUpdateCompanionBuilder,
     (Order, $$OrdersTableReferences),
     Order,
-    PrefetchHooks Function({bool orderItemsRefs})> {
+    PrefetchHooks Function({bool orderItemsRefs, bool reviewsRefs})> {
   $$OrdersTableTableManager(_$AppDatabase db, $OrdersTable table)
       : super(TableManagerState(
           db: db,
@@ -4927,10 +4910,14 @@ class $$OrdersTableTableManager extends RootTableManager<
               .map((e) =>
                   (e.readTable(table), $$OrdersTableReferences(db, table, e)))
               .toList(),
-          prefetchHooksCallback: ({orderItemsRefs = false}) {
+          prefetchHooksCallback: (
+              {orderItemsRefs = false, reviewsRefs = false}) {
             return PrefetchHooks(
               db: db,
-              explicitlyWatchedTables: [if (orderItemsRefs) db.orderItems],
+              explicitlyWatchedTables: [
+                if (orderItemsRefs) db.orderItems,
+                if (reviewsRefs) db.reviews
+              ],
               addJoins: null,
               getPrefetchedDataCallback: (items) async {
                 return [
@@ -4942,6 +4929,17 @@ class $$OrdersTableTableManager extends RootTableManager<
                         managerFromTypedResult: (p0) =>
                             $$OrdersTableReferences(db, table, p0)
                                 .orderItemsRefs,
+                        referencedItemsForCurrentItem: (item,
+                                referencedItems) =>
+                            referencedItems.where((e) => e.orderId == item.id),
+                        typedResults: items),
+                  if (reviewsRefs)
+                    await $_getPrefetchedData<Order, $OrdersTable, Review>(
+                        currentTable: table,
+                        referencedTable:
+                            $$OrdersTableReferences._reviewsRefsTable(db),
+                        managerFromTypedResult: (p0) =>
+                            $$OrdersTableReferences(db, table, p0).reviewsRefs,
                         referencedItemsForCurrentItem: (item,
                                 referencedItems) =>
                             referencedItems.where((e) => e.orderId == item.id),
@@ -4964,7 +4962,7 @@ typedef $$OrdersTableProcessedTableManager = ProcessedTableManager<
     $$OrdersTableUpdateCompanionBuilder,
     (Order, $$OrdersTableReferences),
     Order,
-    PrefetchHooks Function({bool orderItemsRefs})>;
+    PrefetchHooks Function({bool orderItemsRefs, bool reviewsRefs})>;
 typedef $$OrderItemsTableCreateCompanionBuilder = OrderItemsCompanion Function({
   Value<int> id,
   required int orderId,
@@ -5265,7 +5263,7 @@ typedef $$OrderItemsTableProcessedTableManager = ProcessedTableManager<
     PrefetchHooks Function({bool orderId})>;
 typedef $$ReviewsTableCreateCompanionBuilder = ReviewsCompanion Function({
   Value<int> id,
-  required int productId,
+  required int orderId,
   required String userId,
   required int rating,
   Value<String?> comment,
@@ -5273,7 +5271,7 @@ typedef $$ReviewsTableCreateCompanionBuilder = ReviewsCompanion Function({
 });
 typedef $$ReviewsTableUpdateCompanionBuilder = ReviewsCompanion Function({
   Value<int> id,
-  Value<int> productId,
+  Value<int> orderId,
   Value<String> userId,
   Value<int> rating,
   Value<String?> comment,
@@ -5284,15 +5282,15 @@ final class $$ReviewsTableReferences
     extends BaseReferences<_$AppDatabase, $ReviewsTable, Review> {
   $$ReviewsTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
-  static $ProductsTable _productIdTable(_$AppDatabase db) => db.products
-      .createAlias($_aliasNameGenerator(db.reviews.productId, db.products.id));
+  static $OrdersTable _orderIdTable(_$AppDatabase db) => db.orders
+      .createAlias($_aliasNameGenerator(db.reviews.orderId, db.orders.id));
 
-  $$ProductsTableProcessedTableManager get productId {
-    final $_column = $_itemColumn<int>('product_id')!;
+  $$OrdersTableProcessedTableManager get orderId {
+    final $_column = $_itemColumn<int>('order_id')!;
 
-    final manager = $$ProductsTableTableManager($_db, $_db.products)
+    final manager = $$OrdersTableTableManager($_db, $_db.orders)
         .filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_productIdTable($_db));
+    final item = $_typedResult.readTableOrNull(_orderIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
         manager.$state.copyWith(prefetchedData: [item]));
@@ -5334,18 +5332,18 @@ class $$ReviewsTableFilterComposer
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnFilters(column));
 
-  $$ProductsTableFilterComposer get productId {
-    final $$ProductsTableFilterComposer composer = $composerBuilder(
+  $$OrdersTableFilterComposer get orderId {
+    final $$OrdersTableFilterComposer composer = $composerBuilder(
         composer: this,
-        getCurrentColumn: (t) => t.productId,
-        referencedTable: $db.products,
+        getCurrentColumn: (t) => t.orderId,
+        referencedTable: $db.orders,
         getReferencedColumn: (t) => t.id,
         builder: (joinBuilder,
                 {$addJoinBuilderToRootComposer,
                 $removeJoinBuilderFromRootComposer}) =>
-            $$ProductsTableFilterComposer(
+            $$OrdersTableFilterComposer(
               $db: $db,
-              $table: $db.products,
+              $table: $db.orders,
               $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
               joinBuilder: joinBuilder,
               $removeJoinBuilderFromRootComposer:
@@ -5396,18 +5394,18 @@ class $$ReviewsTableOrderingComposer
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnOrderings(column));
 
-  $$ProductsTableOrderingComposer get productId {
-    final $$ProductsTableOrderingComposer composer = $composerBuilder(
+  $$OrdersTableOrderingComposer get orderId {
+    final $$OrdersTableOrderingComposer composer = $composerBuilder(
         composer: this,
-        getCurrentColumn: (t) => t.productId,
-        referencedTable: $db.products,
+        getCurrentColumn: (t) => t.orderId,
+        referencedTable: $db.orders,
         getReferencedColumn: (t) => t.id,
         builder: (joinBuilder,
                 {$addJoinBuilderToRootComposer,
                 $removeJoinBuilderFromRootComposer}) =>
-            $$ProductsTableOrderingComposer(
+            $$OrdersTableOrderingComposer(
               $db: $db,
-              $table: $db.products,
+              $table: $db.orders,
               $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
               joinBuilder: joinBuilder,
               $removeJoinBuilderFromRootComposer:
@@ -5458,18 +5456,18 @@ class $$ReviewsTableAnnotationComposer
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
-  $$ProductsTableAnnotationComposer get productId {
-    final $$ProductsTableAnnotationComposer composer = $composerBuilder(
+  $$OrdersTableAnnotationComposer get orderId {
+    final $$OrdersTableAnnotationComposer composer = $composerBuilder(
         composer: this,
-        getCurrentColumn: (t) => t.productId,
-        referencedTable: $db.products,
+        getCurrentColumn: (t) => t.orderId,
+        referencedTable: $db.orders,
         getReferencedColumn: (t) => t.id,
         builder: (joinBuilder,
                 {$addJoinBuilderToRootComposer,
                 $removeJoinBuilderFromRootComposer}) =>
-            $$ProductsTableAnnotationComposer(
+            $$OrdersTableAnnotationComposer(
               $db: $db,
-              $table: $db.products,
+              $table: $db.orders,
               $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
               joinBuilder: joinBuilder,
               $removeJoinBuilderFromRootComposer:
@@ -5510,7 +5508,7 @@ class $$ReviewsTableTableManager extends RootTableManager<
     $$ReviewsTableUpdateCompanionBuilder,
     (Review, $$ReviewsTableReferences),
     Review,
-    PrefetchHooks Function({bool productId, bool userId})> {
+    PrefetchHooks Function({bool orderId, bool userId})> {
   $$ReviewsTableTableManager(_$AppDatabase db, $ReviewsTable table)
       : super(TableManagerState(
           db: db,
@@ -5523,7 +5521,7 @@ class $$ReviewsTableTableManager extends RootTableManager<
               $$ReviewsTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback: ({
             Value<int> id = const Value.absent(),
-            Value<int> productId = const Value.absent(),
+            Value<int> orderId = const Value.absent(),
             Value<String> userId = const Value.absent(),
             Value<int> rating = const Value.absent(),
             Value<String?> comment = const Value.absent(),
@@ -5531,7 +5529,7 @@ class $$ReviewsTableTableManager extends RootTableManager<
           }) =>
               ReviewsCompanion(
             id: id,
-            productId: productId,
+            orderId: orderId,
             userId: userId,
             rating: rating,
             comment: comment,
@@ -5539,7 +5537,7 @@ class $$ReviewsTableTableManager extends RootTableManager<
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
-            required int productId,
+            required int orderId,
             required String userId,
             required int rating,
             Value<String?> comment = const Value.absent(),
@@ -5547,7 +5545,7 @@ class $$ReviewsTableTableManager extends RootTableManager<
           }) =>
               ReviewsCompanion.insert(
             id: id,
-            productId: productId,
+            orderId: orderId,
             userId: userId,
             rating: rating,
             comment: comment,
@@ -5557,7 +5555,7 @@ class $$ReviewsTableTableManager extends RootTableManager<
               .map((e) =>
                   (e.readTable(table), $$ReviewsTableReferences(db, table, e)))
               .toList(),
-          prefetchHooksCallback: ({productId = false, userId = false}) {
+          prefetchHooksCallback: ({orderId = false, userId = false}) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [],
@@ -5574,14 +5572,13 @@ class $$ReviewsTableTableManager extends RootTableManager<
                       dynamic,
                       dynamic,
                       dynamic>>(state) {
-                if (productId) {
+                if (orderId) {
                   state = state.withJoin(
                     currentTable: table,
-                    currentColumn: table.productId,
-                    referencedTable:
-                        $$ReviewsTableReferences._productIdTable(db),
+                    currentColumn: table.orderId,
+                    referencedTable: $$ReviewsTableReferences._orderIdTable(db),
                     referencedColumn:
-                        $$ReviewsTableReferences._productIdTable(db).id,
+                        $$ReviewsTableReferences._orderIdTable(db).id,
                   ) as T;
                 }
                 if (userId) {
@@ -5615,7 +5612,7 @@ typedef $$ReviewsTableProcessedTableManager = ProcessedTableManager<
     $$ReviewsTableUpdateCompanionBuilder,
     (Review, $$ReviewsTableReferences),
     Review,
-    PrefetchHooks Function({bool productId, bool userId})>;
+    PrefetchHooks Function({bool orderId, bool userId})>;
 typedef $$IngredientsTableCreateCompanionBuilder = IngredientsCompanion
     Function({
   Value<int> id,

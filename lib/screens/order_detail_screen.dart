@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
 import '../database/app_database.dart';
+import 'add_review_screen.dart'; // ✅ NOUVEAU
 
 class OrderDetailScreen extends StatelessWidget {
   final Order order;
@@ -36,13 +37,38 @@ class OrderDetailScreen extends StatelessWidget {
           return ListView(
             padding: const EdgeInsets.all(16.0),
             children: [
-              // ✅ NOUVEAU: En-tête de résumé complet
               _buildOrderSummary(context, totalItems),
               const Divider(height: 32),
               Text('Détails des articles', style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 8),
               ...items.map((item) => OrderItemCard(item: item)),
             ],
+          );
+        },
+      ),
+      // ✅ NOUVEAU: Bouton pour laisser un avis
+      bottomNavigationBar: StreamBuilder<Review?>(
+        stream: db.watchReviewForOrder(order.id),
+        builder: (context, snapshot) {
+          final hasReview = snapshot.hasData && snapshot.data != null;
+
+          // Si un avis existe déjà, on n'affiche rien
+          if (hasReview) {
+            return const SizedBox.shrink();
+          }
+
+          // Sinon, on affiche le bouton
+          return Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: ElevatedButton.icon(
+              icon: const Icon(Icons.rate_review_outlined),
+              label: const Text('Laisser un avis sur cette commande'),
+              onPressed: () {
+                Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => AddReviewScreen(order: order),
+                ));
+              },
+            ),
           );
         },
       ),

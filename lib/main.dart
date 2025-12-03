@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:intl/date_symbol_data_local.dart'; // ✅ NOUVEAU
+import 'package:intl/date_symbol_data_local.dart';
 
 import 'database/app_database.dart';
 import 'services/auth_service.dart';
@@ -10,12 +10,12 @@ import 'services/cart_service.dart';
 import 'services/sync_service.dart';
 import 'services/admin_service.dart';
 import 'services/order_service.dart';
+import 'services/review_service.dart'; // ✅ NOUVEAU
 import 'screens/main_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // ✅ NOUVEAU: Initialisation pour le formatage des dates en français
   await initializeDateFormatting('fr_FR', null);
 
   await dotenv.load(fileName: ".env");
@@ -53,6 +53,7 @@ class MyApp extends StatelessWidget {
         ProxyProvider<AppDatabase, OrderService>(
           update: (_, db, __) => OrderService(db: db),
         ),
+        Provider(create: (_) => ReviewService()), // ✅ NOUVEAU
       ],
       child: MaterialApp(
         title: 'Pizza App',
