@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../database/app_database.dart' hide User;
 import '../services/auth_service.dart';
-import '../services/cart_service.dart';
-import 'login_screen.dart';
-import 'cart_screen.dart';
-import 'admin_screen.dart';
 import 'menu_screen.dart';
 import 'promotions_screen.dart';
 import 'about_us_screen.dart';
+import 'cart_screen.dart';
+import 'login_screen.dart';
+import 'admin_login_screen.dart';
+import 'admin_screen.dart';
+import 'client_area_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -21,17 +21,10 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
 
-  static const List<Widget> _pages = <Widget>[
+  static const List<Widget> _widgetOptions = <Widget>[
     MenuScreen(),
     PromotionsScreen(),
     AboutUsScreen(),
-  ];
-
-  // ✅ CORRIGÉ: L'emoji a été retiré pour être remplacé par une icône.
-  static const List<String> _titles = <String>[
-    '🍕 Menu',
-    '🎉 Promotions',
-    'Qui sommes-nous',
   ];
 
   void _onItemTapped(int index) {
@@ -46,85 +39,93 @@ class _MainScreenState extends State<MainScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        // ✅ CORRIGÉ: Le titre affiche une icône personnalisée pour la page "Qui sommes-nous"
-        title: _selectedIndex == 2
-            ? Row(
-                children: [
-                  CircleAvatar(
-                    radius: 12,
-                    backgroundColor: Colors.blue.shade800,
-                    child: const Icon(Icons.info_outline, color: Colors.white, size: 15),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(_titles[_selectedIndex]),
-                ],
-              )
-            : Text(_titles[_selectedIndex]),
-        backgroundColor: Colors.orange,
-        foregroundColor: Colors.white,
-        actions: [
-          Consumer<CartService>(
-            builder: (context, cart, child) => Badge(
-              label: Text('${cart.items.length}'),
-              isLabelVisible: cart.items.isNotEmpty,
-              child: IconButton(
-                icon: const Icon(Icons.shopping_cart),
-                tooltip: 'Voir le panier',
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const CartScreen()),
-                ),
-              ),
-            ),
+        leading: const Padding(
+          padding: EdgeInsets.all(8.0),
+          child: Icon(Icons.local_pizza, size: 32),
+        ),
+        title: const Text('Pizza App'),
+        actions: <Widget>[
+          IconButton(
+            icon: const Icon(Icons.shopping_cart),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => const CartScreen()),
+              );
+            },
           ),
-          authService.currentUser == null
-              ? IconButton(
-                  icon: Icon(Icons.person, color: Colors.white.withOpacity(0.7)),
-                  tooltip: 'Connexion / Inscription',
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const LoginScreen()),
-                  ),
-                )
-              : IconButton(
-                  icon: const Icon(Icons.person, color: Colors.lightGreenAccent),
-                  tooltip: 'Connecté: ${authService.currentUser!.email}\n(Cliquer pour se déconnecter)',
-                  onPressed: () => authService.signOut(),
-                ),
+          if (authService.currentUser != null)
+            IconButton(
+              tooltip: 'Mon Espace Client',
+              icon: const Icon(Icons.home),
+              onPressed: () {
+                Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ClientAreaScreen()));
+              },
+            ),
+          IconButton(
+            tooltip: authService.currentUser == null ? 'Connexion' : 'Mon Compte / Déconnexion',
+            icon: Icon(
+              Icons.person,
+              color: authService.currentUser == null ? Colors.grey.shade400 : Colors.greenAccent,
+            ),
+            onPressed: () {
+              if (authService.currentUser == null) {
+                Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LoginScreen()));
+              } else {
+                showMenu(
+                  context: context,
+                  position: const RelativeRect.fromLTRB(1000.0, 80.0, 0.0, 0.0),
+                  items: <PopupMenuEntry<String>>[
+                    PopupMenuItem<String>(
+                      enabled: false,
+                      child: Text('Connecté: ${authService.currentUser!.email}'),
+                    ),
+                    // ✅ CORRIGÉ: Le bouton Admin n'apparaît que si l'utilisateur est admin
+                    if (authService.isAdmin)
+                      const PopupMenuItem<String>(
+                        value: 'admin',
+                        child: ListTile(leading: Icon(Icons.admin_panel_settings), title: Text('Panneau Admin')),
+                      ),
+                    const PopupMenuDivider(),
+                    const PopupMenuItem<String>(
+                      value: 'logout',
+                      child: ListTile(leading: Icon(Icons.logout, color: Colors.red), title: Text('Déconnexion', style: TextStyle(color: Colors.red))),
+                    ),
+                  ],
+                ).then((value) {
+                  if (value == 'logout') {
+                    authService.signOut();
+                  } else if (value == 'admin') {
+                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AdminScreen()));
+                  }
+                });
+              }
+            },
+          ),
         ],
       ),
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _pages,
+      body: Center(
+        child: _widgetOptions.elementAt(_selectedIndex),
       ),
-      floatingActionButton: authService.isAdmin
-          ? FloatingActionButton(
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const AdminScreen()),
-              ),
-              backgroundColor: Colors.red,
-              tooltip: 'Panneau d\'administration',
-              child: const Icon(Icons.admin_panel_settings, color: Colors.white),
-            )
-          : null,
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.menu_book),
-            label: 'Menu',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.campaign),
-            label: 'Promotions',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.info_outline),
-            label: 'Qui sommes-nous',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.local_pizza), label: 'Menu'),
+          BottomNavigationBarItem(icon: Icon(Icons.campaign), label: 'Promotions'),
+          BottomNavigationBarItem(icon: Icon(Icons.info_outline), label: 'Qui sommes-nous'),
         ],
         currentIndex: _selectedIndex,
-        selectedItemColor: Colors.orange,
         onTap: _onItemTapped,
       ),
+       floatingActionButton: authService.currentUser == null
+          ? FloatingActionButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
+                );
+              },
+              tooltip: 'Accès Admin',
+              child: const Icon(Icons.admin_panel_settings),
+            )
+          : null,
     );
   }
 }
