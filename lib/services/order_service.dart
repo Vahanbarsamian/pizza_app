@@ -9,7 +9,8 @@ class OrderService {
 
   OrderService({required AppDatabase db}) : _db = db;
 
-  Future<void> createOrderFromCart(CartService cart, String userId, String referenceName, String pickupTime) async {
+  // ✅ CORRIGÉ: Accepte maintenant aussi le mode de paiement
+  Future<void> createOrderFromCart(CartService cart, String userId, String referenceName, String pickupTime, String paymentMethod) async {
     if (cart.items.isEmpty) {
       throw 'Le panier est vide.';
     }
@@ -17,9 +18,10 @@ class OrderService {
     try {
       final orderResponse = await _supabase.from('orders').insert({
         'user_id': userId,
-        'total': cart.totalPrice, // ✅ CORRIGÉ: Renommé 'total_price' en 'total'
+        'total': cart.totalPrice,
         'reference_name': referenceName,
         'pickup_time': pickupTime,
+        'payment_method': paymentMethod, // ✅ NOUVEAU
       }).select();
 
       final orderId = orderResponse.first['id'] as int;

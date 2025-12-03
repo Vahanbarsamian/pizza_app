@@ -28,23 +28,17 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
   late final GeneratedColumn<String> description = GeneratedColumn<String>(
       'description', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _imageMeta = const VerificationMeta('image');
+  @override
+  late final GeneratedColumn<String> image = GeneratedColumn<String>(
+      'image', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _basePriceMeta =
       const VerificationMeta('basePrice');
   @override
   late final GeneratedColumn<double> basePrice = GeneratedColumn<double>(
       'base_price', aliasedName, false,
       type: DriftSqlType.double, requiredDuringInsert: true);
-  static const VerificationMeta _imageMeta = const VerificationMeta('image');
-  @override
-  late final GeneratedColumn<String> image = GeneratedColumn<String>(
-      'image', aliasedName, true,
-      type: DriftSqlType.string, requiredDuringInsert: false);
-  static const VerificationMeta _categoryMeta =
-      const VerificationMeta('category');
-  @override
-  late final GeneratedColumn<String> category = GeneratedColumn<String>(
-      'category', aliasedName, false,
-      type: DriftSqlType.string, requiredDuringInsert: true);
   static const VerificationMeta _discountPercentageMeta =
       const VerificationMeta('discountPercentage');
   @override
@@ -53,42 +47,35 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
           type: DriftSqlType.double,
           requiredDuringInsert: false,
           defaultValue: const Constant(0.0));
-  static const VerificationMeta _hasGlobalDiscountMeta =
-      const VerificationMeta('hasGlobalDiscount');
-  @override
-  late final GeneratedColumn<bool> hasGlobalDiscount = GeneratedColumn<bool>(
-      'has_global_discount', aliasedName, false,
-      type: DriftSqlType.bool,
-      requiredDuringInsert: false,
-      defaultConstraints: GeneratedColumn.constraintIsAlways(
-          'CHECK ("has_global_discount" IN (0, 1))'),
-      defaultValue: const Constant(false));
-  static const VerificationMeta _createdAtMeta =
-      const VerificationMeta('createdAt');
-  @override
-  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
-      'created_at', aliasedName, false,
-      type: DriftSqlType.dateTime,
-      requiredDuringInsert: false,
-      defaultValue: currentDateAndTime);
   static const VerificationMeta _maxSupplementsMeta =
       const VerificationMeta('maxSupplements');
   @override
   late final GeneratedColumn<int> maxSupplements = GeneratedColumn<int>(
       'max_supplements', aliasedName, true,
       type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _categoryMeta =
+      const VerificationMeta('category');
+  @override
+  late final GeneratedColumn<String> category = GeneratedColumn<String>(
+      'category', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
   @override
   List<GeneratedColumn> get $columns => [
         id,
         name,
         description,
-        basePrice,
         image,
-        category,
+        basePrice,
         discountPercentage,
-        hasGlobalDiscount,
-        createdAt,
-        maxSupplements
+        maxSupplements,
+        category,
+        createdAt
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -115,21 +102,15 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
           description.isAcceptableOrUnknown(
               data['description']!, _descriptionMeta));
     }
+    if (data.containsKey('image')) {
+      context.handle(
+          _imageMeta, image.isAcceptableOrUnknown(data['image']!, _imageMeta));
+    }
     if (data.containsKey('base_price')) {
       context.handle(_basePriceMeta,
           basePrice.isAcceptableOrUnknown(data['base_price']!, _basePriceMeta));
     } else if (isInserting) {
       context.missing(_basePriceMeta);
-    }
-    if (data.containsKey('image')) {
-      context.handle(
-          _imageMeta, image.isAcceptableOrUnknown(data['image']!, _imageMeta));
-    }
-    if (data.containsKey('category')) {
-      context.handle(_categoryMeta,
-          category.isAcceptableOrUnknown(data['category']!, _categoryMeta));
-    } else if (isInserting) {
-      context.missing(_categoryMeta);
     }
     if (data.containsKey('discount_percentage')) {
       context.handle(
@@ -137,21 +118,21 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
           discountPercentage.isAcceptableOrUnknown(
               data['discount_percentage']!, _discountPercentageMeta));
     }
-    if (data.containsKey('has_global_discount')) {
-      context.handle(
-          _hasGlobalDiscountMeta,
-          hasGlobalDiscount.isAcceptableOrUnknown(
-              data['has_global_discount']!, _hasGlobalDiscountMeta));
-    }
-    if (data.containsKey('created_at')) {
-      context.handle(_createdAtMeta,
-          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
-    }
     if (data.containsKey('max_supplements')) {
       context.handle(
           _maxSupplementsMeta,
           maxSupplements.isAcceptableOrUnknown(
               data['max_supplements']!, _maxSupplementsMeta));
+    }
+    if (data.containsKey('category')) {
+      context.handle(_categoryMeta,
+          category.isAcceptableOrUnknown(data['category']!, _categoryMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
     }
     return context;
   }
@@ -168,20 +149,18 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
           .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
       description: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}description']),
-      basePrice: attachedDatabase.typeMapping
-          .read(DriftSqlType.double, data['${effectivePrefix}base_price'])!,
       image: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}image']),
-      category: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}category'])!,
+      basePrice: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}base_price'])!,
       discountPercentage: attachedDatabase.typeMapping.read(
           DriftSqlType.double, data['${effectivePrefix}discount_percentage'])!,
-      hasGlobalDiscount: attachedDatabase.typeMapping.read(
-          DriftSqlType.bool, data['${effectivePrefix}has_global_discount'])!,
-      createdAt: attachedDatabase.typeMapping
-          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
       maxSupplements: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}max_supplements']),
+      category: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}category']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
     );
   }
 
@@ -195,24 +174,22 @@ class Product extends DataClass implements Insertable<Product> {
   final int id;
   final String name;
   final String? description;
-  final double basePrice;
   final String? image;
-  final String category;
+  final double basePrice;
   final double discountPercentage;
-  final bool hasGlobalDiscount;
-  final DateTime createdAt;
   final int? maxSupplements;
+  final String? category;
+  final DateTime createdAt;
   const Product(
       {required this.id,
       required this.name,
       this.description,
-      required this.basePrice,
       this.image,
-      required this.category,
+      required this.basePrice,
       required this.discountPercentage,
-      required this.hasGlobalDiscount,
-      required this.createdAt,
-      this.maxSupplements});
+      this.maxSupplements,
+      this.category,
+      required this.createdAt});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -221,17 +198,18 @@ class Product extends DataClass implements Insertable<Product> {
     if (!nullToAbsent || description != null) {
       map['description'] = Variable<String>(description);
     }
-    map['base_price'] = Variable<double>(basePrice);
     if (!nullToAbsent || image != null) {
       map['image'] = Variable<String>(image);
     }
-    map['category'] = Variable<String>(category);
+    map['base_price'] = Variable<double>(basePrice);
     map['discount_percentage'] = Variable<double>(discountPercentage);
-    map['has_global_discount'] = Variable<bool>(hasGlobalDiscount);
-    map['created_at'] = Variable<DateTime>(createdAt);
     if (!nullToAbsent || maxSupplements != null) {
       map['max_supplements'] = Variable<int>(maxSupplements);
     }
+    if (!nullToAbsent || category != null) {
+      map['category'] = Variable<String>(category);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
 
@@ -242,16 +220,17 @@ class Product extends DataClass implements Insertable<Product> {
       description: description == null && nullToAbsent
           ? const Value.absent()
           : Value(description),
-      basePrice: Value(basePrice),
       image:
           image == null && nullToAbsent ? const Value.absent() : Value(image),
-      category: Value(category),
+      basePrice: Value(basePrice),
       discountPercentage: Value(discountPercentage),
-      hasGlobalDiscount: Value(hasGlobalDiscount),
-      createdAt: Value(createdAt),
       maxSupplements: maxSupplements == null && nullToAbsent
           ? const Value.absent()
           : Value(maxSupplements),
+      category: category == null && nullToAbsent
+          ? const Value.absent()
+          : Value(category),
+      createdAt: Value(createdAt),
     );
   }
 
@@ -262,14 +241,13 @@ class Product extends DataClass implements Insertable<Product> {
       id: serializer.fromJson<int>(json['id']),
       name: serializer.fromJson<String>(json['name']),
       description: serializer.fromJson<String?>(json['description']),
-      basePrice: serializer.fromJson<double>(json['basePrice']),
       image: serializer.fromJson<String?>(json['image']),
-      category: serializer.fromJson<String>(json['category']),
+      basePrice: serializer.fromJson<double>(json['basePrice']),
       discountPercentage:
           serializer.fromJson<double>(json['discountPercentage']),
-      hasGlobalDiscount: serializer.fromJson<bool>(json['hasGlobalDiscount']),
-      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       maxSupplements: serializer.fromJson<int?>(json['maxSupplements']),
+      category: serializer.fromJson<String?>(json['category']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
   @override
@@ -279,13 +257,12 @@ class Product extends DataClass implements Insertable<Product> {
       'id': serializer.toJson<int>(id),
       'name': serializer.toJson<String>(name),
       'description': serializer.toJson<String?>(description),
-      'basePrice': serializer.toJson<double>(basePrice),
       'image': serializer.toJson<String?>(image),
-      'category': serializer.toJson<String>(category),
+      'basePrice': serializer.toJson<double>(basePrice),
       'discountPercentage': serializer.toJson<double>(discountPercentage),
-      'hasGlobalDiscount': serializer.toJson<bool>(hasGlobalDiscount),
-      'createdAt': serializer.toJson<DateTime>(createdAt),
       'maxSupplements': serializer.toJson<int?>(maxSupplements),
+      'category': serializer.toJson<String?>(category),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
 
@@ -293,25 +270,23 @@ class Product extends DataClass implements Insertable<Product> {
           {int? id,
           String? name,
           Value<String?> description = const Value.absent(),
-          double? basePrice,
           Value<String?> image = const Value.absent(),
-          String? category,
+          double? basePrice,
           double? discountPercentage,
-          bool? hasGlobalDiscount,
-          DateTime? createdAt,
-          Value<int?> maxSupplements = const Value.absent()}) =>
+          Value<int?> maxSupplements = const Value.absent(),
+          Value<String?> category = const Value.absent(),
+          DateTime? createdAt}) =>
       Product(
         id: id ?? this.id,
         name: name ?? this.name,
         description: description.present ? description.value : this.description,
-        basePrice: basePrice ?? this.basePrice,
         image: image.present ? image.value : this.image,
-        category: category ?? this.category,
+        basePrice: basePrice ?? this.basePrice,
         discountPercentage: discountPercentage ?? this.discountPercentage,
-        hasGlobalDiscount: hasGlobalDiscount ?? this.hasGlobalDiscount,
-        createdAt: createdAt ?? this.createdAt,
         maxSupplements:
             maxSupplements.present ? maxSupplements.value : this.maxSupplements,
+        category: category.present ? category.value : this.category,
+        createdAt: createdAt ?? this.createdAt,
       );
   Product copyWithCompanion(ProductsCompanion data) {
     return Product(
@@ -319,19 +294,16 @@ class Product extends DataClass implements Insertable<Product> {
       name: data.name.present ? data.name.value : this.name,
       description:
           data.description.present ? data.description.value : this.description,
-      basePrice: data.basePrice.present ? data.basePrice.value : this.basePrice,
       image: data.image.present ? data.image.value : this.image,
-      category: data.category.present ? data.category.value : this.category,
+      basePrice: data.basePrice.present ? data.basePrice.value : this.basePrice,
       discountPercentage: data.discountPercentage.present
           ? data.discountPercentage.value
           : this.discountPercentage,
-      hasGlobalDiscount: data.hasGlobalDiscount.present
-          ? data.hasGlobalDiscount.value
-          : this.hasGlobalDiscount,
-      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       maxSupplements: data.maxSupplements.present
           ? data.maxSupplements.value
           : this.maxSupplements,
+      category: data.category.present ? data.category.value : this.category,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
 
@@ -341,29 +313,19 @@ class Product extends DataClass implements Insertable<Product> {
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('description: $description, ')
-          ..write('basePrice: $basePrice, ')
           ..write('image: $image, ')
-          ..write('category: $category, ')
+          ..write('basePrice: $basePrice, ')
           ..write('discountPercentage: $discountPercentage, ')
-          ..write('hasGlobalDiscount: $hasGlobalDiscount, ')
-          ..write('createdAt: $createdAt, ')
-          ..write('maxSupplements: $maxSupplements')
+          ..write('maxSupplements: $maxSupplements, ')
+          ..write('category: $category, ')
+          ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(
-      id,
-      name,
-      description,
-      basePrice,
-      image,
-      category,
-      discountPercentage,
-      hasGlobalDiscount,
-      createdAt,
-      maxSupplements);
+  int get hashCode => Object.hash(id, name, description, image, basePrice,
+      discountPercentage, maxSupplements, category, createdAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -371,75 +333,69 @@ class Product extends DataClass implements Insertable<Product> {
           other.id == this.id &&
           other.name == this.name &&
           other.description == this.description &&
-          other.basePrice == this.basePrice &&
           other.image == this.image &&
-          other.category == this.category &&
+          other.basePrice == this.basePrice &&
           other.discountPercentage == this.discountPercentage &&
-          other.hasGlobalDiscount == this.hasGlobalDiscount &&
-          other.createdAt == this.createdAt &&
-          other.maxSupplements == this.maxSupplements);
+          other.maxSupplements == this.maxSupplements &&
+          other.category == this.category &&
+          other.createdAt == this.createdAt);
 }
 
 class ProductsCompanion extends UpdateCompanion<Product> {
   final Value<int> id;
   final Value<String> name;
   final Value<String?> description;
-  final Value<double> basePrice;
   final Value<String?> image;
-  final Value<String> category;
+  final Value<double> basePrice;
   final Value<double> discountPercentage;
-  final Value<bool> hasGlobalDiscount;
-  final Value<DateTime> createdAt;
   final Value<int?> maxSupplements;
+  final Value<String?> category;
+  final Value<DateTime> createdAt;
   const ProductsCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
     this.description = const Value.absent(),
-    this.basePrice = const Value.absent(),
     this.image = const Value.absent(),
-    this.category = const Value.absent(),
+    this.basePrice = const Value.absent(),
     this.discountPercentage = const Value.absent(),
-    this.hasGlobalDiscount = const Value.absent(),
-    this.createdAt = const Value.absent(),
     this.maxSupplements = const Value.absent(),
+    this.category = const Value.absent(),
+    this.createdAt = const Value.absent(),
   });
   ProductsCompanion.insert({
     this.id = const Value.absent(),
     required String name,
     this.description = const Value.absent(),
-    required double basePrice,
     this.image = const Value.absent(),
-    required String category,
+    required double basePrice,
     this.discountPercentage = const Value.absent(),
-    this.hasGlobalDiscount = const Value.absent(),
-    this.createdAt = const Value.absent(),
     this.maxSupplements = const Value.absent(),
+    this.category = const Value.absent(),
+    required DateTime createdAt,
   })  : name = Value(name),
         basePrice = Value(basePrice),
-        category = Value(category);
+        createdAt = Value(createdAt);
   static Insertable<Product> custom({
     Expression<int>? id,
     Expression<String>? name,
     Expression<String>? description,
-    Expression<double>? basePrice,
     Expression<String>? image,
-    Expression<String>? category,
+    Expression<double>? basePrice,
     Expression<double>? discountPercentage,
-    Expression<bool>? hasGlobalDiscount,
-    Expression<DateTime>? createdAt,
     Expression<int>? maxSupplements,
+    Expression<String>? category,
+    Expression<DateTime>? createdAt,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (name != null) 'name': name,
       if (description != null) 'description': description,
-      if (basePrice != null) 'base_price': basePrice,
       if (image != null) 'image': image,
-      if (category != null) 'category': category,
+      if (basePrice != null) 'base_price': basePrice,
       if (discountPercentage != null) 'discount_percentage': discountPercentage,
-      if (hasGlobalDiscount != null) 'has_global_discount': hasGlobalDiscount,
-      if (createdAt != null) 'created_at': createdAt,
       if (maxSupplements != null) 'max_supplements': maxSupplements,
+      if (category != null) 'category': category,
+      if (createdAt != null) 'created_at': createdAt,
     });
   }
 
@@ -447,24 +403,22 @@ class ProductsCompanion extends UpdateCompanion<Product> {
       {Value<int>? id,
       Value<String>? name,
       Value<String?>? description,
-      Value<double>? basePrice,
       Value<String?>? image,
-      Value<String>? category,
+      Value<double>? basePrice,
       Value<double>? discountPercentage,
-      Value<bool>? hasGlobalDiscount,
-      Value<DateTime>? createdAt,
-      Value<int?>? maxSupplements}) {
+      Value<int?>? maxSupplements,
+      Value<String?>? category,
+      Value<DateTime>? createdAt}) {
     return ProductsCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
       description: description ?? this.description,
-      basePrice: basePrice ?? this.basePrice,
       image: image ?? this.image,
-      category: category ?? this.category,
+      basePrice: basePrice ?? this.basePrice,
       discountPercentage: discountPercentage ?? this.discountPercentage,
-      hasGlobalDiscount: hasGlobalDiscount ?? this.hasGlobalDiscount,
-      createdAt: createdAt ?? this.createdAt,
       maxSupplements: maxSupplements ?? this.maxSupplements,
+      category: category ?? this.category,
+      createdAt: createdAt ?? this.createdAt,
     );
   }
 
@@ -480,26 +434,23 @@ class ProductsCompanion extends UpdateCompanion<Product> {
     if (description.present) {
       map['description'] = Variable<String>(description.value);
     }
-    if (basePrice.present) {
-      map['base_price'] = Variable<double>(basePrice.value);
-    }
     if (image.present) {
       map['image'] = Variable<String>(image.value);
     }
-    if (category.present) {
-      map['category'] = Variable<String>(category.value);
+    if (basePrice.present) {
+      map['base_price'] = Variable<double>(basePrice.value);
     }
     if (discountPercentage.present) {
       map['discount_percentage'] = Variable<double>(discountPercentage.value);
     }
-    if (hasGlobalDiscount.present) {
-      map['has_global_discount'] = Variable<bool>(hasGlobalDiscount.value);
+    if (maxSupplements.present) {
+      map['max_supplements'] = Variable<int>(maxSupplements.value);
+    }
+    if (category.present) {
+      map['category'] = Variable<String>(category.value);
     }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
-    }
-    if (maxSupplements.present) {
-      map['max_supplements'] = Variable<int>(maxSupplements.value);
     }
     return map;
   }
@@ -510,13 +461,12 @@ class ProductsCompanion extends UpdateCompanion<Product> {
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('description: $description, ')
-          ..write('basePrice: $basePrice, ')
           ..write('image: $image, ')
-          ..write('category: $category, ')
+          ..write('basePrice: $basePrice, ')
           ..write('discountPercentage: $discountPercentage, ')
-          ..write('hasGlobalDiscount: $hasGlobalDiscount, ')
-          ..write('createdAt: $createdAt, ')
-          ..write('maxSupplements: $maxSupplements')
+          ..write('maxSupplements: $maxSupplements, ')
+          ..write('category: $category, ')
+          ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
   }
@@ -863,6 +813,12 @@ class $OrdersTable extends Orders with TableInfo<$OrdersTable, Order> {
   late final GeneratedColumn<String> pickupTime = GeneratedColumn<String>(
       'pickup_time', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _paymentMethodMeta =
+      const VerificationMeta('paymentMethod');
+  @override
+  late final GeneratedColumn<String> paymentMethod = GeneratedColumn<String>(
+      'payment_method', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _totalMeta = const VerificationMeta('total');
   @override
   late final GeneratedColumn<double> total = GeneratedColumn<double>(
@@ -876,7 +832,7 @@ class $OrdersTable extends Orders with TableInfo<$OrdersTable, Order> {
       type: DriftSqlType.dateTime, requiredDuringInsert: true);
   @override
   List<GeneratedColumn> get $columns =>
-      [id, userId, referenceName, pickupTime, total, createdAt];
+      [id, userId, referenceName, pickupTime, paymentMethod, total, createdAt];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -908,6 +864,12 @@ class $OrdersTable extends Orders with TableInfo<$OrdersTable, Order> {
           pickupTime.isAcceptableOrUnknown(
               data['pickup_time']!, _pickupTimeMeta));
     }
+    if (data.containsKey('payment_method')) {
+      context.handle(
+          _paymentMethodMeta,
+          paymentMethod.isAcceptableOrUnknown(
+              data['payment_method']!, _paymentMethodMeta));
+    }
     if (data.containsKey('total')) {
       context.handle(
           _totalMeta, total.isAcceptableOrUnknown(data['total']!, _totalMeta));
@@ -937,6 +899,8 @@ class $OrdersTable extends Orders with TableInfo<$OrdersTable, Order> {
           .read(DriftSqlType.string, data['${effectivePrefix}reference_name']),
       pickupTime: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}pickup_time']),
+      paymentMethod: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}payment_method']),
       total: attachedDatabase.typeMapping
           .read(DriftSqlType.double, data['${effectivePrefix}total'])!,
       createdAt: attachedDatabase.typeMapping
@@ -955,6 +919,7 @@ class Order extends DataClass implements Insertable<Order> {
   final String userId;
   final String? referenceName;
   final String? pickupTime;
+  final String? paymentMethod;
   final double total;
   final DateTime createdAt;
   const Order(
@@ -962,6 +927,7 @@ class Order extends DataClass implements Insertable<Order> {
       required this.userId,
       this.referenceName,
       this.pickupTime,
+      this.paymentMethod,
       required this.total,
       required this.createdAt});
   @override
@@ -974,6 +940,9 @@ class Order extends DataClass implements Insertable<Order> {
     }
     if (!nullToAbsent || pickupTime != null) {
       map['pickup_time'] = Variable<String>(pickupTime);
+    }
+    if (!nullToAbsent || paymentMethod != null) {
+      map['payment_method'] = Variable<String>(paymentMethod);
     }
     map['total'] = Variable<double>(total);
     map['created_at'] = Variable<DateTime>(createdAt);
@@ -990,6 +959,9 @@ class Order extends DataClass implements Insertable<Order> {
       pickupTime: pickupTime == null && nullToAbsent
           ? const Value.absent()
           : Value(pickupTime),
+      paymentMethod: paymentMethod == null && nullToAbsent
+          ? const Value.absent()
+          : Value(paymentMethod),
       total: Value(total),
       createdAt: Value(createdAt),
     );
@@ -1003,6 +975,7 @@ class Order extends DataClass implements Insertable<Order> {
       userId: serializer.fromJson<String>(json['userId']),
       referenceName: serializer.fromJson<String?>(json['referenceName']),
       pickupTime: serializer.fromJson<String?>(json['pickupTime']),
+      paymentMethod: serializer.fromJson<String?>(json['paymentMethod']),
       total: serializer.fromJson<double>(json['total']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
@@ -1015,6 +988,7 @@ class Order extends DataClass implements Insertable<Order> {
       'userId': serializer.toJson<String>(userId),
       'referenceName': serializer.toJson<String?>(referenceName),
       'pickupTime': serializer.toJson<String?>(pickupTime),
+      'paymentMethod': serializer.toJson<String?>(paymentMethod),
       'total': serializer.toJson<double>(total),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
@@ -1025,6 +999,7 @@ class Order extends DataClass implements Insertable<Order> {
           String? userId,
           Value<String?> referenceName = const Value.absent(),
           Value<String?> pickupTime = const Value.absent(),
+          Value<String?> paymentMethod = const Value.absent(),
           double? total,
           DateTime? createdAt}) =>
       Order(
@@ -1033,6 +1008,8 @@ class Order extends DataClass implements Insertable<Order> {
         referenceName:
             referenceName.present ? referenceName.value : this.referenceName,
         pickupTime: pickupTime.present ? pickupTime.value : this.pickupTime,
+        paymentMethod:
+            paymentMethod.present ? paymentMethod.value : this.paymentMethod,
         total: total ?? this.total,
         createdAt: createdAt ?? this.createdAt,
       );
@@ -1045,6 +1022,9 @@ class Order extends DataClass implements Insertable<Order> {
           : this.referenceName,
       pickupTime:
           data.pickupTime.present ? data.pickupTime.value : this.pickupTime,
+      paymentMethod: data.paymentMethod.present
+          ? data.paymentMethod.value
+          : this.paymentMethod,
       total: data.total.present ? data.total.value : this.total,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
@@ -1057,6 +1037,7 @@ class Order extends DataClass implements Insertable<Order> {
           ..write('userId: $userId, ')
           ..write('referenceName: $referenceName, ')
           ..write('pickupTime: $pickupTime, ')
+          ..write('paymentMethod: $paymentMethod, ')
           ..write('total: $total, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
@@ -1064,8 +1045,8 @@ class Order extends DataClass implements Insertable<Order> {
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, userId, referenceName, pickupTime, total, createdAt);
+  int get hashCode => Object.hash(
+      id, userId, referenceName, pickupTime, paymentMethod, total, createdAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1074,6 +1055,7 @@ class Order extends DataClass implements Insertable<Order> {
           other.userId == this.userId &&
           other.referenceName == this.referenceName &&
           other.pickupTime == this.pickupTime &&
+          other.paymentMethod == this.paymentMethod &&
           other.total == this.total &&
           other.createdAt == this.createdAt);
 }
@@ -1083,6 +1065,7 @@ class OrdersCompanion extends UpdateCompanion<Order> {
   final Value<String> userId;
   final Value<String?> referenceName;
   final Value<String?> pickupTime;
+  final Value<String?> paymentMethod;
   final Value<double> total;
   final Value<DateTime> createdAt;
   const OrdersCompanion({
@@ -1090,6 +1073,7 @@ class OrdersCompanion extends UpdateCompanion<Order> {
     this.userId = const Value.absent(),
     this.referenceName = const Value.absent(),
     this.pickupTime = const Value.absent(),
+    this.paymentMethod = const Value.absent(),
     this.total = const Value.absent(),
     this.createdAt = const Value.absent(),
   });
@@ -1098,6 +1082,7 @@ class OrdersCompanion extends UpdateCompanion<Order> {
     required String userId,
     this.referenceName = const Value.absent(),
     this.pickupTime = const Value.absent(),
+    this.paymentMethod = const Value.absent(),
     required double total,
     required DateTime createdAt,
   })  : userId = Value(userId),
@@ -1108,6 +1093,7 @@ class OrdersCompanion extends UpdateCompanion<Order> {
     Expression<String>? userId,
     Expression<String>? referenceName,
     Expression<String>? pickupTime,
+    Expression<String>? paymentMethod,
     Expression<double>? total,
     Expression<DateTime>? createdAt,
   }) {
@@ -1116,6 +1102,7 @@ class OrdersCompanion extends UpdateCompanion<Order> {
       if (userId != null) 'user_id': userId,
       if (referenceName != null) 'reference_name': referenceName,
       if (pickupTime != null) 'pickup_time': pickupTime,
+      if (paymentMethod != null) 'payment_method': paymentMethod,
       if (total != null) 'total': total,
       if (createdAt != null) 'created_at': createdAt,
     });
@@ -1126,6 +1113,7 @@ class OrdersCompanion extends UpdateCompanion<Order> {
       Value<String>? userId,
       Value<String?>? referenceName,
       Value<String?>? pickupTime,
+      Value<String?>? paymentMethod,
       Value<double>? total,
       Value<DateTime>? createdAt}) {
     return OrdersCompanion(
@@ -1133,6 +1121,7 @@ class OrdersCompanion extends UpdateCompanion<Order> {
       userId: userId ?? this.userId,
       referenceName: referenceName ?? this.referenceName,
       pickupTime: pickupTime ?? this.pickupTime,
+      paymentMethod: paymentMethod ?? this.paymentMethod,
       total: total ?? this.total,
       createdAt: createdAt ?? this.createdAt,
     );
@@ -1153,6 +1142,9 @@ class OrdersCompanion extends UpdateCompanion<Order> {
     if (pickupTime.present) {
       map['pickup_time'] = Variable<String>(pickupTime.value);
     }
+    if (paymentMethod.present) {
+      map['payment_method'] = Variable<String>(paymentMethod.value);
+    }
     if (total.present) {
       map['total'] = Variable<double>(total.value);
     }
@@ -1169,6 +1161,7 @@ class OrdersCompanion extends UpdateCompanion<Order> {
           ..write('userId: $userId, ')
           ..write('referenceName: $referenceName, ')
           ..write('pickupTime: $pickupTime, ')
+          ..write('paymentMethod: $paymentMethod, ')
           ..write('total: $total, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
@@ -4062,25 +4055,23 @@ typedef $$ProductsTableCreateCompanionBuilder = ProductsCompanion Function({
   Value<int> id,
   required String name,
   Value<String?> description,
-  required double basePrice,
   Value<String?> image,
-  required String category,
+  required double basePrice,
   Value<double> discountPercentage,
-  Value<bool> hasGlobalDiscount,
-  Value<DateTime> createdAt,
   Value<int?> maxSupplements,
+  Value<String?> category,
+  required DateTime createdAt,
 });
 typedef $$ProductsTableUpdateCompanionBuilder = ProductsCompanion Function({
   Value<int> id,
   Value<String> name,
   Value<String?> description,
-  Value<double> basePrice,
   Value<String?> image,
-  Value<String> category,
+  Value<double> basePrice,
   Value<double> discountPercentage,
-  Value<bool> hasGlobalDiscount,
-  Value<DateTime> createdAt,
   Value<int?> maxSupplements,
+  Value<String?> category,
+  Value<DateTime> createdAt,
 });
 
 final class $$ProductsTableReferences
@@ -4140,29 +4131,25 @@ class $$ProductsTableFilterComposer
   ColumnFilters<String> get description => $composableBuilder(
       column: $table.description, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<double> get basePrice => $composableBuilder(
-      column: $table.basePrice, builder: (column) => ColumnFilters(column));
-
   ColumnFilters<String> get image => $composableBuilder(
       column: $table.image, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get category => $composableBuilder(
-      column: $table.category, builder: (column) => ColumnFilters(column));
+  ColumnFilters<double> get basePrice => $composableBuilder(
+      column: $table.basePrice, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<double> get discountPercentage => $composableBuilder(
       column: $table.discountPercentage,
       builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<bool> get hasGlobalDiscount => $composableBuilder(
-      column: $table.hasGlobalDiscount,
-      builder: (column) => ColumnFilters(column));
-
-  ColumnFilters<DateTime> get createdAt => $composableBuilder(
-      column: $table.createdAt, builder: (column) => ColumnFilters(column));
-
   ColumnFilters<int> get maxSupplements => $composableBuilder(
       column: $table.maxSupplements,
       builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get category => $composableBuilder(
+      column: $table.category, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
 
   Expression<bool> reviewsRefs(
       Expression<bool> Function($$ReviewsTableFilterComposer f) f) {
@@ -4227,29 +4214,25 @@ class $$ProductsTableOrderingComposer
   ColumnOrderings<String> get description => $composableBuilder(
       column: $table.description, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<double> get basePrice => $composableBuilder(
-      column: $table.basePrice, builder: (column) => ColumnOrderings(column));
-
   ColumnOrderings<String> get image => $composableBuilder(
       column: $table.image, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get category => $composableBuilder(
-      column: $table.category, builder: (column) => ColumnOrderings(column));
+  ColumnOrderings<double> get basePrice => $composableBuilder(
+      column: $table.basePrice, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<double> get discountPercentage => $composableBuilder(
       column: $table.discountPercentage,
       builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<bool> get hasGlobalDiscount => $composableBuilder(
-      column: $table.hasGlobalDiscount,
-      builder: (column) => ColumnOrderings(column));
-
-  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
-      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
-
   ColumnOrderings<int> get maxSupplements => $composableBuilder(
       column: $table.maxSupplements,
       builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get category => $composableBuilder(
+      column: $table.category, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
 }
 
 class $$ProductsTableAnnotationComposer
@@ -4270,26 +4253,23 @@ class $$ProductsTableAnnotationComposer
   GeneratedColumn<String> get description => $composableBuilder(
       column: $table.description, builder: (column) => column);
 
-  GeneratedColumn<double> get basePrice =>
-      $composableBuilder(column: $table.basePrice, builder: (column) => column);
-
   GeneratedColumn<String> get image =>
       $composableBuilder(column: $table.image, builder: (column) => column);
 
-  GeneratedColumn<String> get category =>
-      $composableBuilder(column: $table.category, builder: (column) => column);
+  GeneratedColumn<double> get basePrice =>
+      $composableBuilder(column: $table.basePrice, builder: (column) => column);
 
   GeneratedColumn<double> get discountPercentage => $composableBuilder(
       column: $table.discountPercentage, builder: (column) => column);
 
-  GeneratedColumn<bool> get hasGlobalDiscount => $composableBuilder(
-      column: $table.hasGlobalDiscount, builder: (column) => column);
+  GeneratedColumn<int> get maxSupplements => $composableBuilder(
+      column: $table.maxSupplements, builder: (column) => column);
+
+  GeneratedColumn<String> get category =>
+      $composableBuilder(column: $table.category, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
-
-  GeneratedColumn<int> get maxSupplements => $composableBuilder(
-      column: $table.maxSupplements, builder: (column) => column);
 
   Expression<T> reviewsRefs<T extends Object>(
       Expression<T> Function($$ReviewsTableAnnotationComposer a) f) {
@@ -4363,49 +4343,45 @@ class $$ProductsTableTableManager extends RootTableManager<
             Value<int> id = const Value.absent(),
             Value<String> name = const Value.absent(),
             Value<String?> description = const Value.absent(),
-            Value<double> basePrice = const Value.absent(),
             Value<String?> image = const Value.absent(),
-            Value<String> category = const Value.absent(),
+            Value<double> basePrice = const Value.absent(),
             Value<double> discountPercentage = const Value.absent(),
-            Value<bool> hasGlobalDiscount = const Value.absent(),
-            Value<DateTime> createdAt = const Value.absent(),
             Value<int?> maxSupplements = const Value.absent(),
+            Value<String?> category = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
           }) =>
               ProductsCompanion(
             id: id,
             name: name,
             description: description,
-            basePrice: basePrice,
             image: image,
-            category: category,
+            basePrice: basePrice,
             discountPercentage: discountPercentage,
-            hasGlobalDiscount: hasGlobalDiscount,
-            createdAt: createdAt,
             maxSupplements: maxSupplements,
+            category: category,
+            createdAt: createdAt,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
             required String name,
             Value<String?> description = const Value.absent(),
-            required double basePrice,
             Value<String?> image = const Value.absent(),
-            required String category,
+            required double basePrice,
             Value<double> discountPercentage = const Value.absent(),
-            Value<bool> hasGlobalDiscount = const Value.absent(),
-            Value<DateTime> createdAt = const Value.absent(),
             Value<int?> maxSupplements = const Value.absent(),
+            Value<String?> category = const Value.absent(),
+            required DateTime createdAt,
           }) =>
               ProductsCompanion.insert(
             id: id,
             name: name,
             description: description,
-            basePrice: basePrice,
             image: image,
-            category: category,
+            basePrice: basePrice,
             discountPercentage: discountPercentage,
-            hasGlobalDiscount: hasGlobalDiscount,
-            createdAt: createdAt,
             maxSupplements: maxSupplements,
+            category: category,
+            createdAt: createdAt,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) =>
@@ -4719,6 +4695,7 @@ typedef $$OrdersTableCreateCompanionBuilder = OrdersCompanion Function({
   required String userId,
   Value<String?> referenceName,
   Value<String?> pickupTime,
+  Value<String?> paymentMethod,
   required double total,
   required DateTime createdAt,
 });
@@ -4727,6 +4704,7 @@ typedef $$OrdersTableUpdateCompanionBuilder = OrdersCompanion Function({
   Value<String> userId,
   Value<String?> referenceName,
   Value<String?> pickupTime,
+  Value<String?> paymentMethod,
   Value<double> total,
   Value<DateTime> createdAt,
 });
@@ -4770,6 +4748,9 @@ class $$OrdersTableFilterComposer
 
   ColumnFilters<String> get pickupTime => $composableBuilder(
       column: $table.pickupTime, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get paymentMethod => $composableBuilder(
+      column: $table.paymentMethod, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<double> get total => $composableBuilder(
       column: $table.total, builder: (column) => ColumnFilters(column));
@@ -4821,6 +4802,10 @@ class $$OrdersTableOrderingComposer
   ColumnOrderings<String> get pickupTime => $composableBuilder(
       column: $table.pickupTime, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get paymentMethod => $composableBuilder(
+      column: $table.paymentMethod,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<double> get total => $composableBuilder(
       column: $table.total, builder: (column) => ColumnOrderings(column));
 
@@ -4848,6 +4833,9 @@ class $$OrdersTableAnnotationComposer
 
   GeneratedColumn<String> get pickupTime => $composableBuilder(
       column: $table.pickupTime, builder: (column) => column);
+
+  GeneratedColumn<String> get paymentMethod => $composableBuilder(
+      column: $table.paymentMethod, builder: (column) => column);
 
   GeneratedColumn<double> get total =>
       $composableBuilder(column: $table.total, builder: (column) => column);
@@ -4904,6 +4892,7 @@ class $$OrdersTableTableManager extends RootTableManager<
             Value<String> userId = const Value.absent(),
             Value<String?> referenceName = const Value.absent(),
             Value<String?> pickupTime = const Value.absent(),
+            Value<String?> paymentMethod = const Value.absent(),
             Value<double> total = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
           }) =>
@@ -4912,6 +4901,7 @@ class $$OrdersTableTableManager extends RootTableManager<
             userId: userId,
             referenceName: referenceName,
             pickupTime: pickupTime,
+            paymentMethod: paymentMethod,
             total: total,
             createdAt: createdAt,
           ),
@@ -4920,6 +4910,7 @@ class $$OrdersTableTableManager extends RootTableManager<
             required String userId,
             Value<String?> referenceName = const Value.absent(),
             Value<String?> pickupTime = const Value.absent(),
+            Value<String?> paymentMethod = const Value.absent(),
             required double total,
             required DateTime createdAt,
           }) =>
@@ -4928,6 +4919,7 @@ class $$OrdersTableTableManager extends RootTableManager<
             userId: userId,
             referenceName: referenceName,
             pickupTime: pickupTime,
+            paymentMethod: paymentMethod,
             total: total,
             createdAt: createdAt,
           ),

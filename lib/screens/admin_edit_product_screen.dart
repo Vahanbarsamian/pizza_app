@@ -22,7 +22,7 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
   late bool _isEditing;
   List<int> _selectedIngredientIds = [];
   bool _isLoading = false;
-  int _maxSupplementsValue = 4;
+  int _maxSupplementsValue = 4; // For the stepper
 
   @override
   void initState() {
@@ -36,6 +36,7 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
       _maxSupplementsValue = product.maxSupplements ?? 4;
 
       final db = Provider.of<AppDatabase>(context, listen: false);
+      // Query only the links to get specifically associated ingredients
       final query = db.select(db.productIngredientLinks)..where((link) => link.productId.equals(product.id));
       query.get().then((links) {
           if (mounted) {
@@ -79,7 +80,7 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
         Navigator.of(context).pop();
       }
     } catch (e, stacktrace) {
-      debugPrint('Erreur lors de la sauvegarde: $e\n$stacktrace');
+      debugPrint('Erreur lors de la sauvegarde: $e\\n$stacktrace');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e')));
       }
@@ -94,13 +95,6 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_isEditing ? 'Modifier la Pizza' : 'Nouvelle Pizza'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.arrow_forward),
-            tooltip: 'Retour',
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -125,6 +119,7 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
                               const SizedBox(height: 12),
                               TextField(controller: _descriptionController, decoration: const InputDecoration(labelText: 'Description', border: OutlineInputBorder()), maxLines: 3),
                               const SizedBox(height: 20),
+                              // ✅ Stepper implementation
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
@@ -171,13 +166,14 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
                         itemCount: allIngredients.length,
                         itemBuilder: (context, index) {
                           final ingredient = allIngredients[index];
+                          // ✅ Overflow fix
                           return Container(
                             decoration: BoxDecoration(
                               border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
                             ),
                             child: CheckboxListTile(
                               title: Text(ingredient.name),
-                              subtitle: Text('+ ${ingredient.price.toStringAsFixed(2)} €'),
+                              subtitle: Text('+ \${ingredient.price.toStringAsFixed(2)} €'),
                               value: _selectedIngredientIds.contains(ingredient.id),
                               onChanged: (bool? selected) {
                                 setState(() {
@@ -227,7 +223,7 @@ class _CardHeader extends StatelessWidget {
   }
 }
 
-// ✅ CORRIGÉ: Ajout de Expanded pour éviter l'overflow
+// ✅ Overflow fix
 class _ListHeader extends StatelessWidget {
   final String title;
   final IconData icon;
@@ -242,7 +238,7 @@ class _ListHeader extends StatelessWidget {
           Icon(icon, color: Colors.grey.shade700, size: 22),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(title, style: Theme.of(context).textTheme.titleLarge),
+            child: Text(title, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 18)),
           ),
         ],
       ),

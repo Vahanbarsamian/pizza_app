@@ -4,7 +4,6 @@ import 'package:drift/native.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 
-// Import des modèles de table
 import 'product.dart';
 import 'user.dart';
 import 'order.dart';
@@ -35,7 +34,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 18;
+  int get schemaVersion => 19; // ✅ Version incrémentée
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -43,6 +42,8 @@ class AppDatabase extends _$AppDatabase {
           await m.createAll();
         },
         onUpgrade: (m, from, to) async {
+          // Pour le développement, nous recréons simplement tout.
+          // Pour la production, une migration plus fine serait nécessaire.
           for (final table in allTables) {
             await m.deleteTable(table.actualTableName);
           }
@@ -50,12 +51,11 @@ class AppDatabase extends _$AppDatabase {
         },
       );
 
-  // ✅ CORRIGÉ: Ré-ajout des méthodes de gestion du panier
+  // --- REQUÊTES PANIER LOCAL ---
   Future<List<SavedCartItem>> getAllSavedCartItems() => select(savedCartItems).get();
   Future<void> saveCartItem(SavedCartItemsCompanion item) => into(savedCartItems).insert(item, mode: InsertMode.replace);
   Future<void> deleteCartItem(String uniqueId) => (delete(savedCartItems)..where((tbl) => tbl.uniqueId.equals(uniqueId))).go();
   Future<void> clearSavedCart() => delete(savedCartItems).go();
-
 
   // --- AUTRES REQUÊTES ---
   Stream<List<Product>> watchAllProducts() => (select(products)..orderBy([(p) => OrderingTerm(expression: p.createdAt, mode: OrderingMode.desc)])).watch();

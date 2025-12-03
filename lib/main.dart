@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:intl/date_symbol_data_local.dart'; // ✅ NOUVEAU
 
 import 'database/app_database.dart';
 import 'services/auth_service.dart';
@@ -13,6 +14,9 @@ import 'screens/main_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // ✅ NOUVEAU: Initialisation pour le formatage des dates en français
+  await initializeDateFormatting('fr_FR', null);
 
   await dotenv.load(fileName: ".env");
 
@@ -36,7 +40,6 @@ class MyApp extends StatelessWidget {
       providers: [
         Provider<AppDatabase>.value(value: database),
         ChangeNotifierProvider(create: (_) => AuthService()),
-        // ✅ CORRIGÉ: Le CartService a maintenant besoin de la base de données
         ChangeNotifierProxyProvider<AppDatabase, CartService>(
           create: (context) => CartService(context.read<AppDatabase>()),
           update: (_, db, cart) => cart!,

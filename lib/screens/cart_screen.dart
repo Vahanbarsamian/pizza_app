@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../services/cart_service.dart';
 import '../services/order_service.dart';
 import '../services/auth_service.dart';
+import '../services/sync_service.dart'; // ✅ NOUVEAU
 
 class CartScreen extends StatelessWidget {
   const CartScreen({super.key});
@@ -11,7 +12,9 @@ class CartScreen extends StatelessWidget {
   Future<void> _checkout(BuildContext context) async {
     final cart = context.read<CartService>();
     final orderService = context.read<OrderService>();
-    final user = context.read<AuthService>().currentUser;
+    final authService = context.read<AuthService>();
+    final syncService = context.read<SyncService>(); // ✅ NOUVEAU
+    final user = authService.currentUser;
 
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Erreur: Utilisateur non connecté.')));
@@ -23,49 +26,80 @@ class CartScreen extends StatelessWidget {
       builder: (BuildContext dialogContext) {
         final nameController = TextEditingController(text: cart.temporaryReferenceName);
         final timeController = TextEditingController(text: cart.temporaryPickupTime);
-        return AlertDialog(
-          title: const Text('Finaliser la commande'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(labelText: 'Nom pour la commande', hintText: 'Ex: Paul'),
-                autofocus: true,
+        String paymentMethod = 'Carte Bleue';
+
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Finaliser la commande'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextField(
+                      controller: nameController,
+                      decoration: const InputDecoration(labelText: 'Nom pour la commande', hintText: 'Ex: Paul'),
+                      autofocus: true,
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: timeController,
+                      decoration: const InputDecoration(labelText: 'Heure de retrait souhaitée', hintText: 'Ex: 19h30'),
+                    ),
+                    const SizedBox(height: 24),
+                    Text('Mode de paiement:', style: Theme.of(context).textTheme.titleSmall),
+                    RadioListTile<String>(
+                      title: const Text('Carte Bleue'),
+                      value: 'Carte Bleue',
+                      groupValue: paymentMethod,
+                      onChanged: (value) => setState(() => paymentMethod = value!),
+                    ),
+                    RadioListTile<String>(
+                      title: const Text('Paypal'),
+                      value: 'Paypal',
+                      groupValue: paymentMethod,
+                      onChanged: (value) => setState(() => paymentMethod = value!),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: timeController,
-                decoration: const InputDecoration(labelText: 'Heure de retrait souhaitée', hintText: 'Ex: 19h30'),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: const Text('Annuler')),
-            ElevatedButton(
-              onPressed: () {
-                if (nameController.text.isNotEmpty && timeController.text.isNotEmpty) {
-                  cart.temporaryReferenceName = nameController.text;
-                  cart.temporaryPickupTime = timeController.text;
-                  Navigator.of(dialogContext).pop({
-                    'name': nameController.text,
-                    'time': timeController.text,
-                  });
-                }
-              },
-              child: const Text('Valider'),
-            ),
-          ],
+              actions: [
+                TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: const Text('Annuler')),
+                ElevatedButton(
+                  onPressed: () {
+                    if (nameController.text.isNotEmpty && timeController.text.isNotEmpty) {
+                      cart.temporaryReferenceName = nameController.text;
+                      cart.temporaryPickupTime = timeController.text;
+                      Navigator.of(dialogContext).pop({
+                        'name': nameController.text,
+                        'time': timeController.text,
+                        'payment': paymentMethod,
+                      });
+                    }
+                  },
+                  child: const Text('Valider'),
+                ),
+              ],
+            );
+          },
         );
       },
     );
 
-    if (orderDetails == null) return; 
+    if (orderDetails == null) return;
     final referenceName = orderDetails['name']!;
     final pickupTime = orderDetails['time']!;
+    final paymentMethod = orderDetails['payment']!;
 
     try {
-      await orderService.createOrderFromCart(cart, user.id, referenceName, pickupTime);
+      // Étape 1: Créer la commande sur le serveur
+      await orderService.createOrderFromCart(cart, user.id, referenceName, pickupTime, paymentMethod);
+
+      // ✅ NOUVEAU: Étape 2: Forcer la resynchronisation des données locales
+      await syncService.syncAll();
+      
+      // Étape 3: Vider le panier local
       cart.clearCart();
 
       if (context.mounted) {
@@ -107,7 +141,6 @@ class CartScreen extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text('${(item.finalPrice * item.quantity).toStringAsFixed(2)} €'),
-                      // ✅ NOUVEAU: Ajout de la corbeille
                       IconButton(
                         icon: const Icon(Icons.delete_outline, color: Colors.red),
                         tooltip: 'Supprimer complètement',

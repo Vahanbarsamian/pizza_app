@@ -1,139 +1,163 @@
-import 'package:flutter/foundation.dart';
-import 'package:drift/drift.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:drift/drift.dart';
 
-import '../database/app_database.dart' as local_db;
+import '../database/app_database.dart';
 
 class SyncService {
-  final local_db.AppDatabase db;
-  final SupabaseClient supabase = Supabase.instance.client;
+  final AppDatabase db;
+  final SupabaseClient _supabase = Supabase.instance.client;
 
   SyncService({required this.db});
 
   Future<void> syncAll() async {
-    await _syncTable('products', db.products, (data) async {
+    await _syncProducts();
+    await _syncIngredients();
+    await _syncProductIngredientLinks();
+    await _syncAnnouncements();
+    await _syncCompanyInfo();
+    await _syncOrders();
+    await _syncOrderItems();
+  }
+
+  Future<void> _syncProducts() async {
+    final response = await _supabase.from('products').select();
+    final productsToSync = response.map((item) => ProductsCompanion.insert(
+        id: Value(item['id']),
+        name: item['name'],
+        description: Value(item['description']),
+        image: Value(item['image']),
+        basePrice: item['base_price'],
+        discountPercentage: Value(item['discount_percentage'] ?? 0.0),
+        maxSupplements: Value(item['max_supplements'] ?? 4),
+        category: Value(item['category']),
+        createdAt: DateTime.parse(item['created_at']),
+    )).toList();
+
+    await db.transaction(() async {
+      await db.delete(db.products).go();
       await db.batch((batch) {
-        batch.insertAll(db.products, data.map((row) => local_db.ProductsCompanion(
-          id: Value(row['id'] as int),
-          name: Value(row['name'] as String),
-          description: Value(row['description'] as String?),
-          basePrice: Value((row['base_price'] as num).toDouble()),
-          image: Value(row['image'] as String?),
-          category: Value(row['category'] as String),
-          discountPercentage: Value((row['discount_percentage'] as num?)?.toDouble() ?? 0.0),
-          hasGlobalDiscount: Value(row['has_global_discount'] as bool? ?? false),
-          createdAt: Value(DateTime.parse(row['created_at'])),
-          maxSupplements: Value(row['max_supplements'] as int?),
-        )));
-      });
-    });
-    await _syncTable('ingredients', db.ingredients, (data) async {
-      await db.batch((batch) {
-         batch.insertAll(db.ingredients, data.map((row) => local_db.IngredientsCompanion(
-            id: Value(row['id'] as int),
-            name: Value(row['name'] as String),
-            price: Value((row['price'] as num).toDouble()),
-            category: Value(row['category'] as String?),
-            createdAt: Value(DateTime.parse(row['created_at'])),
-         )));
-      });
-    });
-    await _syncTable('product_ingredient_links', db.productIngredientLinks, (data) async {
-       await db.batch((batch) {
-          batch.insertAll(db.productIngredientLinks, data.map((row) => local_db.ProductIngredientLinksCompanion(
-            productId: Value(row['product_id'] as int),
-            ingredientId: Value(row['ingredient_id'] as int),
-          )));
-       });
-    });
-    await _syncTable('announcements', db.announcements, (data) async {
-        await db.batch((batch) {
-          batch.insertAll(db.announcements, data.map((row) => local_db.AnnouncementsCompanion(
-              id: Value(row['id'] as int),
-              title: Value(row['title'] as String),
-              announcementText: Value(row['announcement_text'] as String?),
-              description: Value(row['description'] as String?),
-              imageUrl: Value(row['image_url'] as String?),
-              conclusion: Value(row['conclusion'] as String?),
-              isActive: Value(row['is_active'] as bool? ?? true),
-              createdAt: Value(DateTime.parse(row['created_at'])),
-          )));
-        });
-    });
-    await _syncTable('company_info', db.companyInfo, (data) async {
-        await db.batch((batch) {
-           batch.insertAll(db.companyInfo, data.map((row) => local_db.CompanyInfoCompanion(
-              id: Value(row['id'] as int),
-              name: Value(row['name'] as String?),
-              presentation: Value(row['presentation'] as String?),
-              address: Value(row['address'] as String?),
-              phone: Value(row['phone'] as String?),
-              email: Value(row['email'] as String?),
-              facebookUrl: Value(row['facebook_url'] as String?),
-              instagramUrl: Value(row['instagram_url'] as String?),
-              xUrl: Value(row['x_url'] as String?),
-              whatsappPhone: Value(row['whatsapp_phone'] as String?),
-              latitude: Value((row['latitude'] as num?)?.toDouble()),
-              longitude: Value((row['longitude'] as num?)?.toDouble()),
-           )));
-        });
-    });
-    await _syncTable('reviews', db.reviews, (data) async {
-      await db.batch((batch) {
-        batch.insertAll(db.reviews, data.map((row) => local_db.ReviewsCompanion(
-            id: Value(row['id'] as int),
-            productId: Value(row['product_id'] as int),
-            userId: Value(row['user_id'] as String),
-            rating: Value(row['rating'] as int),
-            comment: Value(row['comment'] as String?),
-            createdAt: Value(DateTime.parse(row['created_at'])),
-        )));
-      });
-    });
-    await _syncTable('users', db.users, (data) async {
-      await db.batch((batch) {
-        batch.insertAll(db.users, data.map((row) => local_db.UsersCompanion(
-            id: Value(row['id'] as String),
-            name: Value(row['name'] as String?),
-            email: Value(row['email'] as String),
-            postalCode: Value(row['postal_code'] as String?),
-            createdAt: Value(DateTime.parse(row['created_at'])),
-        )));
-      });
-    });
-    await _syncTable('admins', db.admins, (data) async {
-      await db.batch((batch) {
-        batch.insertAll(db.admins, data.map((row) => local_db.AdminsCompanion(
-            id: Value(row['id'] as String),
-            email: Value(row['email'] as String),
-            role: Value(row['role'] as String),
-            createdAt: Value(DateTime.parse(row['created_at'])),
-        )));
+        batch.insertAll(db.products, productsToSync);
       });
     });
   }
 
-  Future<void> _syncTable(String tableName, TableInfo table, Future<void> Function(List<Map<String, dynamic>>) inserter) async {
-    if (kDebugMode) {
-      debugPrint("[SyncService] 🔄 Sync $tableName...");
-    }
-    try {
-      final response = await supabase.from(tableName).select();
-      final data = (response as List).cast<Map<String, dynamic>>();
-      await db.transaction(() async {
-        await db.delete(table).go();
-        if (data.isNotEmpty) {
-          await inserter(data);
-        }
+  Future<void> _syncIngredients() async {
+    final response = await _supabase.from('ingredients').select();
+    final ingredientsToSync = response.map((item) => IngredientsCompanion.insert(
+        id: Value(item['id']),
+        name: item['name'],
+        price: item['price'],
+        category: Value(item['category']),
+        isGlobal: Value(item['is_global'] ?? false),
+        createdAt: Value(DateTime.parse(item['created_at'])),
+    )).toList();
+
+    await db.transaction(() async {
+      await db.delete(db.ingredients).go();
+      await db.batch((batch) {
+        batch.insertAll(db.ingredients, ingredientsToSync);
       });
-      if (kDebugMode) {
-        debugPrint("[SyncService] ✅ ${data.length} $tableName synchronisés.");
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint("[SyncService] ❌ Erreur sync $tableName: $e");
-      }
-      rethrow;
+    });
+  }
+
+  Future<void> _syncProductIngredientLinks() async {
+    final response = await _supabase.from('product_ingredient_links').select();
+    final linksToSync = response.map((item) => ProductIngredientLinksCompanion.insert(
+        productId: item['product_id'],
+        ingredientId: item['ingredient_id'],
+    )).toList();
+
+    await db.transaction(() async {
+      await db.delete(db.productIngredientLinks).go();
+      await db.batch((batch) {
+        batch.insertAll(db.productIngredientLinks, linksToSync);
+      });
+    });
+  }
+
+  Future<void> _syncOrders() async {
+    final response = await _supabase.from('orders').select();
+    final ordersToSync = response.map((item) => OrdersCompanion.insert(
+        id: Value(item['id']),
+        userId: item['user_id'],
+        total: item['total'] is int ? (item['total'] as int).toDouble() : item['total'],
+        referenceName: Value(item['reference_name']),
+        pickupTime: Value(item['pickup_time']),
+        paymentMethod: Value(item['payment_method']), // ✅ CORRIGÉ
+        createdAt: DateTime.parse(item['created_at']),
+    )).toList();
+
+    await db.transaction(() async {
+      await db.delete(db.orders).go();
+      await db.batch((batch) {
+        batch.insertAll(db.orders, ordersToSync);
+      });
+    });
+  }
+
+  Future<void> _syncOrderItems() async {
+    final response = await _supabase.from('order_items').select();
+    final itemsToSync = response.map((item) => OrderItemsCompanion.insert(
+        id: Value(item['id']),
+        orderId: item['order_id'],
+        productId: item['product_id'],
+        quantity: item['quantity'],
+        unitPrice: item['unit_price'] is int ? (item['unit_price'] as int).toDouble() : item['unit_price'],
+        productName: item['product_name'],
+        optionsDescription: Value(item['options_description']),
+    )).toList();
+
+    await db.transaction(() async {
+      await db.delete(db.orderItems).go();
+      await db.batch((batch) {
+        batch.insertAll(db.orderItems, itemsToSync);
+      });
+    });
+  }
+
+  Future<void> _syncAnnouncements() async {
+    final response = await _supabase.from('announcements').select();
+    final itemsToSync = response.map((item) => AnnouncementsCompanion.insert(
+        id: Value(item['id']),
+        title: item['title'],
+        announcementText: Value(item['announcement_text']),
+        description: Value(item['description']),
+        imageUrl: Value(item['image_url']),
+        conclusion: Value(item['conclusion']),
+        isActive: Value(item['is_active'] ?? true),
+        createdAt: Value(DateTime.parse(item['created_at'])),
+    )).toList();
+
+    await db.transaction(() async {
+      await db.delete(db.announcements).go();
+      await db.batch((batch) {
+        batch.insertAll(db.announcements, itemsToSync);
+      });
+    });
+  }
+
+  Future<void> _syncCompanyInfo() async {
+    final response = await _supabase.from('company_info').select().limit(1);
+    if (response.isNotEmpty) {
+      final info = response.first;
+      final infoToSync = CompanyInfoCompanion.insert(
+        id: Value(info['id']),
+        name: Value(info['name']),
+        presentation: Value(info['presentation']),
+        address: Value(info['address']),
+        phone: Value(info['phone']),
+        email: Value(info['email']),
+        facebookUrl: Value(info['facebook_url']),
+        instagramUrl: Value(info['instagram_url']),
+        xUrl: Value(info['x_url']),
+        whatsappPhone: Value(info['whatsapp_phone']),
+        latitude: Value(info['latitude']),
+        longitude: Value(info['longitude']),
+      );
+      await db.transaction(() async {
+        await db.delete(db.companyInfo).go();
+        await db.into(db.companyInfo).insert(infoToSync);
+      });
     }
   }
 }

@@ -7,7 +7,8 @@ class Orders extends Table {
   TextColumn get userId => text().named('user_id')();
   TextColumn get referenceName => text().named('reference_name').nullable()();
   TextColumn get pickupTime => text().named('pickup_time').nullable()();
-  RealColumn get total => real().named('total')(); // ✅ CORRIGÉ
+  TextColumn get paymentMethod => text().named('payment_method').nullable()(); // ✅ NOUVEAU
+  RealColumn get total => real().named('total')();
   DateTimeColumn get createdAt => dateTime().named('created_at')();
 }
 
