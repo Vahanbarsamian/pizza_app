@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 
 import '../database/app_database.dart' hide User;
 import '../services/auth_service.dart';
-import '../services/cart_service.dart';
 import '../services/sync_service.dart';
 import 'pizza_detail_screen.dart';
 import 'admin_screen.dart';
@@ -73,8 +72,8 @@ class _PizzaCardState extends State<PizzaCard> {
   double _elevation = 8.0;
 
   double _calculateFinalPrice(Product pizza) {
-    if (pizza.discountPercentage != null && pizza.discountPercentage! > 0) {
-      return pizza.basePrice * (1 - pizza.discountPercentage! / 100);
+    if (pizza.discountPercentage > 0) {
+      return pizza.basePrice * (1 - pizza.discountPercentage / 100);
     }
     return pizza.basePrice;
   }
@@ -83,7 +82,7 @@ class _PizzaCardState extends State<PizzaCard> {
   Widget build(BuildContext context) {
     final pizza = widget.pizza;
     final hasImage = pizza.image != null && pizza.image!.isNotEmpty;
-    final hasDiscount = pizza.discountPercentage != null && pizza.discountPercentage! > 0;
+    final hasDiscount = pizza.discountPercentage > 0;
     final finalPrice = _calculateFinalPrice(pizza);
     final isNew = DateTime.now().toUtc().difference(pizza.createdAt.toUtc()).inDays <= 15;
 
@@ -162,16 +161,12 @@ class _PizzaCardState extends State<PizzaCard> {
                                   ),
                                   children: <TextSpan>[
                                     TextSpan(text: '${finalPrice.toStringAsFixed(2)} '),
-                                    TextSpan(
-                                      text: '€ TTC',
-                                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                                    ),
+                                    const TextSpan(text: '€ TTC', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                                   ],
                                 ),
                               ),
                             ],
                           ),
-                          // ✅ CORRIGÉ: Affiche l'icône "info" uniquement pour les non-admins
                           if (!authService.isAdmin)
                             Icon(Icons.info_outline, size: 28, color: Colors.grey.shade400),
                         ],
@@ -207,10 +202,11 @@ class _PizzaCardState extends State<PizzaCard> {
                   child: const Text('PROMO', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 10)),
                 ),
               ),
+            // ✅ CORRIGÉ: Position du crayon ajustée à 0 pour un maximum d'espace.
             if (authService.isAdmin)
               Positioned(
-                bottom: 8,
-                right: 8,
+                bottom: 0, 
+                right: 0,
                 child: IconButton(
                   icon: const CircleAvatar(
                     backgroundColor: Colors.white70,

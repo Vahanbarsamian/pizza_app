@@ -3743,6 +3743,287 @@ class ProductIngredientLinksCompanion
   }
 }
 
+class $SavedCartItemsTable extends SavedCartItems
+    with TableInfo<$SavedCartItemsTable, SavedCartItem> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SavedCartItemsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _uniqueIdMeta =
+      const VerificationMeta('uniqueId');
+  @override
+  late final GeneratedColumn<String> uniqueId = GeneratedColumn<String>(
+      'unique_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _productIdMeta =
+      const VerificationMeta('productId');
+  @override
+  late final GeneratedColumn<int> productId = GeneratedColumn<int>(
+      'product_id', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _quantityMeta =
+      const VerificationMeta('quantity');
+  @override
+  late final GeneratedColumn<int> quantity = GeneratedColumn<int>(
+      'quantity', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _selectedIngredientsMeta =
+      const VerificationMeta('selectedIngredients');
+  @override
+  late final GeneratedColumn<String> selectedIngredients =
+      GeneratedColumn<String>('selected_ingredients', aliasedName, false,
+          type: DriftSqlType.string, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [uniqueId, productId, quantity, selectedIngredients];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'saved_cart_items';
+  @override
+  VerificationContext validateIntegrity(Insertable<SavedCartItem> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('unique_id')) {
+      context.handle(_uniqueIdMeta,
+          uniqueId.isAcceptableOrUnknown(data['unique_id']!, _uniqueIdMeta));
+    } else if (isInserting) {
+      context.missing(_uniqueIdMeta);
+    }
+    if (data.containsKey('product_id')) {
+      context.handle(_productIdMeta,
+          productId.isAcceptableOrUnknown(data['product_id']!, _productIdMeta));
+    } else if (isInserting) {
+      context.missing(_productIdMeta);
+    }
+    if (data.containsKey('quantity')) {
+      context.handle(_quantityMeta,
+          quantity.isAcceptableOrUnknown(data['quantity']!, _quantityMeta));
+    } else if (isInserting) {
+      context.missing(_quantityMeta);
+    }
+    if (data.containsKey('selected_ingredients')) {
+      context.handle(
+          _selectedIngredientsMeta,
+          selectedIngredients.isAcceptableOrUnknown(
+              data['selected_ingredients']!, _selectedIngredientsMeta));
+    } else if (isInserting) {
+      context.missing(_selectedIngredientsMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {uniqueId};
+  @override
+  SavedCartItem map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SavedCartItem(
+      uniqueId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}unique_id'])!,
+      productId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}product_id'])!,
+      quantity: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}quantity'])!,
+      selectedIngredients: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}selected_ingredients'])!,
+    );
+  }
+
+  @override
+  $SavedCartItemsTable createAlias(String alias) {
+    return $SavedCartItemsTable(attachedDatabase, alias);
+  }
+}
+
+class SavedCartItem extends DataClass implements Insertable<SavedCartItem> {
+  final String uniqueId;
+  final int productId;
+  final int quantity;
+  final String selectedIngredients;
+  const SavedCartItem(
+      {required this.uniqueId,
+      required this.productId,
+      required this.quantity,
+      required this.selectedIngredients});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['unique_id'] = Variable<String>(uniqueId);
+    map['product_id'] = Variable<int>(productId);
+    map['quantity'] = Variable<int>(quantity);
+    map['selected_ingredients'] = Variable<String>(selectedIngredients);
+    return map;
+  }
+
+  SavedCartItemsCompanion toCompanion(bool nullToAbsent) {
+    return SavedCartItemsCompanion(
+      uniqueId: Value(uniqueId),
+      productId: Value(productId),
+      quantity: Value(quantity),
+      selectedIngredients: Value(selectedIngredients),
+    );
+  }
+
+  factory SavedCartItem.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SavedCartItem(
+      uniqueId: serializer.fromJson<String>(json['uniqueId']),
+      productId: serializer.fromJson<int>(json['productId']),
+      quantity: serializer.fromJson<int>(json['quantity']),
+      selectedIngredients:
+          serializer.fromJson<String>(json['selectedIngredients']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'uniqueId': serializer.toJson<String>(uniqueId),
+      'productId': serializer.toJson<int>(productId),
+      'quantity': serializer.toJson<int>(quantity),
+      'selectedIngredients': serializer.toJson<String>(selectedIngredients),
+    };
+  }
+
+  SavedCartItem copyWith(
+          {String? uniqueId,
+          int? productId,
+          int? quantity,
+          String? selectedIngredients}) =>
+      SavedCartItem(
+        uniqueId: uniqueId ?? this.uniqueId,
+        productId: productId ?? this.productId,
+        quantity: quantity ?? this.quantity,
+        selectedIngredients: selectedIngredients ?? this.selectedIngredients,
+      );
+  SavedCartItem copyWithCompanion(SavedCartItemsCompanion data) {
+    return SavedCartItem(
+      uniqueId: data.uniqueId.present ? data.uniqueId.value : this.uniqueId,
+      productId: data.productId.present ? data.productId.value : this.productId,
+      quantity: data.quantity.present ? data.quantity.value : this.quantity,
+      selectedIngredients: data.selectedIngredients.present
+          ? data.selectedIngredients.value
+          : this.selectedIngredients,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SavedCartItem(')
+          ..write('uniqueId: $uniqueId, ')
+          ..write('productId: $productId, ')
+          ..write('quantity: $quantity, ')
+          ..write('selectedIngredients: $selectedIngredients')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(uniqueId, productId, quantity, selectedIngredients);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SavedCartItem &&
+          other.uniqueId == this.uniqueId &&
+          other.productId == this.productId &&
+          other.quantity == this.quantity &&
+          other.selectedIngredients == this.selectedIngredients);
+}
+
+class SavedCartItemsCompanion extends UpdateCompanion<SavedCartItem> {
+  final Value<String> uniqueId;
+  final Value<int> productId;
+  final Value<int> quantity;
+  final Value<String> selectedIngredients;
+  final Value<int> rowid;
+  const SavedCartItemsCompanion({
+    this.uniqueId = const Value.absent(),
+    this.productId = const Value.absent(),
+    this.quantity = const Value.absent(),
+    this.selectedIngredients = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SavedCartItemsCompanion.insert({
+    required String uniqueId,
+    required int productId,
+    required int quantity,
+    required String selectedIngredients,
+    this.rowid = const Value.absent(),
+  })  : uniqueId = Value(uniqueId),
+        productId = Value(productId),
+        quantity = Value(quantity),
+        selectedIngredients = Value(selectedIngredients);
+  static Insertable<SavedCartItem> custom({
+    Expression<String>? uniqueId,
+    Expression<int>? productId,
+    Expression<int>? quantity,
+    Expression<String>? selectedIngredients,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (uniqueId != null) 'unique_id': uniqueId,
+      if (productId != null) 'product_id': productId,
+      if (quantity != null) 'quantity': quantity,
+      if (selectedIngredients != null)
+        'selected_ingredients': selectedIngredients,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SavedCartItemsCompanion copyWith(
+      {Value<String>? uniqueId,
+      Value<int>? productId,
+      Value<int>? quantity,
+      Value<String>? selectedIngredients,
+      Value<int>? rowid}) {
+    return SavedCartItemsCompanion(
+      uniqueId: uniqueId ?? this.uniqueId,
+      productId: productId ?? this.productId,
+      quantity: quantity ?? this.quantity,
+      selectedIngredients: selectedIngredients ?? this.selectedIngredients,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (uniqueId.present) {
+      map['unique_id'] = Variable<String>(uniqueId.value);
+    }
+    if (productId.present) {
+      map['product_id'] = Variable<int>(productId.value);
+    }
+    if (quantity.present) {
+      map['quantity'] = Variable<int>(quantity.value);
+    }
+    if (selectedIngredients.present) {
+      map['selected_ingredients'] = Variable<String>(selectedIngredients.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SavedCartItemsCompanion(')
+          ..write('uniqueId: $uniqueId, ')
+          ..write('productId: $productId, ')
+          ..write('quantity: $quantity, ')
+          ..write('selectedIngredients: $selectedIngredients, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -3757,6 +4038,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $CompanyInfoTable companyInfo = $CompanyInfoTable(this);
   late final $ProductIngredientLinksTable productIngredientLinks =
       $ProductIngredientLinksTable(this);
+  late final $SavedCartItemsTable savedCartItems = $SavedCartItemsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3771,7 +4053,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         admins,
         announcements,
         companyInfo,
-        productIngredientLinks
+        productIngredientLinks,
+        savedCartItems
       ];
 }
 
@@ -6568,6 +6851,167 @@ typedef $$ProductIngredientLinksTableProcessedTableManager
         (ProductIngredientLink, $$ProductIngredientLinksTableReferences),
         ProductIngredientLink,
         PrefetchHooks Function({bool productId, bool ingredientId})>;
+typedef $$SavedCartItemsTableCreateCompanionBuilder = SavedCartItemsCompanion
+    Function({
+  required String uniqueId,
+  required int productId,
+  required int quantity,
+  required String selectedIngredients,
+  Value<int> rowid,
+});
+typedef $$SavedCartItemsTableUpdateCompanionBuilder = SavedCartItemsCompanion
+    Function({
+  Value<String> uniqueId,
+  Value<int> productId,
+  Value<int> quantity,
+  Value<String> selectedIngredients,
+  Value<int> rowid,
+});
+
+class $$SavedCartItemsTableFilterComposer
+    extends Composer<_$AppDatabase, $SavedCartItemsTable> {
+  $$SavedCartItemsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get uniqueId => $composableBuilder(
+      column: $table.uniqueId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get productId => $composableBuilder(
+      column: $table.productId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get quantity => $composableBuilder(
+      column: $table.quantity, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get selectedIngredients => $composableBuilder(
+      column: $table.selectedIngredients,
+      builder: (column) => ColumnFilters(column));
+}
+
+class $$SavedCartItemsTableOrderingComposer
+    extends Composer<_$AppDatabase, $SavedCartItemsTable> {
+  $$SavedCartItemsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get uniqueId => $composableBuilder(
+      column: $table.uniqueId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get productId => $composableBuilder(
+      column: $table.productId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get quantity => $composableBuilder(
+      column: $table.quantity, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get selectedIngredients => $composableBuilder(
+      column: $table.selectedIngredients,
+      builder: (column) => ColumnOrderings(column));
+}
+
+class $$SavedCartItemsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SavedCartItemsTable> {
+  $$SavedCartItemsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get uniqueId =>
+      $composableBuilder(column: $table.uniqueId, builder: (column) => column);
+
+  GeneratedColumn<int> get productId =>
+      $composableBuilder(column: $table.productId, builder: (column) => column);
+
+  GeneratedColumn<int> get quantity =>
+      $composableBuilder(column: $table.quantity, builder: (column) => column);
+
+  GeneratedColumn<String> get selectedIngredients => $composableBuilder(
+      column: $table.selectedIngredients, builder: (column) => column);
+}
+
+class $$SavedCartItemsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $SavedCartItemsTable,
+    SavedCartItem,
+    $$SavedCartItemsTableFilterComposer,
+    $$SavedCartItemsTableOrderingComposer,
+    $$SavedCartItemsTableAnnotationComposer,
+    $$SavedCartItemsTableCreateCompanionBuilder,
+    $$SavedCartItemsTableUpdateCompanionBuilder,
+    (
+      SavedCartItem,
+      BaseReferences<_$AppDatabase, $SavedCartItemsTable, SavedCartItem>
+    ),
+    SavedCartItem,
+    PrefetchHooks Function()> {
+  $$SavedCartItemsTableTableManager(
+      _$AppDatabase db, $SavedCartItemsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SavedCartItemsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SavedCartItemsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SavedCartItemsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> uniqueId = const Value.absent(),
+            Value<int> productId = const Value.absent(),
+            Value<int> quantity = const Value.absent(),
+            Value<String> selectedIngredients = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              SavedCartItemsCompanion(
+            uniqueId: uniqueId,
+            productId: productId,
+            quantity: quantity,
+            selectedIngredients: selectedIngredients,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String uniqueId,
+            required int productId,
+            required int quantity,
+            required String selectedIngredients,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              SavedCartItemsCompanion.insert(
+            uniqueId: uniqueId,
+            productId: productId,
+            quantity: quantity,
+            selectedIngredients: selectedIngredients,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$SavedCartItemsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $SavedCartItemsTable,
+    SavedCartItem,
+    $$SavedCartItemsTableFilterComposer,
+    $$SavedCartItemsTableOrderingComposer,
+    $$SavedCartItemsTableAnnotationComposer,
+    $$SavedCartItemsTableCreateCompanionBuilder,
+    $$SavedCartItemsTableUpdateCompanionBuilder,
+    (
+      SavedCartItem,
+      BaseReferences<_$AppDatabase, $SavedCartItemsTable, SavedCartItem>
+    ),
+    SavedCartItem,
+    PrefetchHooks Function()>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -6593,4 +7037,6 @@ class $AppDatabaseManager {
   $$ProductIngredientLinksTableTableManager get productIngredientLinks =>
       $$ProductIngredientLinksTableTableManager(
           _db, _db.productIngredientLinks);
+  $$SavedCartItemsTableTableManager get savedCartItems =>
+      $$SavedCartItemsTableTableManager(_db, _db.savedCartItems);
 }

@@ -8,7 +8,7 @@ import 'services/auth_service.dart';
 import 'services/cart_service.dart';
 import 'services/sync_service.dart';
 import 'services/admin_service.dart';
-import 'services/order_service.dart'; // ✅ NOUVEAU
+import 'services/order_service.dart';
 import 'screens/main_screen.dart';
 
 Future<void> main() async {
@@ -22,7 +22,6 @@ Future<void> main() async {
   );
 
   final db = AppDatabase();
-  // La synchro initiale est maintenant gérée par le `main_screen` ou un splash screen
 
   runApp(MyApp(database: db));
 }
@@ -37,14 +36,17 @@ class MyApp extends StatelessWidget {
       providers: [
         Provider<AppDatabase>.value(value: database),
         ChangeNotifierProvider(create: (_) => AuthService()),
-        ChangeNotifierProvider(create: (_) => CartService()),
+        // ✅ CORRIGÉ: Le CartService a maintenant besoin de la base de données
+        ChangeNotifierProxyProvider<AppDatabase, CartService>(
+          create: (context) => CartService(context.read<AppDatabase>()),
+          update: (_, db, cart) => cart!,
+        ),
         ProxyProvider<AppDatabase, SyncService>(
           update: (_, db, __) => SyncService(db: db),
         ),
         ProxyProvider<AppDatabase, AdminService>(
           update: (_, db, __) => AdminService(db: db),
         ),
-        // ✅ NOUVEAU: Ajout du service de commande
         ProxyProvider<AppDatabase, OrderService>(
           update: (_, db, __) => OrderService(db: db),
         ),

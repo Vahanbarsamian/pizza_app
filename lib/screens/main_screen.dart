@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../services/auth_service.dart';
-import '../services/sync_service.dart'; // ✅ NOUVEAU
+import '../services/sync_service.dart';
+import '../services/cart_service.dart';
 import 'menu_screen.dart';
 import 'promotions_screen.dart';
 import 'about_us_screen.dart';
@@ -21,7 +22,7 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
-  bool _isSyncing = true; // ✅ NOUVEAU: État pour gérer la synchronisation initiale
+  bool _isSyncing = true;
 
   @override
   void initState() {
@@ -60,6 +61,7 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     final authService = context.watch<AuthService>();
+    final cartService = context.watch<CartService>();
 
     return Scaffold(
       appBar: AppBar(
@@ -69,13 +71,21 @@ class _MainScreenState extends State<MainScreen> {
         ),
         title: const Text('Pizza App'),
         actions: <Widget>[
-          IconButton(
-            icon: const Icon(Icons.shopping_cart),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (context) => const CartScreen()),
-              );
-            },
+          // ✅ CORRIGÉ: Offset ajusté pour un effet de chevauchement plus prononcé
+          Badge(
+            label: Text(cartService.itemCount.toString()),
+            isLabelVisible: cartService.itemCount > 0,
+            backgroundColor: Colors.green,
+            alignment: AlignmentDirectional.bottomEnd, 
+            offset: const Offset(-6, -12), // Remonte davantage le badge
+            child: IconButton(
+              icon: const Icon(Icons.shopping_cart),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => const CartScreen()),
+                );
+              },
+            ),
           ),
           if (authService.currentUser != null)
             IconButton(
@@ -126,7 +136,6 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ],
       ),
-      // ✅ NOUVEAU: Affiche un loader pendant la synchro, puis le contenu
       body: _isSyncing
           ? const Center(
               child: Column(

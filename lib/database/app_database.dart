@@ -14,6 +14,7 @@ import 'admin.dart';
 import 'announcement.dart';
 import 'company_info.dart';
 import 'product_ingredient_link.dart';
+import 'saved_cart_item.dart';
 
 part 'app_database.g.dart';
 
@@ -28,12 +29,13 @@ part 'app_database.g.dart';
   Announcements,
   CompanyInfo,
   ProductIngredientLinks,
+  SavedCartItems,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 17; // Version incrémentée
+  int get schemaVersion => 18;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -48,22 +50,31 @@ class AppDatabase extends _$AppDatabase {
         },
       );
 
-  // --- Requêtes ---
+  // ✅ CORRIGÉ: Ré-ajout des méthodes de gestion du panier
+  Future<List<SavedCartItem>> getAllSavedCartItems() => select(savedCartItems).get();
+  Future<void> saveCartItem(SavedCartItemsCompanion item) => into(savedCartItems).insert(item, mode: InsertMode.replace);
+  Future<void> deleteCartItem(String uniqueId) => (delete(savedCartItems)..where((tbl) => tbl.uniqueId.equals(uniqueId))).go();
+  Future<void> clearSavedCart() => delete(savedCartItems).go();
 
+
+  // --- AUTRES REQUÊTES ---
   Stream<List<Product>> watchAllProducts() => (select(products)..orderBy([(p) => OrderingTerm(expression: p.createdAt, mode: OrderingMode.desc)])).watch();
   
   Stream<List<Ingredient>> watchAllIngredients() => select(ingredients).watch();
 
   Stream<List<Ingredient>> watchIngredientsForProduct(int productId) {
-    final specificIngredients = select(productIngredientLinks).join([
+    final specificIngredientsQuery = select(productIngredientLinks).join([
       innerJoin(ingredients, ingredients.id.equalsExp(productIngredientLinks.ingredientId))
     ])
       ..where(productIngredientLinks.productId.equals(productId));
 
-    final globalIngredients = select(ingredients)..where((i) => i.isGlobal.equals(true));
+    final globalIngredientsQuery = select(ingredients)..where((i) => i.isGlobal.equals(true));
 
-    return specificIngredients.map((row) => row.readTable(ingredients)).watch().asyncMap((specific) async {
-      final globals = await globalIngredients.watch().first;
+    final specificStream = specificIngredientsQuery.map((row) => row.readTable(ingredients)).watch();
+    final globalStream = globalIngredientsQuery.watch();
+
+    return specificStream.asyncMap((specific) async {
+      final globals = await globalStream.first;
       final all = {...specific, ...globals}.toList();
       return all;
     });
@@ -87,6 +98,9 @@ class AppDatabase extends _$AppDatabase {
     final admin = await (select(admins)..where((a) => a.id.equals(userId))).getSingleOrNull();
     return admin != null;
   }
+
+  Future<List<Product>> getAllProducts() => select(products).get();
+  Future<List<Ingredient>> getAllIngredients() => select(ingredients).get();
 }
 
 LazyDatabase _openConnection() {
