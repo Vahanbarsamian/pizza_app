@@ -12,6 +12,7 @@ import 'services/admin_service.dart';
 import 'services/order_service.dart';
 import 'services/review_service.dart';
 import 'services/public_review_service.dart';
+import 'services/preferences_service.dart';
 
 import 'screens/main_screen.dart';
 
@@ -42,6 +43,7 @@ class MyApp extends StatelessWidget {
       providers: [
         Provider<AppDatabase>.value(value: database),
         ChangeNotifierProvider(create: (_) => AuthService()),
+        ChangeNotifierProvider(create: (_) => PreferencesService()), // ✅ AJOUTÉ
         ChangeNotifierProxyProvider<AppDatabase, CartService>(
           create: (context) => CartService(context.read<AppDatabase>()),
           update: (_, db, cart) => cart!,
@@ -78,7 +80,7 @@ class MyApp extends StatelessWidget {
             centerTitle: true,
           ),
           bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-            backgroundColor: Color(0xFF87CEEB), // Bleu clair
+            backgroundColor: Color(0xFF87CEEB),
             selectedItemColor: Colors.orange,
             unselectedItemColor: Colors.white,
             elevation: 4,

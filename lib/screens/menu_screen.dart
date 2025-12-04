@@ -32,37 +32,36 @@ class _MenuScreenState extends State<MenuScreen> {
     final db = context.watch<AppDatabase>();
     final authService = context.watch<AuthService>();
 
-    return Scaffold(
-      body: RefreshIndicator(
-        onRefresh: _refreshData,
-        child: StreamBuilder<List<Product>>(
-          stream: db.watchAllProducts(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            if (snapshot.hasError) {
-              return Center(child: Text('Erreur: ${snapshot.error}'));
-            }
-            final pizzas = snapshot.data ?? [];
-            if (pizzas.isEmpty) {
-              return const Center(child: Text('Aucune pizza au menu pour le moment.'));
-            }
+    // ✅ CORRIGÉ: Le Scaffold a été retiré.
+    return RefreshIndicator(
+      onRefresh: _refreshData,
+      child: StreamBuilder<List<Product>>(
+        stream: db.watchAllProducts(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(child: Text('Erreur: ${snapshot.error}'));
+          }
+          final pizzas = snapshot.data ?? [];
+          if (pizzas.isEmpty) {
+            return const Center(child: Text('Aucune pizza au menu pour le moment.'));
+          }
 
-            return GridView.builder(
-              padding: const EdgeInsets.all(16.0),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                childAspectRatio: 0.70, // Ajusté pour le prix
-              ),
-              itemCount: pizzas.length,
-              itemBuilder: (context, index) {
-                final pizza = pizzas[index];
-                return PizzaCard(pizza: pizza, isAdmin: authService.isAdmin);
-              },
-            );
-          },
-        ),
+          return GridView.builder(
+            padding: const EdgeInsets.all(16.0),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              childAspectRatio: 0.70, // Ajusté pour le prix
+            ),
+            itemCount: pizzas.length,
+            itemBuilder: (context, index) {
+              final pizza = pizzas[index];
+              return PizzaCard(pizza: pizza, isAdmin: authService.isAdmin);
+            },
+          );
+        },
       ),
     );
   }

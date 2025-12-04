@@ -14,40 +14,39 @@ class PromotionsScreen extends StatelessWidget {
     final db = Provider.of<AppDatabase>(context);
     final authService = context.watch<AuthService>();
 
-    return Scaffold(
-      body: StreamBuilder<List<Announcement>>(
-        stream: db.watchAllAnnouncements(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text("Il n'y a aucune promotion ou annonce pour le moment."));
-          }
+    // ✅ CORRIGÉ: Le Scaffold a été retiré.
+    return StreamBuilder<List<Announcement>>(
+      stream: db.watchAllAnnouncements(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const Center(child: Text("Il n'y a aucune promotion ou annonce pour le moment."));
+        }
 
-          final allItems = snapshot.data!;
-          final promotions = allItems.where((item) => item.type == 'Promotion').toList();
-          final announcements = allItems.where((item) => item.type == 'Annonce').toList();
+        final allItems = snapshot.data!;
+        final promotions = allItems.where((item) => item.type == 'Promotion').toList();
+        final announcements = allItems.where((item) => item.type == 'Annonce').toList();
 
-          if (promotions.isEmpty && announcements.isEmpty) {
-            return const Center(child: Text("Il n'y a aucune promotion ou annonce pour le moment."));
-          }
+        if (promotions.isEmpty && announcements.isEmpty) {
+          return const Center(child: Text("Il n'y a aucune promotion ou annonce pour le moment."));
+        }
 
-          return ListView(
-            padding: const EdgeInsets.all(16.0),
-            children: [
-              if (promotions.isNotEmpty)
-                _buildSection(context, 'Promotions', promotions, authService.isAdmin),
-              
-              if (promotions.isNotEmpty && announcements.isNotEmpty)
-                const Divider(height: 32, thickness: 1, indent: 20, endIndent: 20),
+        return ListView(
+          padding: const EdgeInsets.all(16.0),
+          children: [
+            if (promotions.isNotEmpty)
+              _buildSection(context, 'Promotions', promotions, authService.isAdmin),
+            
+            if (promotions.isNotEmpty && announcements.isNotEmpty)
+              const Divider(height: 32, thickness: 1, indent: 20, endIndent: 20),
 
-              if (announcements.isNotEmpty)
-                _buildSection(context, 'Annonces', announcements, authService.isAdmin),
-            ],
-          );
-        },
-      ),
+            if (announcements.isNotEmpty)
+              _buildSection(context, 'Annonces', announcements, authService.isAdmin),
+          ],
+        );
+      },
     );
   }
 
@@ -136,10 +135,6 @@ class AnnouncementCard extends StatelessWidget {
                 child: IconButton(
                   icon: const Icon(Icons.edit, color: Colors.white, size: 20),
                   onPressed: () {
-                    // Navigue vers l'écran admin pour l'édition
-                    // Note: Cela nécessite une méthode pour naviguer et afficher le dialogue, 
-                    // que nous allons placer dans admin_announcements_tab.dart pour la réutiliser.
-                    // Pour l'instant, on fait une navigation simple, on affinera si besoin.
                     Navigator.of(context).push(MaterialPageRoute(builder: (_) => AdminAnnouncementsTab()));
                   },
                 ),

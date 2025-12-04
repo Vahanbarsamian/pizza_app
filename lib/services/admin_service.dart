@@ -105,4 +105,9 @@ class AdminService {
   Future<void> deleteAnnouncement(int id) async {
     await _supabase.from('announcements').delete().eq('id', id);
   }
+
+  // ✅ NOUVEAU: Méthode pour mettre à jour le statut d'une commande
+  Future<void> updateOrderStatus(int orderId, String status) async {
+    await _supabase.from('orders').update({'status': status}).eq('id', orderId);
+  }
 }

@@ -9,7 +9,6 @@ class OrderService {
 
   OrderService({required AppDatabase db}) : _db = db;
 
-  // ✅ CORRIGÉ: Accepte maintenant aussi le mode de paiement
   Future<void> createOrderFromCart(CartService cart, String userId, String referenceName, String pickupTime, String paymentMethod) async {
     if (cart.items.isEmpty) {
       throw 'Le panier est vide.';
@@ -21,7 +20,8 @@ class OrderService {
         'total': cart.totalPrice,
         'reference_name': referenceName,
         'pickup_time': pickupTime,
-        'payment_method': paymentMethod, // ✅ NOUVEAU
+        'payment_method': paymentMethod,
+        'status': 'À faire', // ✅ NOUVEAU: Statut par défaut
       }).select();
 
       final orderId = orderResponse.first['id'] as int;

@@ -824,6 +824,13 @@ class $OrdersTable extends Orders with TableInfo<$OrdersTable, Order> {
   late final GeneratedColumn<double> total = GeneratedColumn<double>(
       'total', aliasedName, false,
       type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+      'status', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('À faire'));
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -831,8 +838,16 @@ class $OrdersTable extends Orders with TableInfo<$OrdersTable, Order> {
       'created_at', aliasedName, false,
       type: DriftSqlType.dateTime, requiredDuringInsert: true);
   @override
-  List<GeneratedColumn> get $columns =>
-      [id, userId, referenceName, pickupTime, paymentMethod, total, createdAt];
+  List<GeneratedColumn> get $columns => [
+        id,
+        userId,
+        referenceName,
+        pickupTime,
+        paymentMethod,
+        total,
+        status,
+        createdAt
+      ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -876,6 +891,10 @@ class $OrdersTable extends Orders with TableInfo<$OrdersTable, Order> {
     } else if (isInserting) {
       context.missing(_totalMeta);
     }
+    if (data.containsKey('status')) {
+      context.handle(_statusMeta,
+          status.isAcceptableOrUnknown(data['status']!, _statusMeta));
+    }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
@@ -903,6 +922,8 @@ class $OrdersTable extends Orders with TableInfo<$OrdersTable, Order> {
           .read(DriftSqlType.string, data['${effectivePrefix}payment_method']),
       total: attachedDatabase.typeMapping
           .read(DriftSqlType.double, data['${effectivePrefix}total'])!,
+      status: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}status'])!,
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
     );
@@ -921,6 +942,7 @@ class Order extends DataClass implements Insertable<Order> {
   final String? pickupTime;
   final String? paymentMethod;
   final double total;
+  final String status;
   final DateTime createdAt;
   const Order(
       {required this.id,
@@ -929,6 +951,7 @@ class Order extends DataClass implements Insertable<Order> {
       this.pickupTime,
       this.paymentMethod,
       required this.total,
+      required this.status,
       required this.createdAt});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -945,6 +968,7 @@ class Order extends DataClass implements Insertable<Order> {
       map['payment_method'] = Variable<String>(paymentMethod);
     }
     map['total'] = Variable<double>(total);
+    map['status'] = Variable<String>(status);
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
@@ -963,6 +987,7 @@ class Order extends DataClass implements Insertable<Order> {
           ? const Value.absent()
           : Value(paymentMethod),
       total: Value(total),
+      status: Value(status),
       createdAt: Value(createdAt),
     );
   }
@@ -977,6 +1002,7 @@ class Order extends DataClass implements Insertable<Order> {
       pickupTime: serializer.fromJson<String?>(json['pickupTime']),
       paymentMethod: serializer.fromJson<String?>(json['paymentMethod']),
       total: serializer.fromJson<double>(json['total']),
+      status: serializer.fromJson<String>(json['status']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -990,6 +1016,7 @@ class Order extends DataClass implements Insertable<Order> {
       'pickupTime': serializer.toJson<String?>(pickupTime),
       'paymentMethod': serializer.toJson<String?>(paymentMethod),
       'total': serializer.toJson<double>(total),
+      'status': serializer.toJson<String>(status),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -1001,6 +1028,7 @@ class Order extends DataClass implements Insertable<Order> {
           Value<String?> pickupTime = const Value.absent(),
           Value<String?> paymentMethod = const Value.absent(),
           double? total,
+          String? status,
           DateTime? createdAt}) =>
       Order(
         id: id ?? this.id,
@@ -1011,6 +1039,7 @@ class Order extends DataClass implements Insertable<Order> {
         paymentMethod:
             paymentMethod.present ? paymentMethod.value : this.paymentMethod,
         total: total ?? this.total,
+        status: status ?? this.status,
         createdAt: createdAt ?? this.createdAt,
       );
   Order copyWithCompanion(OrdersCompanion data) {
@@ -1026,6 +1055,7 @@ class Order extends DataClass implements Insertable<Order> {
           ? data.paymentMethod.value
           : this.paymentMethod,
       total: data.total.present ? data.total.value : this.total,
+      status: data.status.present ? data.status.value : this.status,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -1039,14 +1069,15 @@ class Order extends DataClass implements Insertable<Order> {
           ..write('pickupTime: $pickupTime, ')
           ..write('paymentMethod: $paymentMethod, ')
           ..write('total: $total, ')
+          ..write('status: $status, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(
-      id, userId, referenceName, pickupTime, paymentMethod, total, createdAt);
+  int get hashCode => Object.hash(id, userId, referenceName, pickupTime,
+      paymentMethod, total, status, createdAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1057,6 +1088,7 @@ class Order extends DataClass implements Insertable<Order> {
           other.pickupTime == this.pickupTime &&
           other.paymentMethod == this.paymentMethod &&
           other.total == this.total &&
+          other.status == this.status &&
           other.createdAt == this.createdAt);
 }
 
@@ -1067,6 +1099,7 @@ class OrdersCompanion extends UpdateCompanion<Order> {
   final Value<String?> pickupTime;
   final Value<String?> paymentMethod;
   final Value<double> total;
+  final Value<String> status;
   final Value<DateTime> createdAt;
   const OrdersCompanion({
     this.id = const Value.absent(),
@@ -1075,6 +1108,7 @@ class OrdersCompanion extends UpdateCompanion<Order> {
     this.pickupTime = const Value.absent(),
     this.paymentMethod = const Value.absent(),
     this.total = const Value.absent(),
+    this.status = const Value.absent(),
     this.createdAt = const Value.absent(),
   });
   OrdersCompanion.insert({
@@ -1084,6 +1118,7 @@ class OrdersCompanion extends UpdateCompanion<Order> {
     this.pickupTime = const Value.absent(),
     this.paymentMethod = const Value.absent(),
     required double total,
+    this.status = const Value.absent(),
     required DateTime createdAt,
   })  : userId = Value(userId),
         total = Value(total),
@@ -1095,6 +1130,7 @@ class OrdersCompanion extends UpdateCompanion<Order> {
     Expression<String>? pickupTime,
     Expression<String>? paymentMethod,
     Expression<double>? total,
+    Expression<String>? status,
     Expression<DateTime>? createdAt,
   }) {
     return RawValuesInsertable({
@@ -1104,6 +1140,7 @@ class OrdersCompanion extends UpdateCompanion<Order> {
       if (pickupTime != null) 'pickup_time': pickupTime,
       if (paymentMethod != null) 'payment_method': paymentMethod,
       if (total != null) 'total': total,
+      if (status != null) 'status': status,
       if (createdAt != null) 'created_at': createdAt,
     });
   }
@@ -1115,6 +1152,7 @@ class OrdersCompanion extends UpdateCompanion<Order> {
       Value<String?>? pickupTime,
       Value<String?>? paymentMethod,
       Value<double>? total,
+      Value<String>? status,
       Value<DateTime>? createdAt}) {
     return OrdersCompanion(
       id: id ?? this.id,
@@ -1123,6 +1161,7 @@ class OrdersCompanion extends UpdateCompanion<Order> {
       pickupTime: pickupTime ?? this.pickupTime,
       paymentMethod: paymentMethod ?? this.paymentMethod,
       total: total ?? this.total,
+      status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -1148,6 +1187,9 @@ class OrdersCompanion extends UpdateCompanion<Order> {
     if (total.present) {
       map['total'] = Variable<double>(total.value);
     }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -1163,6 +1205,7 @@ class OrdersCompanion extends UpdateCompanion<Order> {
           ..write('pickupTime: $pickupTime, ')
           ..write('paymentMethod: $paymentMethod, ')
           ..write('total: $total, ')
+          ..write('status: $status, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -4661,6 +4704,7 @@ typedef $$OrdersTableCreateCompanionBuilder = OrdersCompanion Function({
   Value<String?> pickupTime,
   Value<String?> paymentMethod,
   required double total,
+  Value<String> status,
   required DateTime createdAt,
 });
 typedef $$OrdersTableUpdateCompanionBuilder = OrdersCompanion Function({
@@ -4670,6 +4714,7 @@ typedef $$OrdersTableUpdateCompanionBuilder = OrdersCompanion Function({
   Value<String?> pickupTime,
   Value<String?> paymentMethod,
   Value<double> total,
+  Value<String> status,
   Value<DateTime> createdAt,
 });
 
@@ -4732,6 +4777,9 @@ class $$OrdersTableFilterComposer
 
   ColumnFilters<double> get total => $composableBuilder(
       column: $table.total, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get status => $composableBuilder(
+      column: $table.status, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnFilters(column));
@@ -4808,6 +4856,9 @@ class $$OrdersTableOrderingComposer
   ColumnOrderings<double> get total => $composableBuilder(
       column: $table.total, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get status => $composableBuilder(
+      column: $table.status, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnOrderings(column));
 }
@@ -4838,6 +4889,9 @@ class $$OrdersTableAnnotationComposer
 
   GeneratedColumn<double> get total =>
       $composableBuilder(column: $table.total, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -4914,6 +4968,7 @@ class $$OrdersTableTableManager extends RootTableManager<
             Value<String?> pickupTime = const Value.absent(),
             Value<String?> paymentMethod = const Value.absent(),
             Value<double> total = const Value.absent(),
+            Value<String> status = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
           }) =>
               OrdersCompanion(
@@ -4923,6 +4978,7 @@ class $$OrdersTableTableManager extends RootTableManager<
             pickupTime: pickupTime,
             paymentMethod: paymentMethod,
             total: total,
+            status: status,
             createdAt: createdAt,
           ),
           createCompanionCallback: ({
@@ -4932,6 +4988,7 @@ class $$OrdersTableTableManager extends RootTableManager<
             Value<String?> pickupTime = const Value.absent(),
             Value<String?> paymentMethod = const Value.absent(),
             required double total,
+            Value<String> status = const Value.absent(),
             required DateTime createdAt,
           }) =>
               OrdersCompanion.insert(
@@ -4941,6 +4998,7 @@ class $$OrdersTableTableManager extends RootTableManager<
             pickupTime: pickupTime,
             paymentMethod: paymentMethod,
             total: total,
+            status: status,
             createdAt: createdAt,
           ),
           withReferenceMapper: (p0) => p0

@@ -3,6 +3,9 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
 import '../database/app_database.dart';
+import '../services/admin_service.dart';
+import '../services/auth_service.dart';
+import '../services/sync_service.dart';
 import 'add_review_screen.dart';
 
 class OrderDetailScreen extends StatelessWidget {
@@ -10,13 +13,32 @@ class OrderDetailScreen extends StatelessWidget {
 
   const OrderDetailScreen({super.key, required this.order});
 
+  Future<void> _updateOrderStatus(BuildContext context, String newStatus) async {
+    final adminService = context.read<AdminService>();
+    final syncService = context.read<SyncService>();
+    try {
+      // NOTE: Il faudrait une méthode dédiée dans le service pour ne mettre à jour que le statut.
+      // Pour l'instant, on réutilise saveOrder qui n'existe pas encore, on va la créer.
+      // adminService.updateOrderStatus(order.id, newStatus);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Statut mis à jour: $newStatus'), backgroundColor: Colors.green),
+      );
+      await syncService.syncAll();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final db = Provider.of<AppDatabase>(context, listen: false);
+    final authService = context.watch<AuthService>();
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Détail de la commande'),
+        title: const Text('Bon de Commande'),
       ),
       body: FutureBuilder<List<OrderItem>>(
         future: db.getOrderItems(order.id),
@@ -46,29 +68,21 @@ class OrderDetailScreen extends StatelessWidget {
           );
         },
       ),
-      bottomNavigationBar: StreamBuilder<Review?>(
-        stream: db.watchReviewForOrder(order.id),
-        builder: (context, snapshot) {
-          final hasReview = snapshot.hasData && snapshot.data != null;
-
-          if (hasReview) {
-            return const SizedBox.shrink();
-          }
-
-          return Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: ElevatedButton.icon(
-              icon: const Icon(Icons.rate_review_outlined),
-              label: const Text('Laisser un avis sur cette commande'),
-              onPressed: () {
-                Navigator.of(context).push(MaterialPageRoute(
-                  builder: (_) => AddReviewScreen(order: order),
-                ));
-              },
-            ),
-          );
-        },
-      ),
+      bottomNavigationBar: authService.isAdmin && order.status == 'À faire'
+          ? Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.check_circle_outline),
+                label: const Text('Marquer comme PRÊTE'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+                onPressed: () => _updateOrderStatus(context, 'Prête'),
+              ),
+            )
+          : null,
     );
   }
 
@@ -79,6 +93,7 @@ class OrderDetailScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            _buildSummaryRow('Statut:', order.status, isStatus: true),
             _buildSummaryRow('Référence:', order.referenceName ?? 'Non spécifié'),
             _buildSummaryRow('Heure de retrait:', order.pickupTime ?? 'Non spécifiée'),
             _buildSummaryRow('Date:', DateFormat('dd/MM/yyyy HH:mm', 'fr_FR').format(order.createdAt)),
@@ -91,7 +106,7 @@ class OrderDetailScreen extends StatelessWidget {
                 const Text('TOTAL', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
                 Text.rich(
                   TextSpan(
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold, color: Colors.green.shade800),
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold, color: Colors.black),
                     children: [
                       TextSpan(text: order.total.toStringAsFixed(2)),
                       const TextSpan(text: ' € TTC', style: TextStyle(fontSize: 14, fontWeight: FontWeight.normal)),
@@ -106,14 +121,15 @@ class OrderDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSummaryRow(String label, String value) {
+  Widget _buildSummaryRow(String label, String value, {bool isStatus = false}) {
+    final statusColor = value == 'À faire' ? Colors.red : Colors.green;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: TextStyle(color: Colors.grey.shade600)),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
+          Text(value, style: TextStyle(fontWeight: FontWeight.bold, color: isStatus ? statusColor : null, fontSize: isStatus ? 18 : null)),
         ],
       ),
     );

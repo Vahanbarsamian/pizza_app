@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' hide Column;
 
 import '../database/app_database.dart';
 import '../services/admin_service.dart';
 import '../services/sync_service.dart';
+import '../services/preferences_service.dart';
 
 class AdminInfoTab extends StatefulWidget {
   const AdminInfoTab({super.key});
@@ -55,7 +56,6 @@ class _AdminInfoTabState extends State<AdminInfoTab> {
         email: Value(_emailController.text),
       );
 
-      // ✅ CORRIGÉ: Correction du nom de la méthode
       await adminService.saveCompanyInfo(updatedInfo);
       await syncService.syncAll();
 
@@ -68,6 +68,7 @@ class _AdminInfoTabState extends State<AdminInfoTab> {
   @override
   Widget build(BuildContext context) {
     final db = Provider.of<AppDatabase>(context);
+    final prefs = Provider.of<PreferencesService>(context);
 
     return StreamBuilder<CompanyInfoData>(
       stream: db.watchCompanyInfo(),
@@ -83,23 +84,41 @@ class _AdminInfoTabState extends State<AdminInfoTab> {
         _phoneController.text = info.phone ?? '';
         _emailController.text = info.email ?? '';
 
-        return Form(
-          key: _formKey,
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              TextFormField(controller: _nameController, decoration: const InputDecoration(labelText: "Nom de l'établissement")),
-              TextFormField(controller: _presentationController, decoration: const InputDecoration(labelText: "Texte de présentation"), maxLines: 3),
-              TextFormField(controller: _addressController, decoration: const InputDecoration(labelText: 'Adresse')),
-              TextFormField(controller: _phoneController, decoration: const InputDecoration(labelText: 'Téléphone')),
-              TextFormField(controller: _emailController, decoration: const InputDecoration(labelText: 'Email')),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () => _saveChanges(info),
-                child: const Text('Enregistrer les modifications'),
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  TextFormField(controller: _nameController, decoration: const InputDecoration(labelText: "Nom de l'établissement")),
+                  TextFormField(controller: _presentationController, decoration: const InputDecoration(labelText: "Texte de présentation"), maxLines: 3),
+                  TextFormField(controller: _addressController, decoration: const InputDecoration(labelText: 'Adresse')),
+                  TextFormField(controller: _phoneController, decoration: const InputDecoration(labelText: 'Téléphone')),
+                  TextFormField(controller: _emailController, decoration: const InputDecoration(labelText: 'Email')),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: () => _saveChanges(info),
+                    child: const Text('Enregistrer les modifications'),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+            const Divider(height: 32, thickness: 1),
+            Text('Préférences de Notification', style: Theme.of(context).textTheme.titleLarge),
+            SwitchListTile(
+              title: const Text('Notification visuelle'),
+              subtitle: const Text('Affiche une bannière pour chaque nouvelle commande.'),
+              value: prefs.visualNotification,
+              onChanged: (value) => prefs.setVisualNotification(value),
+            ),
+            SwitchListTile(
+              title: const Text('Notification sonore'),
+              subtitle: const Text('Joue un son pour chaque nouvelle commande.'),
+              value: prefs.soundNotification,
+              onChanged: (value) => prefs.setSoundNotification(value),
+            ),
+          ],
         );
       },
     );

@@ -7,8 +7,9 @@ class Orders extends Table {
   TextColumn get userId => text().named('user_id')();
   TextColumn get referenceName => text().named('reference_name').nullable()();
   TextColumn get pickupTime => text().named('pickup_time').nullable()();
-  TextColumn get paymentMethod => text().named('payment_method').nullable()(); // ✅ NOUVEAU
+  TextColumn get paymentMethod => text().named('payment_method').nullable()(); 
   RealColumn get total => real().named('total')();
+  TextColumn get status => text().withDefault(const Constant('À faire'))();
   DateTimeColumn get createdAt => dateTime().named('created_at')();
 }
 

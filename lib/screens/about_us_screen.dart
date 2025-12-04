@@ -86,7 +86,6 @@ class _AboutUsScreenState extends State<AboutUsScreen> {
     );
   }
 
-  // ✅ CORRIGÉ: Le contenu de la méthode a été restauré.
   Widget _buildSocialRow(CompanyInfoData info) {
     final Map<String, FaIcon> socialLinks = {
       if (info.facebookUrl != null && info.facebookUrl!.isNotEmpty) info.facebookUrl!: const FaIcon(FontAwesomeIcons.facebook, color: Color(0xFF1877F2)),
