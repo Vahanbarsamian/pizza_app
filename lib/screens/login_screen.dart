@@ -50,13 +50,19 @@ class _LoginScreenState extends State<LoginScreen> {
         await authService.signUp(
           email: _emailController.text,
           password: _passwordController.text,
-          // ✅ CORRIGÉ: Le nom n'est plus envoyé
         );
       }
-      if (mounted) Navigator.of(context).pop();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Connexion réussie !'), backgroundColor: Colors.green),
+        );
+        Navigator.of(context).pop();
+      }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Votre connexion a échoué: ${e.toString()}'), backgroundColor: Colors.red),
+        );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -117,7 +123,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 16),
                         Text(_isLogin ? 'Bon retour !' : 'Bienvenue !', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold), textAlign: TextAlign.center),
                         const SizedBox(height: 24),
-                        // ✅ CORRIGÉ: Le champ Nom n'est plus affiché
                         TextField(
                           controller: _emailController,
                           decoration: InputDecoration(

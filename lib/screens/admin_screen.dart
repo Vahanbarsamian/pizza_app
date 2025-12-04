@@ -1,98 +1,57 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
-import '../database/app_database.dart';
-import '../services/auth_service.dart';
-import 'main_screen.dart';
-import 'admin_menu_tab.dart';
-import 'admin_announcements_tab.dart';
+import 'admin_orders_tab.dart';
+import 'admin_products_tab.dart';
+import 'admin_options_tab.dart';
 import 'admin_info_tab.dart';
+import 'admin_announcements_tab.dart';
 
 class AdminScreen extends StatefulWidget {
-  final Product? productToEdit;
-  final Announcement? announcementToEdit;
-
-  const AdminScreen({super.key, this.productToEdit, this.announcementToEdit});
+  const AdminScreen({super.key});
 
   @override
   State<AdminScreen> createState() => _AdminScreenState();
 }
 
-class _AdminScreenState extends State<AdminScreen> {
-  int _selectedIndex = 0;
-
-  late final List<Widget> _adminTabs;
+class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
-    _adminTabs = [
-      AdminMenuTab(productToEdit: widget.productToEdit),
-      AdminAnnouncementsTab(announcementToEdit: widget.announcementToEdit),
-      const AdminInfoTab(),
-    ];
-  }
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+    _tabController = TabController(length: 5, vsync: this);
   }
 
   @override
   Widget build(BuildContext context) {
-    final authService = context.watch<AuthService>();
-
-    // Redirige si l'utilisateur n'est pas admin
-    if (!authService.isAdmin) {
-      // Utilise un post-frame callback pour ne pas perturber le build
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const MainScreen()),
-          (route) => false,
-        );
-      });
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-
     return Scaffold(
       appBar: AppBar(
-        // ✅ CORRIGÉ: Style amélioré pour l'en-tête admin
-        title: const Text('Panneau d\'administration'),
-        backgroundColor: Theme.of(context).primaryColor,
-        foregroundColor: Colors.white,
-        elevation: 10,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.exit_to_app),
-            tooltip: 'Retour à l\'application',
-            onPressed: () {
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (_) => const MainScreen()),
-                (route) => false,
-              );
-            },
-          ),
-        ],
+        backgroundColor: Colors.blue.shade700, // Couleur de fond de l'AppBar
+        title: const Text('Panneau Administrateur'),
+        bottom: TabBar(
+          controller: _tabController,
+          isScrollable: true,
+          labelColor: Colors.orange, // Couleur du texte et de l'icône sélectionnés
+          unselectedLabelColor: Colors.white, // Couleur du texte et de l'icône non sélectionnés
+          indicatorColor: Colors.orange, // Couleur du petit indicateur sous l'onglet
+          tabs: const [
+            Tab(text: 'Commandes', icon: Icon(Icons.receipt_long)),
+            Tab(text: 'Produits', icon: Icon(Icons.local_pizza)),
+            Tab(text: 'Options', icon: Icon(Icons.add_shopping_cart)),
+            Tab(text: 'Annonces', icon: Icon(Icons.campaign)),
+            Tab(text: 'Infos Société', icon: Icon(Icons.info)),
+          ],
+        ),
       ),
-      body: _adminTabs.elementAt(_selectedIndex),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.restaurant_menu),
-            label: 'Menu & Options',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.campaign),
-            label: 'Annonces',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.storefront),
-            label: 'Infos Pratiques',
-          ),
+      body: TabBarView(
+        controller: _tabController,
+        children: const [
+          AdminOrdersTab(),
+          AdminProductsTab(),
+          AdminOptionsTab(),
+          AdminAnnouncementsTab(),
+          AdminInfoTab(),
         ],
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
       ),
     );
   }

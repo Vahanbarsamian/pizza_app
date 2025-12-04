@@ -13,35 +13,33 @@ class PublicReviewsScreen extends StatelessWidget {
     final reviewService = context.watch<PublicReviewService>();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Livre d'Or"),
-        automaticallyImplyLeading: false,
-      ),
-      body: Column(
-        children: [
-          _buildStatsHeader(context, reviewService),
-          _buildFilterChips(context, reviewService),
-          const Divider(),
-          Expanded(
-            child: reviewService.reviews.isEmpty
-                ? const Center(child: Text('Aucun avis pour cette période.'))
-                : ListView.builder(
-                    padding: const EdgeInsets.all(8.0),
-                    itemCount: reviewService.reviews.length,
-                    itemBuilder: (context, index) {
-                      final item = reviewService.reviews[index];
-                      return PublicReviewCard(reviewWithOrder: item);
-                    },
-                  ),
-          ),
-        ],
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            _buildStatsHeader(context, reviewService),
+            _buildFilterChips(context, reviewService),
+            const Divider(),
+            Expanded(
+              child: reviewService.reviews.isEmpty
+                  ? const Center(child: Text('Aucun avis pour cette période.'))
+                  : ListView.builder(
+                      itemCount: reviewService.reviews.length,
+                      itemBuilder: (context, index) {
+                        final item = reviewService.reviews[index];
+                        return PublicReviewCard(reviewWithOrder: item);
+                      },
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildStatsHeader(BuildContext context, PublicReviewService service) {
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
@@ -69,9 +67,10 @@ class PublicReviewsScreen extends StatelessWidget {
 
   Widget _buildFilterChips(BuildContext context, PublicReviewService service) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Wrap(
+        spacing: 8.0,
+        alignment: WrapAlignment.center,
         children: [
           ChoiceChip(
             label: const Text('Tout'),
@@ -110,7 +109,7 @@ class PublicReviewCard extends StatelessWidget {
     final order = reviewWithOrder.order;
 
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
+      margin: const EdgeInsets.symmetric(vertical: 8.0),
       child: Padding(
         padding: const EdgeInsets.all(12.0),
         child: Column(

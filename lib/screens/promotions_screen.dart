@@ -1,9 +1,10 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:pizza_app/screens/admin_announcements_tab.dart';
+
 import '../database/app_database.dart';
 import '../services/auth_service.dart';
-import 'admin_screen.dart';
 
 class PromotionsScreen extends StatelessWidget {
   const PromotionsScreen({super.key});
@@ -11,124 +12,162 @@ class PromotionsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final db = Provider.of<AppDatabase>(context);
+    final authService = context.watch<AuthService>();
 
-    return StreamBuilder<List<Announcement>>(
-      stream: db.watchAllAnnouncements(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        final announcements = snapshot.data ?? [];
+    return Scaffold(
+      body: StreamBuilder<List<Announcement>>(
+        stream: db.watchAllAnnouncements(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(child: Text("Il n'y a aucune promotion ou annonce pour le moment."));
+          }
 
-        if (announcements.isEmpty) {
-          return const Center(
-            child: Text('Aucune promotion pour le moment.', style: TextStyle(fontSize: 18)),
+          final allItems = snapshot.data!;
+          final promotions = allItems.where((item) => item.type == 'Promotion').toList();
+          final announcements = allItems.where((item) => item.type == 'Annonce').toList();
+
+          if (promotions.isEmpty && announcements.isEmpty) {
+            return const Center(child: Text("Il n'y a aucune promotion ou annonce pour le moment."));
+          }
+
+          return ListView(
+            padding: const EdgeInsets.all(16.0),
+            children: [
+              if (promotions.isNotEmpty)
+                _buildSection(context, 'Promotions', promotions, authService.isAdmin),
+              
+              if (promotions.isNotEmpty && announcements.isNotEmpty)
+                const Divider(height: 32, thickness: 1, indent: 20, endIndent: 20),
+
+              if (announcements.isNotEmpty)
+                _buildSection(context, 'Annonces', announcements, authService.isAdmin),
+            ],
           );
-        }
+        },
+      ),
+    );
+  }
 
-        return ListView.builder(
-          padding: const EdgeInsets.all(16.0),
-          itemCount: announcements.length,
-          itemBuilder: (context, index) {
-            final announcement = announcements[index];
-            // ✅ CORRIGÉ: Utilisation d'un widget dédié pour gérer l'effet de survol
-            return PromotionCard(announcement: announcement);
-          },
-        );
-      },
+  Widget _buildSection(BuildContext context, String title, List<Announcement> items, bool isAdmin) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 12),
+        ...items.map((item) => AnnouncementCard(announcement: item, isAdmin: isAdmin)),
+      ],
     );
   }
 }
 
-// Widget dédié pour la carte de promotion
-class PromotionCard extends StatefulWidget {
+class AnnouncementCard extends StatelessWidget {
   final Announcement announcement;
+  final bool isAdmin;
 
-  const PromotionCard({super.key, required this.announcement});
-
-  @override
-  State<PromotionCard> createState() => _PromotionCardState();
-}
-
-class _PromotionCardState extends State<PromotionCard> {
-  double _elevation = 4.0;
+  const AnnouncementCard({super.key, required this.announcement, required this.isAdmin});
 
   @override
   Widget build(BuildContext context) {
-    final authService = context.watch<AuthService>();
-    final announcement = widget.announcement;
-
-    return InkWell(
-      onTap: () { /* Pour l'instant, les promos ne sont pas cliquables, mais on pourrait ajouter un détail */ },
-      onHover: (isHovering) {
-        setState(() {
-          _elevation = isHovering ? 12.0 : 4.0;
-        });
-      },
-      splashColor: Colors.orange.withOpacity(0.3),
-      hoverColor: Colors.transparent,
-      borderRadius: BorderRadius.circular(12),
-      child: Card(
-        elevation: _elevation,
-        clipBehavior: Clip.antiAlias,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: Stack(
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (announcement.imageUrl != null && announcement.imageUrl!.isNotEmpty)
-                  CachedNetworkImage(
-                    imageUrl: announcement.imageUrl!,
-                    width: double.infinity,
-                    height: 200,
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) => const SizedBox(height: 200, child: Center(child: CircularProgressIndicator())),
-                    errorWidget: (context, url, error) => const SizedBox(height: 200, child: Icon(Icons.error)),
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (announcement.imageUrl != null && announcement.imageUrl!.isNotEmpty)
+                CachedNetworkImage(
+                  imageUrl: announcement.imageUrl!,
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: 180,
+                  placeholder: (context, url) => Container(
+                    height: 180,
+                    color: Colors.grey[300],
+                    child: const Center(child: CircularProgressIndicator()),
                   ),
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(announcement.title, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
-                      if (announcement.announcementText != null)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8.0),
-                          child: Text(announcement.announcementText!, style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.orange, fontWeight: FontWeight.bold)),
-                        ),
-                      if (announcement.description != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8.0),
-                          child: Text(announcement.description!),
-                        ),
-                      if (announcement.conclusion != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 16.0),
-                          child: Text(announcement.conclusion!, style: Theme.of(context).textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic)),
-                        ),
-                    ],
+                  errorWidget: (context, url, error) => Container(
+                    height: 180,
+                    color: Colors.grey[300],
+                    child: const Icon(Icons.error, color: Colors.red),
                   ),
                 ),
-              ],
-            ),
-            if (authService.isAdmin)
-              Positioned(
-                top: 8,
-                right: 8,
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(announcement.title, style: Theme.of(context).textTheme.titleLarge),
+                    if (announcement.announcementText != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8.0),
+                        child: Text(announcement.announcementText!),
+                      ),
+                    if (announcement.description != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8.0),
+                        child: Text(announcement.description!, style: Theme.of(context).textTheme.bodySmall),
+                      ),
+                    if (announcement.conclusion != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 16.0),
+                        child: Text(announcement.conclusion!, style: const TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (announcement.type == 'Promotion')
+            _buildBanner('PROMO', Colors.amber, Colors.black),
+          if (isAdmin)
+            Positioned(
+              top: 8,
+              right: 8,
+              child: CircleAvatar(
+                backgroundColor: Colors.black.withOpacity(0.6),
                 child: IconButton(
-                  icon: const CircleAvatar(
-                    backgroundColor: Colors.white70,
-                    child: Icon(Icons.edit, size: 20, color: Colors.orange),
-                  ),
+                  icon: const Icon(Icons.edit, color: Colors.white, size: 20),
                   onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => AdminScreen(announcementToEdit: announcement)),
-                    );
+                    // Navigue vers l'écran admin pour l'édition
+                    // Note: Cela nécessite une méthode pour naviguer et afficher le dialogue, 
+                    // que nous allons placer dans admin_announcements_tab.dart pour la réutiliser.
+                    // Pour l'instant, on fait une navigation simple, on affinera si besoin.
+                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => AdminAnnouncementsTab()));
                   },
                 ),
               ),
-          ],
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBanner(String text, Color backgroundColor, Color textColor) {
+    return Positioned(
+      top: 0,
+      left: 0,
+      child: Container(
+        width: 80,
+        height: 80,
+        child: ClipRect(
+          child: Banner(
+            message: text,
+            location: BannerLocation.topStart,
+            color: backgroundColor,
+            textStyle: TextStyle(
+              color: textColor,
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
+          ),
         ),
       ),
     );

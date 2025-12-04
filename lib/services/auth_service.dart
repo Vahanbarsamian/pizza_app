@@ -15,17 +15,17 @@ class AuthService extends ChangeNotifier {
   Stream<User?> get authStateChanges => _supabase.auth.onAuthStateChange.map((data) => data.session?.user);
 
   AuthService() {
-    _currentUser = _supabase.auth.currentUser;
-    _checkAdminStatus();
-    notifyListeners();
-
     _supabase.auth.onAuthStateChange.listen((data) {
       _currentUser = data.session?.user;
-      _checkAdminStatus();
+      // Ne pas vérifier le statut admin automatiquement
+      if (_currentUser == null) {
+        _isAdmin = false;
+      }
       notifyListeners();
     });
   }
 
+  // Cette méthode n'est plus appelée automatiquement
   void _checkAdminStatus() {
     final adminUuid = dotenv.env['ADMIN_UUID'];
     if (adminUuid != null && _currentUser != null && adminUuid.isNotEmpty) {
@@ -49,7 +49,7 @@ class AuthService extends ChangeNotifier {
       }
       
       _currentUser = authResponse.user;
-      _isAdmin = true;
+      _isAdmin = true; // ✅ Seule cette méthode met isAdmin à true
       notifyListeners();
 
     } catch (e) {
@@ -60,7 +60,12 @@ class AuthService extends ChangeNotifier {
 
   Future<void> signInWithPassword({required String email, required String password}) async {
     try {
-      await _supabase.auth.signInWithPassword(email: email, password: password);
+      final authResponse = await _supabase.auth.signInWithPassword(email: email, password: password);
+      if (authResponse.user != null) {
+        _currentUser = authResponse.user;
+        _isAdmin = false; // ✅ Le login normal force le statut à USER
+        notifyListeners();
+      }
     } catch (e) {
       debugPrint('Erreur de connexion: $e');
       rethrow;
@@ -68,13 +73,17 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<void> signUp({required String email, required String password, String? name, String? postalCode}) async {
-    // ✅ CORRIGÉ: Le nom n'est plus obligatoire à l'inscription
     try {
-      await _supabase.auth.signUp(
+      final response = await _supabase.auth.signUp(
         email: email,
         password: password,
         data: {'name': name, 'postal_code': postalCode},
       );
+      if (response.user != null) {
+        _currentUser = response.user;
+        _isAdmin = false; // ✅ Un nouvel inscrit est toujours un USER
+        notifyListeners();
+      }
     } catch (e) {
       debugPrint('Erreur d\'inscription: $e');
       rethrow;
@@ -92,5 +101,7 @@ class AuthService extends ChangeNotifier {
 
   Future<void> signOut() async {
     await _supabase.auth.signOut();
+    _isAdmin = false; // ✅ Réinitialisation du statut admin à la déconnexion
+    notifyListeners();
   }
 }

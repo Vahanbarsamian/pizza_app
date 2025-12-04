@@ -43,7 +43,7 @@ class MyReviewsScreen extends StatelessWidget {
           final reviewsWithOrders = snapshot.data!;
 
           return ListView.builder(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.all(16.0),
             itemCount: reviewsWithOrders.length,
             itemBuilder: (context, index) {
               final item = reviewsWithOrders[index];
@@ -99,7 +99,7 @@ class ReviewCard extends StatelessWidget {
     final order = reviewWithOrder.order;
 
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
+      margin: const EdgeInsets.symmetric(vertical: 8.0),
       child: Padding(
         padding: const EdgeInsets.all(12.0),
         child: Column(
@@ -111,8 +111,7 @@ class ReviewCard extends StatelessWidget {
                 children: [
                   const TextSpan(text: 'Avis de '),
                   TextSpan(text: order.referenceName ?? 'Anonyme', style: const TextStyle(fontWeight: FontWeight.bold)),
-                  // ✅ CORRIGÉ: Retrait du "sa"
-                  TextSpan(text: ', déposé le ${DateFormat('dd/MM/yyyy').format(review.createdAt)}, suite à commande du ${DateFormat('dd/MM/yyyy').format(order.createdAt)}.'),
+                  TextSpan(text: ', déposé le ${DateFormat('dd/MM/yyyy').format(review.createdAt)}, suite à la commande du ${DateFormat('dd/MM/yyyy').format(order.createdAt)}.'),
                 ],
               ),
             ),

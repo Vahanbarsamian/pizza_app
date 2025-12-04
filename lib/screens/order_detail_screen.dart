@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
 import '../database/app_database.dart';
-import 'add_review_screen.dart'; // ✅ NOUVEAU
+import 'add_review_screen.dart';
 
 class OrderDetailScreen extends StatelessWidget {
   final Order order;
@@ -46,18 +46,15 @@ class OrderDetailScreen extends StatelessWidget {
           );
         },
       ),
-      // ✅ NOUVEAU: Bouton pour laisser un avis
       bottomNavigationBar: StreamBuilder<Review?>(
         stream: db.watchReviewForOrder(order.id),
         builder: (context, snapshot) {
           final hasReview = snapshot.hasData && snapshot.data != null;
 
-          // Si un avis existe déjà, on n'affiche rien
           if (hasReview) {
             return const SizedBox.shrink();
           }
 
-          // Sinon, on affiche le bouton
           return Padding(
             padding: const EdgeInsets.all(16.0),
             child: ElevatedButton.icon(
@@ -92,7 +89,15 @@ class OrderDetailScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text('TOTAL', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                Text('${order.total.toStringAsFixed(2)} €', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold, color: Colors.green.shade800)),
+                Text.rich(
+                  TextSpan(
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold, color: Colors.green.shade800),
+                    children: [
+                      TextSpan(text: order.total.toStringAsFixed(2)),
+                      const TextSpan(text: ' € TTC', style: TextStyle(fontSize: 14, fontWeight: FontWeight.normal)),
+                    ],
+                  ),
+                )
               ],
             )
           ],
@@ -139,7 +144,15 @@ class OrderItemCard extends StatelessWidget {
                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                 ),
-                Text('${(item.unitPrice * item.quantity).toStringAsFixed(2)} €', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                Text.rich(
+                  TextSpan(
+                    style: const TextStyle(fontSize: 16),
+                    children: [
+                      TextSpan(text: (item.unitPrice * item.quantity).toStringAsFixed(2), style: const TextStyle(fontWeight: FontWeight.bold)),
+                      const TextSpan(text: ' € TTC', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                    ],
+                  ),
+                ),
               ],
             ),
             if (item.optionsDescription != null && item.optionsDescription!.isNotEmpty)

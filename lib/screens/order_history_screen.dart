@@ -80,9 +80,14 @@ class OrderCard extends StatelessWidget {
       child: ListTile(
         title: Text(referenceText, style: const TextStyle(fontWeight: FontWeight.bold)),
         subtitle: Text(DateFormat('le dd/MM/yyyy à HH:mm', 'fr_FR').format(order.createdAt)),
-        trailing: Text(
-          '${order.total.toStringAsFixed(2)} €',
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        trailing: Text.rich(
+          TextSpan(
+            style: const TextStyle(fontSize: 16),
+            children: [
+              TextSpan(text: order.total.toStringAsFixed(2), style: const TextStyle(fontWeight: FontWeight.bold)),
+              const TextSpan(text: ' € TTC', style: TextStyle(fontSize: 10, color: Colors.grey)),
+            ],
+          ),
         ),
         onTap: () {
           Navigator.of(context).push(MaterialPageRoute(

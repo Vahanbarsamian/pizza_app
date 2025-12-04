@@ -4,7 +4,8 @@ import 'package:provider/provider.dart';
 import '../services/cart_service.dart';
 import '../services/order_service.dart';
 import '../services/auth_service.dart';
-import '../services/sync_service.dart'; // ✅ NOUVEAU
+import '../services/sync_service.dart';
+import 'login_screen.dart';
 
 class CartScreen extends StatelessWidget {
   const CartScreen({super.key});
@@ -13,11 +14,14 @@ class CartScreen extends StatelessWidget {
     final cart = context.read<CartService>();
     final orderService = context.read<OrderService>();
     final authService = context.read<AuthService>();
-    final syncService = context.read<SyncService>(); // ✅ NOUVEAU
+    final syncService = context.read<SyncService>();
     final user = authService.currentUser;
 
     if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Erreur: Utilisateur non connecté.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Veuillez vous connecter pour commander.'), backgroundColor: Colors.amber),
+      );
+      Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LoginScreen()));
       return;
     }
 
@@ -93,13 +97,8 @@ class CartScreen extends StatelessWidget {
     final paymentMethod = orderDetails['payment']!;
 
     try {
-      // Étape 1: Créer la commande sur le serveur
       await orderService.createOrderFromCart(cart, user.id, referenceName, pickupTime, paymentMethod);
-
-      // ✅ NOUVEAU: Étape 2: Forcer la resynchronisation des données locales
       await syncService.syncAll();
-      
-      // Étape 3: Vider le panier local
       cart.clearCart();
 
       if (context.mounted) {
@@ -116,6 +115,7 @@ class CartScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cartService = context.watch<CartService>();
+    final authService = context.watch<AuthService>();
 
     return Scaffold(
       appBar: AppBar(
@@ -140,7 +140,15 @@ class CartScreen extends StatelessWidget {
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text('${(item.finalPrice * item.quantity).toStringAsFixed(2)} €'),
+                      Text.rich(
+                        TextSpan(
+                          style: const TextStyle(fontSize: 16),
+                          children: [
+                            TextSpan(text: (item.finalPrice * item.quantity).toStringAsFixed(2), style: const TextStyle(fontWeight: FontWeight.bold)),
+                            const TextSpan(text: ' € TTC', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                          ],
+                        ),
+                      ),
                       IconButton(
                         icon: const Icon(Icons.delete_outline, color: Colors.red),
                         tooltip: 'Supprimer complètement',
@@ -165,16 +173,47 @@ class CartScreen extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'Total: ${cartService.totalPrice.toStringAsFixed(2)} €',
-                      style: Theme.of(context).textTheme.headlineSmall,
+                    Expanded(
+                      child: Text.rich(
+                        TextSpan(
+                          style: Theme.of(context).textTheme.titleLarge,
+                          children: [
+                            const TextSpan(text: 'Total: '),
+                            TextSpan(text: cartService.totalPrice.toStringAsFixed(2), style: const TextStyle(fontWeight: FontWeight.bold)),
+                            const TextSpan(text: ' € TTC', style: TextStyle(fontSize: 12, fontWeight: FontWeight.normal)),
+                          ],
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                    ElevatedButton(
-                      onPressed: () => _checkout(context),
-                      child: const Text('Passer au paiement'),
-                    )
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Consumer<AuthService>(
+                        builder: (context, auth, child) {
+                          final buttonStyle = ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                            textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          );
+                          if (auth.currentUser != null) {
+                            return ElevatedButton(
+                              onPressed: () => _checkout(context),
+                              style: buttonStyle,
+                              child: const Text('Payer'),
+                            );
+                          } else {
+                            return ElevatedButton(
+                              onPressed: () {
+                                Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LoginScreen()));
+                              },
+                              style: buttonStyle,
+                              child: const Text('Connexion'),
+                            );
+                          }
+                        },
+                      ),
+                    ),
                   ],
                 ),
               ),

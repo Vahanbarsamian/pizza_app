@@ -18,6 +18,7 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
   final _nameController = TextEditingController();
   final _priceController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _discountController = TextEditingController();
   
   late bool _isEditing;
   List<int> _selectedIngredientIds = [];
@@ -33,6 +34,7 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
       _nameController.text = product.name;
       _priceController.text = product.basePrice.toString();
       _descriptionController.text = product.description ?? '';
+      _discountController.text = (product.discountPercentage * 100).toString();
       _maxSupplementsValue = product.maxSupplements ?? 4;
 
       final db = Provider.of<AppDatabase>(context, listen: false);
@@ -53,6 +55,7 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
     _nameController.dispose();
     _priceController.dispose();
     _descriptionController.dispose();
+    _discountController.dispose();
     super.dispose();
   }
 
@@ -67,6 +70,7 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
         name: _nameController.text,
         price: double.tryParse(_priceController.text) ?? 0.0,
         description: _descriptionController.text,
+        discountPercentage: (double.tryParse(_discountController.text) ?? 0.0) / 100,
         maxSupplements: _maxSupplementsValue,
       );
       final savedProductId = savedProductData['id'] as int;
@@ -117,9 +121,10 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
                               const SizedBox(height: 12),
                               TextField(controller: _priceController, decoration: const InputDecoration(labelText: 'Prix (€)', border: OutlineInputBorder()), keyboardType: TextInputType.number),
                               const SizedBox(height: 12),
+                              TextField(controller: _discountController, decoration: const InputDecoration(labelText: 'Réduction (%)', border: OutlineInputBorder()), keyboardType: TextInputType.number),
+                              const SizedBox(height: 12),
                               TextField(controller: _descriptionController, decoration: const InputDecoration(labelText: 'Description', border: OutlineInputBorder()), maxLines: 3),
                               const SizedBox(height: 20),
-                              // ✅ Stepper implementation
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
@@ -166,14 +171,22 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
                         itemCount: allIngredients.length,
                         itemBuilder: (context, index) {
                           final ingredient = allIngredients[index];
-                          // ✅ Overflow fix
                           return Container(
                             decoration: BoxDecoration(
                               border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
                             ),
                             child: CheckboxListTile(
                               title: Text(ingredient.name),
-                              subtitle: Text('+ \${ingredient.price.toStringAsFixed(2)} €'),
+                              subtitle: Text.rich(
+                                TextSpan(
+                                  style: TextStyle(color: Colors.grey.shade700),
+                                  children: [
+                                    const TextSpan(text: '+ '),
+                                    TextSpan(text: ingredient.price.toStringAsFixed(2), style: const TextStyle(fontWeight: FontWeight.bold)),
+                                    const TextSpan(text: ' € TTC', style: TextStyle(fontSize: 10)),
+                                  ],
+                                ),
+                              ),
                               value: _selectedIngredientIds.contains(ingredient.id),
                               onChanged: (bool? selected) {
                                 setState(() {
@@ -223,7 +236,6 @@ class _CardHeader extends StatelessWidget {
   }
 }
 
-// ✅ Overflow fix
 class _ListHeader extends StatelessWidget {
   final String title;
   final IconData icon;

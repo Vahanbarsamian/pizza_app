@@ -50,7 +50,7 @@ class SyncService {
         discountPercentage: Value(item['discount_percentage'] ?? 0.0),
         maxSupplements: Value(item['max_supplements'] ?? 4),
         category: Value(item['category']),
-        createdAt: DateTime.parse(item['created_at']), // No Value()
+        createdAt: DateTime.parse(item['created_at']),
     )).toList();
 
     await db.transaction(() async {
@@ -69,7 +69,7 @@ class SyncService {
         price: item['price'],
         category: Value(item['category']),
         isGlobal: Value(item['is_global'] ?? false),
-        createdAt: Value(DateTime.parse(item['created_at'])), // Needs Value()
+        createdAt: Value(DateTime.parse(item['created_at'])),
     )).toList();
 
     await db.transaction(() async {
@@ -104,7 +104,7 @@ class SyncService {
         referenceName: Value(item['reference_name']),
         pickupTime: Value(item['pickup_time']),
         paymentMethod: Value(item['payment_method']),
-        createdAt: DateTime.parse(item['created_at']), // No Value()
+        createdAt: DateTime.parse(item['created_at']),
     )).toList();
 
     await db.transaction(() async {
@@ -145,7 +145,8 @@ class SyncService {
         imageUrl: Value(item['image_url']),
         conclusion: Value(item['conclusion']),
         isActive: Value(item['is_active'] ?? true),
-        createdAt: Value(DateTime.parse(item['created_at'])), // Needs Value()
+        type: Value(item['type'] ?? 'Annonce'),
+        createdAt: DateTime.parse(item['created_at']),
     )).toList();
 
     await db.transaction(() async {

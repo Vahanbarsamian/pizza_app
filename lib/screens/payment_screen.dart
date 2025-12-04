@@ -26,7 +26,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Paiement ${widget.total}€')),
+      appBar: AppBar(title: Text('Paiement ${widget.total.toStringAsFixed(2)} € TTC')),
       body: Column(
         children: [
           ElevatedButton.icon(
@@ -44,7 +44,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
               // Paiement sur place
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('💰 À payer ${widget.total}€ à l\'accueil'),
+                  content: Text('💰 À payer ${widget.total.toStringAsFixed(2)} € TTC à l\'accueil'),
                   backgroundColor: Colors.orange,
                   duration: Duration(seconds: 3),
                 ),

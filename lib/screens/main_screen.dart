@@ -54,6 +54,13 @@ class _MainScreenState extends State<MainScreen> {
     AboutUsScreen(),
   ];
 
+  static const List<String> _appBarTitles = <String>[
+    'Menu',
+    'Promotions & Annonces',
+    'Avis des Clients',
+    'À Propos',
+  ];
+
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -67,11 +74,7 @@ class _MainScreenState extends State<MainScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        leading: const Padding(
-          padding: EdgeInsets.all(8.0),
-          child: Icon(Icons.local_pizza, size: 32),
-        ),
-        title: const Text('Pizza App'),
+        title: Text(_appBarTitles[_selectedIndex]),
         actions: <Widget>[
           Badge(
             label: Text(cartService.itemCount.toString()),
@@ -88,7 +91,8 @@ class _MainScreenState extends State<MainScreen> {
               },
             ),
           ),
-          if (authService.currentUser != null)
+          // ✅ Le bouton "Mon Espace" ne s'affiche que pour les utilisateurs NON-admin
+          if (authService.currentUser != null && !authService.isAdmin)
             IconButton(
               tooltip: 'Mon Espace Client',
               icon: const Icon(Icons.home),
@@ -162,14 +166,15 @@ class _MainScreenState extends State<MainScreen> {
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
       ),
-       floatingActionButton: authService.currentUser == null
+       // ✅ CORRECTION FINALE: Le bouton flottant n'apparait que si l'ADMIN est connecté
+       floatingActionButton: authService.isAdmin
           ? FloatingActionButton(
               onPressed: () {
                 Navigator.of(context).push(
-                  MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
+                  MaterialPageRoute(builder: (context) => const AdminScreen()),
                 );
               },
-              tooltip: 'Accès Admin',
+              tooltip: 'Retour au Panneau Admin',
               child: const Icon(Icons.admin_panel_settings),
             )
           : null,

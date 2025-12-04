@@ -119,10 +119,11 @@ class MenuScreen extends StatelessWidget {
                                         children: [
                                           if (hasDiscount)
                                             Text(
-                                              '${pizza.basePrice.toStringAsFixed(2)} €',
+                                              '${pizza.basePrice.toStringAsFixed(2)} € TTC',
                                               style: TextStyle(
                                                 fontSize: 14,
                                                 decoration: TextDecoration.lineThrough,
+                                                decorationColor: Colors.red,
                                                 color: Colors.grey.shade500,
                                               ),
                                             ),

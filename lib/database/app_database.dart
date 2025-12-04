@@ -40,7 +40,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 21;
+  int get schemaVersion => 22;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -48,6 +48,8 @@ class AppDatabase extends _$AppDatabase {
           await m.createAll();
         },
         onUpgrade: (m, from, to) async {
+          // ATTENTION: Ceci est une migration destructive.
+          // Pour une app en production, il faudrait une stratégie plus fine.
           for (final table in allTables) {
             await m.deleteTable(table.actualTableName);
           }
@@ -58,7 +60,6 @@ class AppDatabase extends _$AppDatabase {
   // --- REQUÊTES PANIER LOCAL ---
   Future<List<SavedCartItem>> getAllSavedCartItems() => select(savedCartItems).get();
   Future<void> saveCartItem(SavedCartItemsCompanion item) => into(savedCartItems).insert(item, mode: InsertMode.replace);
-  // ✅ CORRIGÉ: Renommage de la fonction pour correspondre aux appels
   Future<void> deleteCartItem(String uniqueId) => (delete(savedCartItems)..where((tbl) => tbl.uniqueId.equals(uniqueId))).go();
   Future<void> clearSavedCart() => delete(savedCartItems).go();
 
@@ -94,7 +95,20 @@ class AppDatabase extends _$AppDatabase {
     }).toList());
   }
 
-  // --- AUTRES REQUÊTES ---
+  // --- REQUÊTES ADMIN & Spécifiques ---
+
+  // Pour l'écran admin : récupère TOUTES les annonces, actives ou non.
+  Stream<List<Announcement>> watchAllAnnouncementsForAdmin() {
+    return (select(announcements)..orderBy([(a) => OrderingTerm(expression: a.createdAt, mode: OrderingMode.desc)])).watch();
+  }
+
+  // Pour les utilisateurs : ne récupère que les annonces actives.
+  Stream<List<Announcement>> watchAllAnnouncements() => (select(announcements)..where((a) => a.isActive.equals(true))..orderBy([(a) => OrderingTerm(expression: a.createdAt, mode: OrderingMode.desc)])).watch();
+  
+  Stream<List<Order>> watchAllOrders() {
+    return (select(orders)..orderBy([(o) => OrderingTerm(expression: o.createdAt, mode: OrderingMode.desc)])).watch();
+  }
+
   Stream<List<Product>> watchAllProducts() => (select(products)..orderBy([(p) => OrderingTerm(expression: p.createdAt, mode: OrderingMode.desc)])).watch();
   Stream<List<Ingredient>> watchAllIngredients() => select(ingredients).watch();
   Stream<List<Ingredient>> watchIngredientsForProduct(int productId) {
@@ -124,7 +138,6 @@ class AppDatabase extends _$AppDatabase {
     return (select(orderItems)..where((item) => item.orderId.equals(orderId))).get();
   }
 
-  Stream<List<Announcement>> watchAllAnnouncements() => (select(announcements)..where((a) => a.isActive.equals(true))..orderBy([(a) => OrderingTerm(expression: a.createdAt, mode: OrderingMode.desc)])).watch();
   Stream<CompanyInfoData> watchCompanyInfo() => select(companyInfo).watchSingle();
   Future<bool> isAdmin(String userId) async {
     final admin = await (select(admins)..where((a) => a.id.equals(userId))).getSingleOrNull();

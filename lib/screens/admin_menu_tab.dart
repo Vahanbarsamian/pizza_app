@@ -75,7 +75,14 @@ class _ProductsListTab extends StatelessWidget {
               final product = products[index];
               return ListTile(
                 title: Text(product.name),
-                subtitle: Text('${product.basePrice.toStringAsFixed(2)} €'),
+                subtitle: Text.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(text: product.basePrice.toStringAsFixed(2), style: const TextStyle(fontWeight: FontWeight.bold)),
+                      const TextSpan(text: ' € TTC', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                    ],
+                  ),
+                ),
                 trailing: IconButton(
                   icon: const Icon(Icons.edit, color: Colors.blue),
                   onPressed: () {

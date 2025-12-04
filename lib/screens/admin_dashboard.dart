@@ -81,8 +81,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
             ),
             Row(
               children: [
-                Expanded(child: StatCard(title: "CA Total", value: '${stats['totalRevenue']?.toStringAsFixed(0) ?? 0}€')),
-                Expanded(child: StatCard(title: "Prix Moyen", value: '${stats['avgPrice']?.toStringAsFixed(1) ?? 0}€')),
+                Expanded(child: StatCard(title: "CA Total", value: stats['totalRevenue']?.toStringAsFixed(2) ?? '0.00', isPrice: true)),
+                Expanded(child: StatCard(title: "Prix Moyen", value: stats['avgPrice']?.toStringAsFixed(2) ?? '0.00', isPrice: true)),
               ],
             ),
 
@@ -158,8 +158,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
 class StatCard extends StatelessWidget {
   final String title;
   final String value;
+  final bool isPrice;
 
-  const StatCard({Key? key, required this.title, required this.value}) : super(key: key);
+  const StatCard({Key? key, required this.title, required this.value, this.isPrice = false}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -169,7 +170,17 @@ class StatCard extends StatelessWidget {
         child: Column(
           children: [
             Text(title, style: TextStyle(fontSize: 12)),
-            Text(value, style: Theme.of(context).textTheme.headlineMedium),
+            isPrice
+                ? Text.rich(
+                    TextSpan(
+                      style: Theme.of(context).textTheme.headlineMedium,
+                      children: [
+                        TextSpan(text: value),
+                        const TextSpan(text: ' € TTC', style: TextStyle(fontSize: 12, fontWeight: FontWeight.normal)),
+                      ],
+                    ),
+                  )
+                : Text(value, style: Theme.of(context).textTheme.headlineMedium),
           ],
         ),
       ),

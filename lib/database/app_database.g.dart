@@ -2559,14 +2559,19 @@ class $AnnouncementsTable extends Announcements
       defaultConstraints:
           GeneratedColumn.constraintIsAlways('CHECK ("is_active" IN (0, 1))'),
       defaultValue: const Constant(true));
+  static const VerificationMeta _typeMeta = const VerificationMeta('type');
+  @override
+  late final GeneratedColumn<String> type = GeneratedColumn<String>(
+      'type', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('Annonce'));
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
   late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
       'created_at', aliasedName, false,
-      type: DriftSqlType.dateTime,
-      requiredDuringInsert: false,
-      defaultValue: currentDateAndTime);
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -2576,6 +2581,7 @@ class $AnnouncementsTable extends Announcements
         imageUrl,
         conclusion,
         isActive,
+        type,
         createdAt
       ];
   @override
@@ -2623,9 +2629,15 @@ class $AnnouncementsTable extends Announcements
       context.handle(_isActiveMeta,
           isActive.isAcceptableOrUnknown(data['is_active']!, _isActiveMeta));
     }
+    if (data.containsKey('type')) {
+      context.handle(
+          _typeMeta, type.isAcceptableOrUnknown(data['type']!, _typeMeta));
+    }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
     }
     return context;
   }
@@ -2650,6 +2662,8 @@ class $AnnouncementsTable extends Announcements
           .read(DriftSqlType.string, data['${effectivePrefix}conclusion']),
       isActive: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}is_active'])!,
+      type: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}type'])!,
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
     );
@@ -2669,6 +2683,7 @@ class Announcement extends DataClass implements Insertable<Announcement> {
   final String? imageUrl;
   final String? conclusion;
   final bool isActive;
+  final String type;
   final DateTime createdAt;
   const Announcement(
       {required this.id,
@@ -2678,6 +2693,7 @@ class Announcement extends DataClass implements Insertable<Announcement> {
       this.imageUrl,
       this.conclusion,
       required this.isActive,
+      required this.type,
       required this.createdAt});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2697,6 +2713,7 @@ class Announcement extends DataClass implements Insertable<Announcement> {
       map['conclusion'] = Variable<String>(conclusion);
     }
     map['is_active'] = Variable<bool>(isActive);
+    map['type'] = Variable<String>(type);
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
@@ -2718,6 +2735,7 @@ class Announcement extends DataClass implements Insertable<Announcement> {
           ? const Value.absent()
           : Value(conclusion),
       isActive: Value(isActive),
+      type: Value(type),
       createdAt: Value(createdAt),
     );
   }
@@ -2733,6 +2751,7 @@ class Announcement extends DataClass implements Insertable<Announcement> {
       imageUrl: serializer.fromJson<String?>(json['imageUrl']),
       conclusion: serializer.fromJson<String?>(json['conclusion']),
       isActive: serializer.fromJson<bool>(json['isActive']),
+      type: serializer.fromJson<String>(json['type']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -2747,6 +2766,7 @@ class Announcement extends DataClass implements Insertable<Announcement> {
       'imageUrl': serializer.toJson<String?>(imageUrl),
       'conclusion': serializer.toJson<String?>(conclusion),
       'isActive': serializer.toJson<bool>(isActive),
+      'type': serializer.toJson<String>(type),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -2759,6 +2779,7 @@ class Announcement extends DataClass implements Insertable<Announcement> {
           Value<String?> imageUrl = const Value.absent(),
           Value<String?> conclusion = const Value.absent(),
           bool? isActive,
+          String? type,
           DateTime? createdAt}) =>
       Announcement(
         id: id ?? this.id,
@@ -2770,6 +2791,7 @@ class Announcement extends DataClass implements Insertable<Announcement> {
         imageUrl: imageUrl.present ? imageUrl.value : this.imageUrl,
         conclusion: conclusion.present ? conclusion.value : this.conclusion,
         isActive: isActive ?? this.isActive,
+        type: type ?? this.type,
         createdAt: createdAt ?? this.createdAt,
       );
   Announcement copyWithCompanion(AnnouncementsCompanion data) {
@@ -2785,6 +2807,7 @@ class Announcement extends DataClass implements Insertable<Announcement> {
       conclusion:
           data.conclusion.present ? data.conclusion.value : this.conclusion,
       isActive: data.isActive.present ? data.isActive.value : this.isActive,
+      type: data.type.present ? data.type.value : this.type,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -2799,6 +2822,7 @@ class Announcement extends DataClass implements Insertable<Announcement> {
           ..write('imageUrl: $imageUrl, ')
           ..write('conclusion: $conclusion, ')
           ..write('isActive: $isActive, ')
+          ..write('type: $type, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -2806,7 +2830,7 @@ class Announcement extends DataClass implements Insertable<Announcement> {
 
   @override
   int get hashCode => Object.hash(id, title, announcementText, description,
-      imageUrl, conclusion, isActive, createdAt);
+      imageUrl, conclusion, isActive, type, createdAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2818,6 +2842,7 @@ class Announcement extends DataClass implements Insertable<Announcement> {
           other.imageUrl == this.imageUrl &&
           other.conclusion == this.conclusion &&
           other.isActive == this.isActive &&
+          other.type == this.type &&
           other.createdAt == this.createdAt);
 }
 
@@ -2829,6 +2854,7 @@ class AnnouncementsCompanion extends UpdateCompanion<Announcement> {
   final Value<String?> imageUrl;
   final Value<String?> conclusion;
   final Value<bool> isActive;
+  final Value<String> type;
   final Value<DateTime> createdAt;
   const AnnouncementsCompanion({
     this.id = const Value.absent(),
@@ -2838,6 +2864,7 @@ class AnnouncementsCompanion extends UpdateCompanion<Announcement> {
     this.imageUrl = const Value.absent(),
     this.conclusion = const Value.absent(),
     this.isActive = const Value.absent(),
+    this.type = const Value.absent(),
     this.createdAt = const Value.absent(),
   });
   AnnouncementsCompanion.insert({
@@ -2848,8 +2875,10 @@ class AnnouncementsCompanion extends UpdateCompanion<Announcement> {
     this.imageUrl = const Value.absent(),
     this.conclusion = const Value.absent(),
     this.isActive = const Value.absent(),
-    this.createdAt = const Value.absent(),
-  }) : title = Value(title);
+    this.type = const Value.absent(),
+    required DateTime createdAt,
+  })  : title = Value(title),
+        createdAt = Value(createdAt);
   static Insertable<Announcement> custom({
     Expression<int>? id,
     Expression<String>? title,
@@ -2858,6 +2887,7 @@ class AnnouncementsCompanion extends UpdateCompanion<Announcement> {
     Expression<String>? imageUrl,
     Expression<String>? conclusion,
     Expression<bool>? isActive,
+    Expression<String>? type,
     Expression<DateTime>? createdAt,
   }) {
     return RawValuesInsertable({
@@ -2868,6 +2898,7 @@ class AnnouncementsCompanion extends UpdateCompanion<Announcement> {
       if (imageUrl != null) 'image_url': imageUrl,
       if (conclusion != null) 'conclusion': conclusion,
       if (isActive != null) 'is_active': isActive,
+      if (type != null) 'type': type,
       if (createdAt != null) 'created_at': createdAt,
     });
   }
@@ -2880,6 +2911,7 @@ class AnnouncementsCompanion extends UpdateCompanion<Announcement> {
       Value<String?>? imageUrl,
       Value<String?>? conclusion,
       Value<bool>? isActive,
+      Value<String>? type,
       Value<DateTime>? createdAt}) {
     return AnnouncementsCompanion(
       id: id ?? this.id,
@@ -2889,6 +2921,7 @@ class AnnouncementsCompanion extends UpdateCompanion<Announcement> {
       imageUrl: imageUrl ?? this.imageUrl,
       conclusion: conclusion ?? this.conclusion,
       isActive: isActive ?? this.isActive,
+      type: type ?? this.type,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -2917,6 +2950,9 @@ class AnnouncementsCompanion extends UpdateCompanion<Announcement> {
     if (isActive.present) {
       map['is_active'] = Variable<bool>(isActive.value);
     }
+    if (type.present) {
+      map['type'] = Variable<String>(type.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -2933,6 +2969,7 @@ class AnnouncementsCompanion extends UpdateCompanion<Announcement> {
           ..write('imageUrl: $imageUrl, ')
           ..write('conclusion: $conclusion, ')
           ..write('isActive: $isActive, ')
+          ..write('type: $type, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -6046,7 +6083,8 @@ typedef $$AnnouncementsTableCreateCompanionBuilder = AnnouncementsCompanion
   Value<String?> imageUrl,
   Value<String?> conclusion,
   Value<bool> isActive,
-  Value<DateTime> createdAt,
+  Value<String> type,
+  required DateTime createdAt,
 });
 typedef $$AnnouncementsTableUpdateCompanionBuilder = AnnouncementsCompanion
     Function({
@@ -6057,6 +6095,7 @@ typedef $$AnnouncementsTableUpdateCompanionBuilder = AnnouncementsCompanion
   Value<String?> imageUrl,
   Value<String?> conclusion,
   Value<bool> isActive,
+  Value<String> type,
   Value<DateTime> createdAt,
 });
 
@@ -6090,6 +6129,9 @@ class $$AnnouncementsTableFilterComposer
 
   ColumnFilters<bool> get isActive => $composableBuilder(
       column: $table.isActive, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get type => $composableBuilder(
+      column: $table.type, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnFilters(column));
@@ -6126,6 +6168,9 @@ class $$AnnouncementsTableOrderingComposer
   ColumnOrderings<bool> get isActive => $composableBuilder(
       column: $table.isActive, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get type => $composableBuilder(
+      column: $table.type, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnOrderings(column));
 }
@@ -6159,6 +6204,9 @@ class $$AnnouncementsTableAnnotationComposer
 
   GeneratedColumn<bool> get isActive =>
       $composableBuilder(column: $table.isActive, builder: (column) => column);
+
+  GeneratedColumn<String> get type =>
+      $composableBuilder(column: $table.type, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -6197,6 +6245,7 @@ class $$AnnouncementsTableTableManager extends RootTableManager<
             Value<String?> imageUrl = const Value.absent(),
             Value<String?> conclusion = const Value.absent(),
             Value<bool> isActive = const Value.absent(),
+            Value<String> type = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
           }) =>
               AnnouncementsCompanion(
@@ -6207,6 +6256,7 @@ class $$AnnouncementsTableTableManager extends RootTableManager<
             imageUrl: imageUrl,
             conclusion: conclusion,
             isActive: isActive,
+            type: type,
             createdAt: createdAt,
           ),
           createCompanionCallback: ({
@@ -6217,7 +6267,8 @@ class $$AnnouncementsTableTableManager extends RootTableManager<
             Value<String?> imageUrl = const Value.absent(),
             Value<String?> conclusion = const Value.absent(),
             Value<bool> isActive = const Value.absent(),
-            Value<DateTime> createdAt = const Value.absent(),
+            Value<String> type = const Value.absent(),
+            required DateTime createdAt,
           }) =>
               AnnouncementsCompanion.insert(
             id: id,
@@ -6227,6 +6278,7 @@ class $$AnnouncementsTableTableManager extends RootTableManager<
             imageUrl: imageUrl,
             conclusion: conclusion,
             isActive: isActive,
+            type: type,
             createdAt: createdAt,
           ),
           withReferenceMapper: (p0) => p0

@@ -64,7 +64,26 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         title: 'Pizza App',
         theme: ThemeData(
-          primarySwatch: Colors.orange,
+          brightness: Brightness.light,
+          primaryColor: const Color(0xFF2C3E50),
+          colorScheme: const ColorScheme.light(
+            primary: Color(0xFF2C3E50),
+            secondary: Color(0xFFE74C3C),
+            background: Color(0xFFECF0F1),
+          ),
+          appBarTheme: const AppBarTheme(
+            color: Color(0xFF2C3E50),
+            foregroundColor: Colors.white,
+            elevation: 2,
+            centerTitle: true,
+          ),
+          bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+            backgroundColor: Color(0xFF87CEEB), // Bleu clair
+            selectedItemColor: Colors.orange,
+            unselectedItemColor: Colors.white,
+            elevation: 4,
+          ),
+          scaffoldBackgroundColor: const Color(0xFFF8F9FA),
           visualDensity: VisualDensity.adaptivePlatformDensity,
         ),
         home: const MainScreen(),
