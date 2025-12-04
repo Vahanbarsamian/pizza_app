@@ -48,7 +48,8 @@ class SyncService {
         image: Value(item['image']),
         basePrice: item['base_price'],
         discountPercentage: Value(item['discount_percentage'] ?? 0.0),
-        maxSupplements: Value(item['max_supplements'] ?? 4),
+        // ✅ CORRIGÉ: La valeur est maintenant directement mappée depuis le serveur
+        maxSupplements: Value(item['max_supplements']),
         category: Value(item['category']),
         createdAt: DateTime.parse(item['created_at']),
     )).toList();
