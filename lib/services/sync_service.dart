@@ -17,7 +17,28 @@ class SyncService {
     await _syncCompanyInfo();
     await _syncOrders();
     await _syncOrderItems();
+    await _syncOrderStatusHistories(); // ✅ AJOUTÉ
     await _syncReviews();
+  }
+
+  // ✅ NOUVELLE MÉTHODE
+  Future<void> _syncOrderStatusHistories() async {
+    try {
+      final response = await _supabase.from('order_status_histories').select();
+      final historiesToSync = response.map((item) => OrderStatusHistoriesCompanion.insert(
+        id: Value(item['id'] as int),
+        orderId: item['order_id'] as int,
+        status: item['status'] as String,
+        createdAt: DateTime.parse(item['created_at'] as String),
+      )).toList();
+
+      await db.transaction(() async {
+        await db.delete(db.orderStatusHistories).go();
+        await db.batch((batch) => batch.insertAll(db.orderStatusHistories, historiesToSync));
+      });
+    } catch (e) {
+      print('❌ Erreur de synchronisation (OrderStatusHistories): $e');
+    }
   }
 
   Future<void> _syncReviews() async {

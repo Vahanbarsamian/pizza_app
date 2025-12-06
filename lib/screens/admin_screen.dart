@@ -7,7 +7,7 @@ import 'main_screen.dart';
 import 'admin_menu_tab.dart';
 import 'admin_announcements_tab.dart';
 import 'admin_info_tab.dart';
-import 'admin_orders_tab.dart'; // ✅ IMPORTÉ
+import 'admin_orders_tab.dart';
 
 class AdminScreen extends StatefulWidget {
   final Product? productToEdit;
@@ -22,15 +22,23 @@ class _AdminScreenState extends State<AdminScreen> {
   int _selectedIndex = 0;
 
   late final List<Widget> _adminTabs;
+  // ✅ AJOUTÉ: Liste des titres
+  late final List<String> _adminTitles;
 
   @override
   void initState() {
     super.initState();
     _adminTabs = [
-      const AdminOrdersTab(), // ✅ AJOUTÉ EN PREMIER
+      const AdminOrdersTab(),
       AdminMenuTab(productToEdit: widget.productToEdit),
       const AdminAnnouncementsTab(),
       const AdminInfoTab(),
+    ];
+    _adminTitles = [
+      'Gestion des Commandes',
+      'Menu & Options',
+      'Annonces',
+      'Infos Pratiques',
     ];
   }
 
@@ -56,7 +64,8 @@ class _AdminScreenState extends State<AdminScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Panneau d\'administration'),
+        // ✅ CORRIGÉ: Titre dynamique
+        title: Text(_adminTitles[_selectedIndex]), 
         backgroundColor: Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
         elevation: 10,
@@ -75,7 +84,7 @@ class _AdminScreenState extends State<AdminScreen> {
       ),
       body: _adminTabs.elementAt(_selectedIndex),
       bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed, // Important pour voir tous les labels
+        type: BottomNavigationBarType.fixed, 
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
             icon: Icon(Icons.receipt_long),

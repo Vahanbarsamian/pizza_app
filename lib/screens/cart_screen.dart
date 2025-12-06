@@ -168,32 +168,36 @@ class CartScreen extends StatelessWidget {
                 ],
               ),
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Expanded(
+                    flex: 1,
                     child: Text(
                       'Total: ${cartService.totalPrice.toStringAsFixed(2)} €',
-                      style: Theme.of(context).textTheme.headlineSmall,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   const SizedBox(width: 16),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                      textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  Expanded(
+                    flex: 1,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      onPressed: () {
+                        if (isLoggedIn) {
+                          _checkout(context);
+                        } else {
+                          Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LoginScreen()));
+                        }
+                      },
+                      child: Text(isLoggedIn ? 'Payer' : 'Connexion'),
                     ),
-                    onPressed: () {
-                      if (isLoggedIn) {
-                        _checkout(context);
-                      } else {
-                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LoginScreen()));
-                      }
-                    },
-                    child: Text(isLoggedIn ? 'Payer' : 'Connexion'),
-                  )
+                  ),
                 ],
               ),
             )
