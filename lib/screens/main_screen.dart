@@ -4,12 +4,12 @@ import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import '../services/sync_service.dart';
 import '../services/cart_service.dart';
+import '../widgets/loyalty_status_widget.dart';
 import 'menu_screen.dart';
 import 'promotions_screen.dart';
 import 'about_us_screen.dart';
 import 'cart_screen.dart';
 import 'login_screen.dart';
-import 'admin_login_screen.dart';
 import 'admin_screen.dart';
 import 'client_area_screen.dart';
 import 'public_reviews_screen.dart';
@@ -74,49 +74,39 @@ class _MainScreenState extends State<MainScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        // ✅ CORRIGÉ: Ajout du nom de l'enseigne à gauche
         leading: const Padding(
           padding: EdgeInsets.only(left: 16.0),
-          child: Center(
-            child: Text(
-              'Pizza Mania',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-          ),
+          child: Center(child: Text('Pizza Mania', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
         ),
-        leadingWidth: 150, // Ajuster la largeur pour le texte
+        leadingWidth: 150,
         title: Text(_appBarTitles[_selectedIndex]),
-        centerTitle: true, // Pour s'assurer que le titre principal reste centré
+        centerTitle: true,
         actions: <Widget>[
           Badge(
-            label: Text(cartService.itemCount.toString()),
+            label: Text(
+              cartService.itemCount.toString(), 
+              style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold),
+            ),
             isLabelVisible: cartService.itemCount > 0,
             backgroundColor: Colors.green,
-            alignment: AlignmentDirectional.bottomEnd, 
-            offset: const Offset(-6, -12), 
+            alignment: AlignmentDirectional.bottomEnd,
+            offset: const Offset(-8, -16), // ✅ Remonté
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            largeSize: 18,
             child: IconButton(
               icon: const Icon(Icons.shopping_cart),
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (context) => const CartScreen()),
-                );
-              },
+              onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (context) => const CartScreen())),
             ),
           ),
           if (authService.currentUser != null && !authService.isAdmin)
             IconButton(
               tooltip: 'Mon Espace Client',
               icon: const Icon(Icons.home),
-              onPressed: () {
-                Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ClientAreaScreen()));
-              },
+              onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ClientAreaScreen())),
             ),
           IconButton(
             tooltip: authService.currentUser == null ? 'Connexion' : 'Mon Compte / Déconnexion',
-            icon: Icon(
-              Icons.person,
-              color: authService.currentUser == null ? Colors.grey.shade400 : Colors.greenAccent,
-            ),
+            icon: Icon(Icons.person, color: authService.currentUser == null ? Colors.grey.shade400 : Colors.greenAccent),
             onPressed: () {
               if (authService.currentUser == null) {
                 Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LoginScreen()));
@@ -125,10 +115,7 @@ class _MainScreenState extends State<MainScreen> {
                   context: context,
                   position: const RelativeRect.fromLTRB(1000.0, 80.0, 0.0, 0.0),
                   items: <PopupMenuEntry<String>>[
-                    PopupMenuItem<String>(
-                      enabled: false,
-                      child: Text('Connecté: ${authService.currentUser!.email}'),
-                    ),
+                    PopupMenuItem<String>(enabled: false, child: Text('Connecté: ${authService.currentUser!.email}')),
                     if (authService.isAdmin)
                       const PopupMenuItem<String>(
                         value: 'admin',
@@ -141,11 +128,8 @@ class _MainScreenState extends State<MainScreen> {
                     ),
                   ],
                 ).then((value) {
-                  if (value == 'logout') {
-                    authService.signOut();
-                  } else if (value == 'admin') {
-                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AdminScreen()));
-                  }
+                  if (value == 'logout') authService.signOut();
+                  else if (value == 'admin') Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AdminScreen()));
                 });
               }
             },
@@ -154,18 +138,9 @@ class _MainScreenState extends State<MainScreen> {
       ),
       body: _isSyncing
           ? const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Synchronisation des données...'),
-                ],
-              ),
+              child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [CircularProgressIndicator(), SizedBox(height: 16), Text('Synchronisation des données...')]),
             )
-          : Center(
-              child: _widgetOptions.elementAt(_selectedIndex),
-            ),
+          : Center(child: _widgetOptions.elementAt(_selectedIndex)),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         items: const <BottomNavigationBarItem>[
@@ -179,11 +154,7 @@ class _MainScreenState extends State<MainScreen> {
       ),
        floatingActionButton: authService.isAdmin
           ? FloatingActionButton(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (context) => const AdminScreen()),
-                );
-              },
+              onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (context) => const AdminScreen())),
               tooltip: 'Retour au Panneau Admin',
               child: const Icon(Icons.admin_panel_settings),
             )

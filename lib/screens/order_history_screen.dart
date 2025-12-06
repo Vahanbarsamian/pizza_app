@@ -41,7 +41,10 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     final userId = authService.currentUser?.id;
 
     if (userId == null) {
-      return const Center(child: Text('Veuillez vous connecter pour voir cet historique.'));
+      return Scaffold(
+        appBar: AppBar(title: const Text('Mes Commandes')),
+        body: const Center(child: Text('Veuillez vous connecter pour voir cet historique.')),
+      );
     }
 
     return Scaffold(
@@ -81,7 +84,15 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     );
   }
 
+  // ✅ CORRIGÉ: Traduction des étiquettes de filtre
   Widget _buildFilterChips() {
+    final labels = {
+      OrderFilter.all: 'Tout',
+      OrderFilter.week: 'Semaine',
+      OrderFilter.month: 'Mois',
+      OrderFilter.year: 'Année',
+    };
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Wrap(
@@ -89,7 +100,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
         alignment: WrapAlignment.center,
         children: OrderFilter.values.map((filter) {
           return ChoiceChip(
-            label: Text(filter.name.substring(0, 1).toUpperCase() + filter.name.substring(1)),
+            label: Text(labels[filter]!),
             selected: _activeFilter == filter,
             selectedColor: const Color(0xFFE6E6FA), // Mauve pâle
             onSelected: (selected) {

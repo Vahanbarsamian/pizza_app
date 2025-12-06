@@ -13,6 +13,7 @@ import 'services/order_service.dart';
 import 'services/review_service.dart';
 import 'services/public_review_service.dart';
 import 'services/preferences_service.dart';
+import 'services/loyalty_service.dart'; // ✅ AJOUTÉ
 
 import 'screens/main_screen.dart';
 
@@ -43,7 +44,7 @@ class MyApp extends StatelessWidget {
       providers: [
         Provider<AppDatabase>.value(value: database),
         ChangeNotifierProvider(create: (_) => AuthService()),
-        ChangeNotifierProvider(create: (_) => PreferencesService()), // ✅ AJOUTÉ
+        ChangeNotifierProvider(create: (_) => PreferencesService()),
         ChangeNotifierProxyProvider<AppDatabase, CartService>(
           create: (context) => CartService(context.read<AppDatabase>()),
           update: (_, db, cart) => cart!,
@@ -56,6 +57,10 @@ class MyApp extends StatelessWidget {
         ),
         ProxyProvider<AppDatabase, OrderService>(
           update: (_, db, __) => OrderService(db: db),
+        ),
+        // ✅ AJOUTÉ: Le nouveau service de fidélité
+        ProxyProvider<AppDatabase, LoyaltyService>(
+          update: (_, db, __) => LoyaltyService(db: db),
         ),
         Provider(create: (_) => ReviewService()),
         ChangeNotifierProxyProvider<AppDatabase, PublicReviewService>(

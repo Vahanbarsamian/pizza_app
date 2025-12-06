@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../widgets/loyalty_status_widget.dart'; // ✅ AJOUTÉ
 import '../services/auth_service.dart';
 import 'order_history_screen.dart';
 import 'my_reviews_screen.dart';
@@ -18,7 +19,10 @@ class ClientAreaScreen extends StatelessWidget {
       ),
       body: ListView(
         children: [
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
+          // ✅ AJOUTÉ: Le widget de statut de fidélité
+          const LoyaltyStatusWidget(),
+          const SizedBox(height: 8),
           _buildMenuOption(
             context,
             icon: Icons.history,

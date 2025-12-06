@@ -8,6 +8,7 @@ import 'admin_menu_tab.dart';
 import 'admin_announcements_tab.dart';
 import 'admin_info_tab.dart';
 import 'admin_orders_tab.dart';
+import 'admin_loyalty_tab.dart';
 
 class AdminScreen extends StatefulWidget {
   final Product? productToEdit;
@@ -22,7 +23,6 @@ class _AdminScreenState extends State<AdminScreen> {
   int _selectedIndex = 0;
 
   late final List<Widget> _adminTabs;
-  // ✅ AJOUTÉ: Liste des titres
   late final List<String> _adminTitles;
 
   @override
@@ -30,12 +30,14 @@ class _AdminScreenState extends State<AdminScreen> {
     super.initState();
     _adminTabs = [
       const AdminOrdersTab(),
+      const AdminLoyaltyTab(),
       AdminMenuTab(productToEdit: widget.productToEdit),
       const AdminAnnouncementsTab(),
       const AdminInfoTab(),
     ];
     _adminTitles = [
-      'Gestion des Commandes',
+      'Commandes & Archives',
+      'Gestion Fidélité',
       'Menu & Options',
       'Annonces',
       'Infos Pratiques',
@@ -64,8 +66,7 @@ class _AdminScreenState extends State<AdminScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        // ✅ CORRIGÉ: Titre dynamique
-        title: Text(_adminTitles[_selectedIndex]), 
+        title: Text(_adminTitles[_selectedIndex]),
         backgroundColor: Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
         elevation: 10,
@@ -90,6 +91,11 @@ class _AdminScreenState extends State<AdminScreen> {
             icon: Icon(Icons.receipt_long),
             label: 'Commandes',
           ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.loyalty),
+            label: 'Fidélité',
+          ),
+          // ✅ CORRIGÉ: Ligne dupliquée supprimée
           BottomNavigationBarItem(
             icon: Icon(Icons.restaurant_menu),
             label: 'Menu & Options',

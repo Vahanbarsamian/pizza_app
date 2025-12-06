@@ -149,6 +149,7 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> with SingleTickerProvid
   }
 }
 
+// ✅ CORRIGÉ: Contenu de la classe restauré
 class OrdersList extends StatelessWidget {
   final DateTime? startDate;
   final DateTime? endDate;
@@ -207,6 +208,7 @@ class OrdersList extends StatelessWidget {
   }
 }
 
+// ✅ CORRIGÉ: Contenu de la classe restauré
 class SettingsTab extends StatelessWidget {
   final DateTime? initialFilterStartDate, initialFilterEndDate, vacationStartDate, vacationEndDate, tempClosureStartDate, tempClosureEndDate;
   final bool areOrdersOpen;
@@ -276,8 +278,14 @@ class _ArchivesTabState extends State<ArchivesTab> {
   Future<void> _fetchArchives() async {
     setState(() => _isLoading = true);
     final db = context.read<AppDatabase>();
+
+    print('🔍 [ArchivesTab] Recherche lancée avec les dates:');
+    print('🔍 Start: ${widget.archiveStartDate}, End: ${widget.archiveEndDate}');
+
     try {
       final results = await db.getArchivedOrders(widget.archiveStartDate, widget.archiveEndDate);
+      print('🔍 [ArchivesTab] ${results.length} résultats trouvés dans la base de données.');
+      
       setState(() {
         _archivedOrders = results;
         _isLoading = false;
@@ -285,6 +293,7 @@ class _ArchivesTabState extends State<ArchivesTab> {
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red));
+      print('❌ [ArchivesTab] Erreur lors de la recherche: $e');
     }
   }
 
@@ -298,53 +307,12 @@ class _ArchivesTabState extends State<ArchivesTab> {
     final dateFormat = DateFormat('dd/MM/yyyy');
     return Column(
       children: [
-        Card(
-          margin: const EdgeInsets.all(16.0),
-          elevation: 4,
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Column(
-              children: [
-                Text('Actions', style: Theme.of(context).textTheme.titleLarge),
-                const SizedBox(height: 8),
-                TextButton.icon(icon: const Icon(Icons.archive_outlined, color: Colors.red), label: const Text('Archiver les commandes terminées du jour', style: TextStyle(color: Colors.red)), onPressed: widget.onArchivePressed),
-              ],
-            ),
-          ),
-        ),
-        Card(
-          margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          elevation: 4,
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Column(
-              children: [
-                Text('Rechercher dans les archives', style: Theme.of(context).textTheme.titleLarge),
-                const SizedBox(height: 8),
-                Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
-                  ElevatedButton.icon(icon: const Icon(Icons.calendar_today_outlined), label: Text(widget.archiveStartDate == null ? 'Début' : dateFormat.format(widget.archiveStartDate!)), onPressed: () => _selectDate(context, initialDate: widget.archiveStartDate, onDateSelected: (date) => widget.onArchiveDateChanged(date, widget.archiveEndDate))),
-                  ElevatedButton.icon(icon: const Icon(Icons.calendar_today), label: Text(widget.archiveEndDate == null ? 'Fin' : dateFormat.format(widget.archiveEndDate!)), onPressed: () => _selectDate(context, initialDate: widget.archiveEndDate, onDateSelected: (date) => widget.onArchiveDateChanged(widget.archiveStartDate, date))),
-                ]),
-                const SizedBox(height: 8),
-                SizedBox(width: double.infinity, child: ElevatedButton(onPressed: _fetchArchives, child: const Text('Afficher'))),
-              ],
-            ),
-          ),
-        ),
-        Expanded(
-          child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : _archivedOrders.isEmpty
-                  ? const Center(child: Text('Aucun résultat pour cette période.'))
-                  : ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: _archivedOrders.length,
-                      itemBuilder: (context, index) {
-                        final order = _archivedOrders[index];
-                        return Card(child: ListTile(title: Text('Commande de ${order.referenceName ?? 'N/A'}'), subtitle: Text('Archivée le ${dateFormat.format(order.createdAt)}'), trailing: Text('${order.total.toStringAsFixed(2)} €')));
-                      },
-                    ),
-        )
+        Card(margin: const EdgeInsets.all(16.0), elevation: 4, child: Padding(padding: const EdgeInsets.all(8.0), child: Column(children: [Text('Actions', style: Theme.of(context).textTheme.titleLarge), const SizedBox(height: 8), TextButton.icon(icon: const Icon(Icons.archive_outlined, color: Colors.red), label: const Text('Archiver les commandes terminées du jour', style: TextStyle(color: Colors.red)), onPressed: widget.onArchivePressed)]))),
+        Card(margin: const EdgeInsets.fromLTRB(16, 0, 16, 16), elevation: 4, child: Padding(padding: const EdgeInsets.all(8.0), child: Column(children: [Text('Rechercher dans les archives', style: Theme.of(context).textTheme.titleLarge), const SizedBox(height: 8), Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [ElevatedButton.icon(icon: const Icon(Icons.calendar_today_outlined), label: Text(widget.archiveStartDate == null ? 'Début' : dateFormat.format(widget.archiveStartDate!)), onPressed: () => _selectDate(context, initialDate: widget.archiveStartDate, onDateSelected: (date) => widget.onArchiveDateChanged(date, widget.archiveEndDate))), ElevatedButton.icon(icon: const Icon(Icons.calendar_today), label: Text(widget.archiveEndDate == null ? 'Fin' : dateFormat.format(widget.archiveEndDate!)), onPressed: () => _selectDate(context, initialDate: widget.archiveEndDate, onDateSelected: (date) => widget.onArchiveDateChanged(widget.archiveStartDate, date)))]), const SizedBox(height: 8), SizedBox(width: double.infinity, child: ElevatedButton(onPressed: _fetchArchives, child: const Text('Afficher')))]))),
+        Expanded(child: _isLoading ? const Center(child: CircularProgressIndicator()) : _archivedOrders.isEmpty ? const Center(child: Text('Aucun résultat pour cette période.')) : ListView.builder(padding: const EdgeInsets.symmetric(horizontal: 16), itemCount: _archivedOrders.length, itemBuilder: (context, index) {
+          final order = _archivedOrders[index];
+          return Card(child: ListTile(title: Text('Commande de ${order.referenceName ?? 'N/A'}'), subtitle: Text('Archivée le ${dateFormat.format(order.createdAt)}'), trailing: Text('${order.total.toStringAsFixed(2)} €')));
+        }))
       ],
     );
   }

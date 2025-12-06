@@ -14,15 +14,19 @@ import 'announcement.dart';
 import 'company_info.dart';
 import 'product_ingredient_link.dart';
 import 'saved_cart_item.dart';
+import 'loyalty_setting.dart';
+import 'user_loyalty.dart';
 
 part 'app_database.g.dart';
 
+// ✅ CORRIGÉ: Classe restaurée
 class ReviewWithOrder {
   final Review review;
   final Order order;
   ReviewWithOrder({required this.review, required this.order});
 }
 
+// ✅ CORRIGÉ: Classe restaurée
 class OrderWithStatus {
   final Order order;
   final String status;
@@ -30,30 +34,19 @@ class OrderWithStatus {
 }
 
 @DriftDatabase(tables: [
-  Products,
-  Users,
-  Orders,
-  OrderItems,
-  Reviews,
-  Ingredients,
-  Admins,
-  Announcements,
-  CompanyInfo,
-  ProductIngredientLinks,
-  SavedCartItems,
-  OrderStatusHistories,
+  Products, Users, Orders, OrderItems, Reviews, Ingredients, Admins,
+  Announcements, CompanyInfo, ProductIngredientLinks, SavedCartItems, 
+  OrderStatusHistories, LoyaltySettings, UserLoyalties,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 26;
+  int get schemaVersion => 27;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-        onCreate: (m) async {
-          await m.createAll();
-        },
+        onCreate: (m) => m.createAll(),
         onUpgrade: (m, from, to) async {
           for (final table in allTables) {
             await m.deleteTable(table.actualTableName);
@@ -62,6 +55,7 @@ class AppDatabase extends _$AppDatabase {
         },
       );
       
+  // ✅ CORRIGÉ: Méthode restaurée
   Stream<List<OrderWithStatus>> _watchOrdersWithStatus(String? userId) {
     final baseSql = '''
       SELECT o.*, COALESCE(latest.status, \'À faire\') as status
@@ -97,7 +91,6 @@ class AppDatabase extends _$AppDatabase {
     var query = select(orders)..where((o) => o.isArchived.equals(true));
 
     if (start != null) {
-      // ✅ CORRECTION FINALE ET ABSOLUE
       query.where((o) => o.createdAt.isBiggerOrEqualValue(start));
     }
     if (end != null) {
@@ -152,6 +145,9 @@ class AppDatabase extends _$AppDatabase {
 
   Future<List<Product>> getAllProducts() => select(products).get();
   Future<List<Ingredient>> getAllIngredients() => select(ingredients).get();
+
+  Stream<LoyaltySetting?> watchLoyaltySettings() => (select(loyaltySettings)..where((s) => s.id.equals(1))).watchSingleOrNull();
+  Stream<UserLoyalty?> watchUserLoyalty(String userId) => (select(userLoyalties)..where((u) => u.userId.equals(userId))).watchSingleOrNull();
 }
 
 LazyDatabase _openConnection() {

@@ -4455,6 +4455,500 @@ class OrderStatusHistoriesCompanion
   }
 }
 
+class $LoyaltySettingsTable extends LoyaltySettings
+    with TableInfo<$LoyaltySettingsTable, LoyaltySetting> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LoyaltySettingsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(1));
+  static const VerificationMeta _isEnabledMeta =
+      const VerificationMeta('isEnabled');
+  @override
+  late final GeneratedColumn<bool> isEnabled = GeneratedColumn<bool>(
+      'is_enabled', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_enabled" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _modeMeta = const VerificationMeta('mode');
+  @override
+  late final GeneratedColumn<String> mode = GeneratedColumn<String>(
+      'mode', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('free_pizza'));
+  static const VerificationMeta _thresholdMeta =
+      const VerificationMeta('threshold');
+  @override
+  late final GeneratedColumn<int> threshold = GeneratedColumn<int>(
+      'threshold', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(10));
+  static const VerificationMeta _discountPercentageMeta =
+      const VerificationMeta('discountPercentage');
+  @override
+  late final GeneratedColumn<double> discountPercentage =
+      GeneratedColumn<double>('discount_percentage', aliasedName, false,
+          type: DriftSqlType.double,
+          requiredDuringInsert: false,
+          defaultValue: const Constant(0.1));
+  @override
+  List<GeneratedColumn> get $columns =>
+      [id, isEnabled, mode, threshold, discountPercentage];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'loyalty_settings';
+  @override
+  VerificationContext validateIntegrity(Insertable<LoyaltySetting> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('is_enabled')) {
+      context.handle(_isEnabledMeta,
+          isEnabled.isAcceptableOrUnknown(data['is_enabled']!, _isEnabledMeta));
+    }
+    if (data.containsKey('mode')) {
+      context.handle(
+          _modeMeta, mode.isAcceptableOrUnknown(data['mode']!, _modeMeta));
+    }
+    if (data.containsKey('threshold')) {
+      context.handle(_thresholdMeta,
+          threshold.isAcceptableOrUnknown(data['threshold']!, _thresholdMeta));
+    }
+    if (data.containsKey('discount_percentage')) {
+      context.handle(
+          _discountPercentageMeta,
+          discountPercentage.isAcceptableOrUnknown(
+              data['discount_percentage']!, _discountPercentageMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  LoyaltySetting map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LoyaltySetting(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      isEnabled: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_enabled'])!,
+      mode: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}mode'])!,
+      threshold: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}threshold'])!,
+      discountPercentage: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}discount_percentage'])!,
+    );
+  }
+
+  @override
+  $LoyaltySettingsTable createAlias(String alias) {
+    return $LoyaltySettingsTable(attachedDatabase, alias);
+  }
+}
+
+class LoyaltySetting extends DataClass implements Insertable<LoyaltySetting> {
+  final int id;
+  final bool isEnabled;
+  final String mode;
+  final int threshold;
+  final double discountPercentage;
+  const LoyaltySetting(
+      {required this.id,
+      required this.isEnabled,
+      required this.mode,
+      required this.threshold,
+      required this.discountPercentage});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['is_enabled'] = Variable<bool>(isEnabled);
+    map['mode'] = Variable<String>(mode);
+    map['threshold'] = Variable<int>(threshold);
+    map['discount_percentage'] = Variable<double>(discountPercentage);
+    return map;
+  }
+
+  LoyaltySettingsCompanion toCompanion(bool nullToAbsent) {
+    return LoyaltySettingsCompanion(
+      id: Value(id),
+      isEnabled: Value(isEnabled),
+      mode: Value(mode),
+      threshold: Value(threshold),
+      discountPercentage: Value(discountPercentage),
+    );
+  }
+
+  factory LoyaltySetting.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LoyaltySetting(
+      id: serializer.fromJson<int>(json['id']),
+      isEnabled: serializer.fromJson<bool>(json['isEnabled']),
+      mode: serializer.fromJson<String>(json['mode']),
+      threshold: serializer.fromJson<int>(json['threshold']),
+      discountPercentage:
+          serializer.fromJson<double>(json['discountPercentage']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'isEnabled': serializer.toJson<bool>(isEnabled),
+      'mode': serializer.toJson<String>(mode),
+      'threshold': serializer.toJson<int>(threshold),
+      'discountPercentage': serializer.toJson<double>(discountPercentage),
+    };
+  }
+
+  LoyaltySetting copyWith(
+          {int? id,
+          bool? isEnabled,
+          String? mode,
+          int? threshold,
+          double? discountPercentage}) =>
+      LoyaltySetting(
+        id: id ?? this.id,
+        isEnabled: isEnabled ?? this.isEnabled,
+        mode: mode ?? this.mode,
+        threshold: threshold ?? this.threshold,
+        discountPercentage: discountPercentage ?? this.discountPercentage,
+      );
+  LoyaltySetting copyWithCompanion(LoyaltySettingsCompanion data) {
+    return LoyaltySetting(
+      id: data.id.present ? data.id.value : this.id,
+      isEnabled: data.isEnabled.present ? data.isEnabled.value : this.isEnabled,
+      mode: data.mode.present ? data.mode.value : this.mode,
+      threshold: data.threshold.present ? data.threshold.value : this.threshold,
+      discountPercentage: data.discountPercentage.present
+          ? data.discountPercentage.value
+          : this.discountPercentage,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LoyaltySetting(')
+          ..write('id: $id, ')
+          ..write('isEnabled: $isEnabled, ')
+          ..write('mode: $mode, ')
+          ..write('threshold: $threshold, ')
+          ..write('discountPercentage: $discountPercentage')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, isEnabled, mode, threshold, discountPercentage);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LoyaltySetting &&
+          other.id == this.id &&
+          other.isEnabled == this.isEnabled &&
+          other.mode == this.mode &&
+          other.threshold == this.threshold &&
+          other.discountPercentage == this.discountPercentage);
+}
+
+class LoyaltySettingsCompanion extends UpdateCompanion<LoyaltySetting> {
+  final Value<int> id;
+  final Value<bool> isEnabled;
+  final Value<String> mode;
+  final Value<int> threshold;
+  final Value<double> discountPercentage;
+  const LoyaltySettingsCompanion({
+    this.id = const Value.absent(),
+    this.isEnabled = const Value.absent(),
+    this.mode = const Value.absent(),
+    this.threshold = const Value.absent(),
+    this.discountPercentage = const Value.absent(),
+  });
+  LoyaltySettingsCompanion.insert({
+    this.id = const Value.absent(),
+    this.isEnabled = const Value.absent(),
+    this.mode = const Value.absent(),
+    this.threshold = const Value.absent(),
+    this.discountPercentage = const Value.absent(),
+  });
+  static Insertable<LoyaltySetting> custom({
+    Expression<int>? id,
+    Expression<bool>? isEnabled,
+    Expression<String>? mode,
+    Expression<int>? threshold,
+    Expression<double>? discountPercentage,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (isEnabled != null) 'is_enabled': isEnabled,
+      if (mode != null) 'mode': mode,
+      if (threshold != null) 'threshold': threshold,
+      if (discountPercentage != null) 'discount_percentage': discountPercentage,
+    });
+  }
+
+  LoyaltySettingsCompanion copyWith(
+      {Value<int>? id,
+      Value<bool>? isEnabled,
+      Value<String>? mode,
+      Value<int>? threshold,
+      Value<double>? discountPercentage}) {
+    return LoyaltySettingsCompanion(
+      id: id ?? this.id,
+      isEnabled: isEnabled ?? this.isEnabled,
+      mode: mode ?? this.mode,
+      threshold: threshold ?? this.threshold,
+      discountPercentage: discountPercentage ?? this.discountPercentage,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (isEnabled.present) {
+      map['is_enabled'] = Variable<bool>(isEnabled.value);
+    }
+    if (mode.present) {
+      map['mode'] = Variable<String>(mode.value);
+    }
+    if (threshold.present) {
+      map['threshold'] = Variable<int>(threshold.value);
+    }
+    if (discountPercentage.present) {
+      map['discount_percentage'] = Variable<double>(discountPercentage.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LoyaltySettingsCompanion(')
+          ..write('id: $id, ')
+          ..write('isEnabled: $isEnabled, ')
+          ..write('mode: $mode, ')
+          ..write('threshold: $threshold, ')
+          ..write('discountPercentage: $discountPercentage')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $UserLoyaltiesTable extends UserLoyalties
+    with TableInfo<$UserLoyaltiesTable, UserLoyalty> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $UserLoyaltiesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+      'user_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _pizzaCountMeta =
+      const VerificationMeta('pizzaCount');
+  @override
+  late final GeneratedColumn<int> pizzaCount = GeneratedColumn<int>(
+      'pizza_count', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  @override
+  List<GeneratedColumn> get $columns => [userId, pizzaCount];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'user_loyalties';
+  @override
+  VerificationContext validateIntegrity(Insertable<UserLoyalty> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('user_id')) {
+      context.handle(_userIdMeta,
+          userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta));
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('pizza_count')) {
+      context.handle(
+          _pizzaCountMeta,
+          pizzaCount.isAcceptableOrUnknown(
+              data['pizza_count']!, _pizzaCountMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {userId};
+  @override
+  UserLoyalty map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return UserLoyalty(
+      userId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}user_id'])!,
+      pizzaCount: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}pizza_count'])!,
+    );
+  }
+
+  @override
+  $UserLoyaltiesTable createAlias(String alias) {
+    return $UserLoyaltiesTable(attachedDatabase, alias);
+  }
+}
+
+class UserLoyalty extends DataClass implements Insertable<UserLoyalty> {
+  final String userId;
+  final int pizzaCount;
+  const UserLoyalty({required this.userId, required this.pizzaCount});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['user_id'] = Variable<String>(userId);
+    map['pizza_count'] = Variable<int>(pizzaCount);
+    return map;
+  }
+
+  UserLoyaltiesCompanion toCompanion(bool nullToAbsent) {
+    return UserLoyaltiesCompanion(
+      userId: Value(userId),
+      pizzaCount: Value(pizzaCount),
+    );
+  }
+
+  factory UserLoyalty.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return UserLoyalty(
+      userId: serializer.fromJson<String>(json['userId']),
+      pizzaCount: serializer.fromJson<int>(json['pizzaCount']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'userId': serializer.toJson<String>(userId),
+      'pizzaCount': serializer.toJson<int>(pizzaCount),
+    };
+  }
+
+  UserLoyalty copyWith({String? userId, int? pizzaCount}) => UserLoyalty(
+        userId: userId ?? this.userId,
+        pizzaCount: pizzaCount ?? this.pizzaCount,
+      );
+  UserLoyalty copyWithCompanion(UserLoyaltiesCompanion data) {
+    return UserLoyalty(
+      userId: data.userId.present ? data.userId.value : this.userId,
+      pizzaCount:
+          data.pizzaCount.present ? data.pizzaCount.value : this.pizzaCount,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('UserLoyalty(')
+          ..write('userId: $userId, ')
+          ..write('pizzaCount: $pizzaCount')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(userId, pizzaCount);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is UserLoyalty &&
+          other.userId == this.userId &&
+          other.pizzaCount == this.pizzaCount);
+}
+
+class UserLoyaltiesCompanion extends UpdateCompanion<UserLoyalty> {
+  final Value<String> userId;
+  final Value<int> pizzaCount;
+  final Value<int> rowid;
+  const UserLoyaltiesCompanion({
+    this.userId = const Value.absent(),
+    this.pizzaCount = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  UserLoyaltiesCompanion.insert({
+    required String userId,
+    this.pizzaCount = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : userId = Value(userId);
+  static Insertable<UserLoyalty> custom({
+    Expression<String>? userId,
+    Expression<int>? pizzaCount,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (userId != null) 'user_id': userId,
+      if (pizzaCount != null) 'pizza_count': pizzaCount,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  UserLoyaltiesCompanion copyWith(
+      {Value<String>? userId, Value<int>? pizzaCount, Value<int>? rowid}) {
+    return UserLoyaltiesCompanion(
+      userId: userId ?? this.userId,
+      pizzaCount: pizzaCount ?? this.pizzaCount,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (pizzaCount.present) {
+      map['pizza_count'] = Variable<int>(pizzaCount.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('UserLoyaltiesCompanion(')
+          ..write('userId: $userId, ')
+          ..write('pizzaCount: $pizzaCount, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -4472,6 +4966,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $SavedCartItemsTable savedCartItems = $SavedCartItemsTable(this);
   late final $OrderStatusHistoriesTable orderStatusHistories =
       $OrderStatusHistoriesTable(this);
+  late final $LoyaltySettingsTable loyaltySettings =
+      $LoyaltySettingsTable(this);
+  late final $UserLoyaltiesTable userLoyalties = $UserLoyaltiesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -4488,7 +4985,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         companyInfo,
         productIngredientLinks,
         savedCartItems,
-        orderStatusHistories
+        orderStatusHistories,
+        loyaltySettings,
+        userLoyalties
       ];
 }
 
@@ -7849,6 +8348,304 @@ typedef $$OrderStatusHistoriesTableProcessedTableManager
         (OrderStatusHistory, $$OrderStatusHistoriesTableReferences),
         OrderStatusHistory,
         PrefetchHooks Function({bool orderId})>;
+typedef $$LoyaltySettingsTableCreateCompanionBuilder = LoyaltySettingsCompanion
+    Function({
+  Value<int> id,
+  Value<bool> isEnabled,
+  Value<String> mode,
+  Value<int> threshold,
+  Value<double> discountPercentage,
+});
+typedef $$LoyaltySettingsTableUpdateCompanionBuilder = LoyaltySettingsCompanion
+    Function({
+  Value<int> id,
+  Value<bool> isEnabled,
+  Value<String> mode,
+  Value<int> threshold,
+  Value<double> discountPercentage,
+});
+
+class $$LoyaltySettingsTableFilterComposer
+    extends Composer<_$AppDatabase, $LoyaltySettingsTable> {
+  $$LoyaltySettingsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isEnabled => $composableBuilder(
+      column: $table.isEnabled, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get mode => $composableBuilder(
+      column: $table.mode, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get threshold => $composableBuilder(
+      column: $table.threshold, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get discountPercentage => $composableBuilder(
+      column: $table.discountPercentage,
+      builder: (column) => ColumnFilters(column));
+}
+
+class $$LoyaltySettingsTableOrderingComposer
+    extends Composer<_$AppDatabase, $LoyaltySettingsTable> {
+  $$LoyaltySettingsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get isEnabled => $composableBuilder(
+      column: $table.isEnabled, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get mode => $composableBuilder(
+      column: $table.mode, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get threshold => $composableBuilder(
+      column: $table.threshold, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get discountPercentage => $composableBuilder(
+      column: $table.discountPercentage,
+      builder: (column) => ColumnOrderings(column));
+}
+
+class $$LoyaltySettingsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LoyaltySettingsTable> {
+  $$LoyaltySettingsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<bool> get isEnabled =>
+      $composableBuilder(column: $table.isEnabled, builder: (column) => column);
+
+  GeneratedColumn<String> get mode =>
+      $composableBuilder(column: $table.mode, builder: (column) => column);
+
+  GeneratedColumn<int> get threshold =>
+      $composableBuilder(column: $table.threshold, builder: (column) => column);
+
+  GeneratedColumn<double> get discountPercentage => $composableBuilder(
+      column: $table.discountPercentage, builder: (column) => column);
+}
+
+class $$LoyaltySettingsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $LoyaltySettingsTable,
+    LoyaltySetting,
+    $$LoyaltySettingsTableFilterComposer,
+    $$LoyaltySettingsTableOrderingComposer,
+    $$LoyaltySettingsTableAnnotationComposer,
+    $$LoyaltySettingsTableCreateCompanionBuilder,
+    $$LoyaltySettingsTableUpdateCompanionBuilder,
+    (
+      LoyaltySetting,
+      BaseReferences<_$AppDatabase, $LoyaltySettingsTable, LoyaltySetting>
+    ),
+    LoyaltySetting,
+    PrefetchHooks Function()> {
+  $$LoyaltySettingsTableTableManager(
+      _$AppDatabase db, $LoyaltySettingsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LoyaltySettingsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LoyaltySettingsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LoyaltySettingsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<bool> isEnabled = const Value.absent(),
+            Value<String> mode = const Value.absent(),
+            Value<int> threshold = const Value.absent(),
+            Value<double> discountPercentage = const Value.absent(),
+          }) =>
+              LoyaltySettingsCompanion(
+            id: id,
+            isEnabled: isEnabled,
+            mode: mode,
+            threshold: threshold,
+            discountPercentage: discountPercentage,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<bool> isEnabled = const Value.absent(),
+            Value<String> mode = const Value.absent(),
+            Value<int> threshold = const Value.absent(),
+            Value<double> discountPercentage = const Value.absent(),
+          }) =>
+              LoyaltySettingsCompanion.insert(
+            id: id,
+            isEnabled: isEnabled,
+            mode: mode,
+            threshold: threshold,
+            discountPercentage: discountPercentage,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$LoyaltySettingsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $LoyaltySettingsTable,
+    LoyaltySetting,
+    $$LoyaltySettingsTableFilterComposer,
+    $$LoyaltySettingsTableOrderingComposer,
+    $$LoyaltySettingsTableAnnotationComposer,
+    $$LoyaltySettingsTableCreateCompanionBuilder,
+    $$LoyaltySettingsTableUpdateCompanionBuilder,
+    (
+      LoyaltySetting,
+      BaseReferences<_$AppDatabase, $LoyaltySettingsTable, LoyaltySetting>
+    ),
+    LoyaltySetting,
+    PrefetchHooks Function()>;
+typedef $$UserLoyaltiesTableCreateCompanionBuilder = UserLoyaltiesCompanion
+    Function({
+  required String userId,
+  Value<int> pizzaCount,
+  Value<int> rowid,
+});
+typedef $$UserLoyaltiesTableUpdateCompanionBuilder = UserLoyaltiesCompanion
+    Function({
+  Value<String> userId,
+  Value<int> pizzaCount,
+  Value<int> rowid,
+});
+
+class $$UserLoyaltiesTableFilterComposer
+    extends Composer<_$AppDatabase, $UserLoyaltiesTable> {
+  $$UserLoyaltiesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get userId => $composableBuilder(
+      column: $table.userId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get pizzaCount => $composableBuilder(
+      column: $table.pizzaCount, builder: (column) => ColumnFilters(column));
+}
+
+class $$UserLoyaltiesTableOrderingComposer
+    extends Composer<_$AppDatabase, $UserLoyaltiesTable> {
+  $$UserLoyaltiesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get userId => $composableBuilder(
+      column: $table.userId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get pizzaCount => $composableBuilder(
+      column: $table.pizzaCount, builder: (column) => ColumnOrderings(column));
+}
+
+class $$UserLoyaltiesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $UserLoyaltiesTable> {
+  $$UserLoyaltiesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<int> get pizzaCount => $composableBuilder(
+      column: $table.pizzaCount, builder: (column) => column);
+}
+
+class $$UserLoyaltiesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $UserLoyaltiesTable,
+    UserLoyalty,
+    $$UserLoyaltiesTableFilterComposer,
+    $$UserLoyaltiesTableOrderingComposer,
+    $$UserLoyaltiesTableAnnotationComposer,
+    $$UserLoyaltiesTableCreateCompanionBuilder,
+    $$UserLoyaltiesTableUpdateCompanionBuilder,
+    (
+      UserLoyalty,
+      BaseReferences<_$AppDatabase, $UserLoyaltiesTable, UserLoyalty>
+    ),
+    UserLoyalty,
+    PrefetchHooks Function()> {
+  $$UserLoyaltiesTableTableManager(_$AppDatabase db, $UserLoyaltiesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$UserLoyaltiesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$UserLoyaltiesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$UserLoyaltiesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> userId = const Value.absent(),
+            Value<int> pizzaCount = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              UserLoyaltiesCompanion(
+            userId: userId,
+            pizzaCount: pizzaCount,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String userId,
+            Value<int> pizzaCount = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              UserLoyaltiesCompanion.insert(
+            userId: userId,
+            pizzaCount: pizzaCount,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$UserLoyaltiesTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $UserLoyaltiesTable,
+    UserLoyalty,
+    $$UserLoyaltiesTableFilterComposer,
+    $$UserLoyaltiesTableOrderingComposer,
+    $$UserLoyaltiesTableAnnotationComposer,
+    $$UserLoyaltiesTableCreateCompanionBuilder,
+    $$UserLoyaltiesTableUpdateCompanionBuilder,
+    (
+      UserLoyalty,
+      BaseReferences<_$AppDatabase, $UserLoyaltiesTable, UserLoyalty>
+    ),
+    UserLoyalty,
+    PrefetchHooks Function()>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -7878,4 +8675,8 @@ class $AppDatabaseManager {
       $$SavedCartItemsTableTableManager(_db, _db.savedCartItems);
   $$OrderStatusHistoriesTableTableManager get orderStatusHistories =>
       $$OrderStatusHistoriesTableTableManager(_db, _db.orderStatusHistories);
+  $$LoyaltySettingsTableTableManager get loyaltySettings =>
+      $$LoyaltySettingsTableTableManager(_db, _db.loyaltySettings);
+  $$UserLoyaltiesTableTableManager get userLoyalties =>
+      $$UserLoyaltiesTableTableManager(_db, _db.userLoyalties);
 }

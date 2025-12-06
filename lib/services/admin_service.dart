@@ -9,10 +9,34 @@ class AdminService {
 
   AdminService({required AppDatabase db}) : _db = db;
 
+  Future<LoyaltySetting?> getLoyaltySettings() async {
+    final data = await _supabase.from('loyalty_settings').select().eq('id', 1).maybeSingle();
+    if (data == null) return null;
+    return LoyaltySetting(
+      id: data['id'] ?? 1,
+      isEnabled: data['is_enabled'] ?? false,
+      mode: data['mode'] ?? 'free_pizza',
+      threshold: data['threshold'] ?? 10,
+      discountPercentage: (data['discount_percentage'] as double?) ?? 0.1,
+    );
+  }
+
+  Future<void> saveLoyaltySettings(LoyaltySettingsCompanion settings) async {
+    final dataToSave = <String, dynamic>{};
+    if (settings.isEnabled.present) dataToSave['is_enabled'] = settings.isEnabled.value;
+    if (settings.mode.present) dataToSave['mode'] = settings.mode.value;
+    if (settings.threshold.present) dataToSave['threshold'] = settings.threshold.value;
+    if (settings.discountPercentage.present) dataToSave['discount_percentage'] = settings.discountPercentage.value;
+
+    await _supabase.from('loyalty_settings').update(dataToSave).eq('id', 1);
+  }
+
   Future<void> archiveTodaysWork() async {
     final now = DateTime.now();
     final startOfDay = DateTime(now.year, now.month, now.day).toIso8601String();
     final endOfDay = DateTime(now.year, now.month, now.day, 23, 59, 59).toIso8601String();
+
+    print('🔍 [AdminService] Recherche des commandes à archiver entre: $startOfDay et $endOfDay');
 
     final finishedOrdersResponse = await _supabase
         .from('order_status_histories')
@@ -23,15 +47,15 @@ class AdminService {
 
     final orderIds = finishedOrdersResponse.map((row) => row['order_id'] as int).toSet().toList();
 
+    print('🔍 [AdminService] ${orderIds.length} commandes trouvées à archiver.');
+
     if (orderIds.isEmpty) {
-      print('ℹ️ Aucune commande terminée à archiver aujourd\'hui.');
       return;
     }
 
-    // ✅ CORRIGÉ: Utilisation de la syntaxe .filter()
+    print('🚀 [AdminService] Archivage des IDs: $orderIds');
     await _supabase.from('orders').update({'is_archived': true}).filter('id', 'in', orderIds);
-
-    print('✅ ${orderIds.length} commande(s) archivée(s).');
+    print('✅ [AdminService] Ordre d\'archivage envoyé à Supabase.');
   }
 
   Future<Map<String, dynamic>> saveProduct({
@@ -67,7 +91,7 @@ class AdminService {
 
   Future<void> saveIngredient(IngredientsCompanion ingredient) async {
     await _db.into(_db.ingredients).insert(ingredient, mode: InsertMode.replace);
-    final response = await _supabase.from('ingredients').upsert({
+    await _supabase.from('ingredients').upsert({
       'id': ingredient.id.value,
       'name': ingredient.name.value,
       'price': ingredient.price.value,

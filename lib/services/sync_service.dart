@@ -17,19 +17,103 @@ class SyncService {
     await _syncCompanyInfo();
     await _syncOrders();
     await _syncOrderItems();
-    await _syncOrderStatusHistories(); // ✅ AJOUTÉ
+    await _syncOrderStatusHistories();
     await _syncReviews();
+    await _syncLoyaltySettings();
+    await _syncUserLoyalty();
   }
 
-  // ✅ NOUVELLE MÉTHODE
+  Future<void> _syncLoyaltySettings() async {
+    try {
+      final response = await _supabase.from('loyalty_settings').select();
+      final settingsToSync = response.map((item) => LoyaltySettingsCompanion(
+        id: Value(item['id'] as int),
+        isEnabled: Value(item['is_enabled'] as bool? ?? false),
+        mode: Value(item['mode'] as String? ?? 'free_pizza'),
+        threshold: Value(item['threshold'] as int? ?? 10),
+        discountPercentage: Value((item['discount_percentage'] as num? ?? 0.1).toDouble()),
+      )).toList();
+      await db.transaction(() async {
+        await db.delete(db.loyaltySettings).go();
+        await db.batch((batch) => batch.insertAll(db.loyaltySettings, settingsToSync));
+      });
+    } catch (e) {
+      print('❌ Erreur de synchronisation (LoyaltySettings): $e');
+    }
+  }
+
+  Future<void> _syncUserLoyalty() async {
+    try {
+      final response = await _supabase.from('user_loyalty').select();
+      final loyaltyDataToSync = response.map((item) => UserLoyaltiesCompanion(
+        userId: Value(item['user_id'] as String),
+        pizzaCount: Value(item['pizza_count'] as int? ?? 0),
+      )).toList();
+      await db.transaction(() async {
+        await db.delete(db.userLoyalties).go();
+        await db.batch((batch) => batch.insertAll(db.userLoyalties, loyaltyDataToSync));
+      });
+    } catch (e) {
+      print('❌ Erreur de synchronisation (UserLoyalty): $e');
+    }
+  }
+
+  Future<void> _syncReviews() async {
+    try {
+      final response = await _supabase.from('reviews').select();
+      final reviewsToSync = response.map((item) => ReviewsCompanion(
+        id: Value(item['id'] as int),
+        orderId: Value(item['order_id'] as int),
+        userId: Value(item['user_id'] as String),
+        rating: Value(item['rating'] as int),
+        comment: Value(item['comment'] as String?),
+        createdAt: Value(DateTime.parse(item['created_at'] as String)),
+      )).toList();
+      await db.transaction(() async {
+        await db.delete(db.reviews).go();
+        await db.batch((batch) => batch.insertAll(db.reviews, reviewsToSync));
+      });
+    } catch (e) {
+      print('❌ Erreur de synchronisation (Reviews): $e');
+    }
+  }
+
+  Future<void> _syncOrders() async {
+    try {
+      final response = await _supabase.from('orders').select();
+      final ordersToSync = response.map((item) {
+        // ✅ AJOUTÉ: Log pour déboguer le statut d'archivage
+        print('🔄 Syncing Order ID: ${item['id']}, is_archived: ${item['is_archived']}');
+        
+        return OrdersCompanion(
+          id: Value(item['id'] as int),
+          userId: Value(item['user_id'] as String),
+          total: Value((item['total'] as num? ?? 0).toDouble()),
+          referenceName: Value(item['reference_name'] as String?),
+          pickupTime: Value(item['pickup_time'] as String?),
+          paymentMethod: Value(item['payment_method'] as String?),
+          isArchived: Value(item['is_archived'] as bool?),
+          createdAt: Value(DateTime.parse(item['created_at'] as String? ?? '2023-01-01T00:00:00Z')),
+          updatedAt: item['updated_at'] != null ? Value(DateTime.parse(item['updated_at'])) : const Value.absent(),
+        );
+      }).toList();
+      await db.transaction(() async {
+        await db.delete(db.orders).go();
+        await db.batch((batch) => batch.insertAll(db.orders, ordersToSync));
+      });
+    } catch (e) {
+      print('❌ Erreur de synchronisation (Orders): $e');
+    }
+  }
+  
   Future<void> _syncOrderStatusHistories() async {
     try {
       final response = await _supabase.from('order_status_histories').select();
-      final historiesToSync = response.map((item) => OrderStatusHistoriesCompanion.insert(
+      final historiesToSync = response.map((item) => OrderStatusHistoriesCompanion(
         id: Value(item['id'] as int),
-        orderId: item['order_id'] as int,
-        status: item['status'] as String,
-        createdAt: DateTime.parse(item['created_at'] as String),
+        orderId: Value(item['order_id'] as int),
+        status: Value(item['status'] as String),
+        createdAt: Value(DateTime.parse(item['created_at'] as String)),
       )).toList();
 
       await db.transaction(() async {
@@ -41,42 +125,21 @@ class SyncService {
     }
   }
 
-  Future<void> _syncReviews() async {
-    try {
-      final response = await _supabase.from('reviews').select();
-      final reviewsToSync = response.map((item) => ReviewsCompanion.insert(
-        id: Value(item['id'] as int),
-        orderId: item['order_id'] as int,
-        userId: item['user_id'] as String,
-        rating: item['rating'] as int,
-        comment: Value(item['comment'] as String?),
-        createdAt: Value(DateTime.parse(item['created_at'] as String)),
-      )).toList();
-
-      await db.transaction(() async {
-        await db.delete(db.reviews).go();
-        await db.batch((batch) => batch.insertAll(db.reviews, reviewsToSync));
-      });
-    } catch (e) {
-      print('❌ Erreur de synchronisation (Reviews): $e');
-    }
-  }
-
   Future<void> _syncProducts() async {
     try {
       final response = await _supabase.from('products').select();
       final productsToSync = response.map((item) {
-        return ProductsCompanion.insert(
+        return ProductsCompanion(
           id: Value(item['id'] as int),
-          name: item['name'] as String? ?? 'Nom manquant',
+          name: Value(item['name'] as String? ?? 'Nom manquant'),
           description: Value(item['description'] as String?),
-          basePrice: (item['base_price'] as num? ?? 0).toDouble(),
+          basePrice: Value((item['base_price'] as num? ?? 0).toDouble()),
           image: Value(item['image'] as String?),
           category: Value(item['category'] as String?),
           hasGlobalDiscount: Value(item['has_global_discount'] as bool? ?? false),
           discountPercentage: Value((item['discount_percentage'] as num? ?? 0).toDouble()),
           maxSupplements: Value(item['max_supplements'] as int?),
-          createdAt: DateTime.parse(item['created_at'] as String? ?? '2023-01-01T00:00:00Z'),
+          createdAt: Value(DateTime.parse(item['created_at'] as String? ?? '2023-01-01T00:00:00Z')),
         );
       }).toList();
 
@@ -92,10 +155,10 @@ class SyncService {
   Future<void> _syncIngredients() async {
     try {
       final response = await _supabase.from('ingredients').select();
-      final ingredientsToSync = response.map((item) => IngredientsCompanion.insert(
+      final ingredientsToSync = response.map((item) => IngredientsCompanion(
         id: Value(item['id'] as int),
-        name: item['name'] as String? ?? 'Ingrédient inconnu',
-        price: (item['price'] as num? ?? 0).toDouble(),
+        name: Value(item['name'] as String? ?? 'Ingrédient inconnu'),
+        price: Value((item['price'] as num? ?? 0).toDouble()),
         category: Value(item['category'] as String?),
         isGlobal: Value(item['is_global'] as bool? ?? false),
         createdAt: Value(DateTime.parse(item['created_at'] as String? ?? '2023-01-01T00:00:00Z')),
@@ -113,9 +176,9 @@ class SyncService {
   Future<void> _syncProductIngredientLinks() async {
     try {
       final response = await _supabase.from('product_ingredient_links').select();
-      final linksToSync = response.map((item) => ProductIngredientLinksCompanion.insert(
-        productId: item['product_id'] as int,
-        ingredientId: item['ingredient_id'] as int,
+      final linksToSync = response.map((item) => ProductIngredientLinksCompanion(
+        productId: Value(item['product_id'] as int),
+        ingredientId: Value(item['ingredient_id'] as int),
       )).toList();
 
       await db.transaction(() async {
@@ -127,39 +190,16 @@ class SyncService {
     }
   }
 
-  Future<void> _syncOrders() async {
-    try {
-      final response = await _supabase.from('orders').select();
-      final ordersToSync = response.map((item) => OrdersCompanion.insert(
-        id: Value(item['id'] as int),
-        userId: item['user_id'] as String,
-        total: (item['total'] as num? ?? 0).toDouble(),
-        referenceName: Value(item['reference_name'] as String?),
-        pickupTime: Value(item['pickup_time'] as String?),
-        paymentMethod: Value(item['payment_method'] as String?),
-        createdAt: DateTime.parse(item['created_at'] as String? ?? '2023-01-01T00:00:00Z'),
-        updatedAt: item['updated_at'] != null ? Value(DateTime.parse(item['updated_at'])) : const Value.absent(),
-      )).toList();
-
-      await db.transaction(() async {
-        await db.delete(db.orders).go();
-        await db.batch((batch) => batch.insertAll(db.orders, ordersToSync));
-      });
-    } catch (e) {
-      print('❌ Erreur de synchronisation (Orders): $e');
-    }
-  }
-
   Future<void> _syncOrderItems() async {
     try {
       final response = await _supabase.from('order_items').select();
-      final itemsToSync = response.map((item) => OrderItemsCompanion.insert(
+      final itemsToSync = response.map((item) => OrderItemsCompanion(
         id: Value(item['id'] as int),
-        orderId: item['order_id'] as int,
-        productId: item['product_id'] as int,
-        quantity: item['quantity'] as int,
-        unitPrice: (item['unit_price'] as num? ?? 0).toDouble(),
-        productName: item['product_name'] as String? ?? 'Produit inconnu',
+        orderId: Value(item['order_id'] as int),
+        productId: Value(item['product_id'] as int),
+        quantity: Value(item['quantity'] as int),
+        unitPrice: Value((item['unit_price'] as num? ?? 0).toDouble()),
+        productName: Value(item['product_name'] as String? ?? 'Produit inconnu'),
         optionsDescription: Value(item['options_description'] as String?),
       )).toList();
 
@@ -175,16 +215,16 @@ class SyncService {
   Future<void> _syncAnnouncements() async {
     try {
       final response = await _supabase.from('announcements').select();
-      final itemsToSync = response.map((item) => AnnouncementsCompanion.insert(
+      final itemsToSync = response.map((item) => AnnouncementsCompanion(
         id: Value(item['id'] as int),
-        title: item['title'] as String? ?? 'Titre manquant',
+        title: Value(item['title'] as String? ?? 'Titre manquant'),
         announcementText: Value(item['announcement_text'] as String?),
         description: Value(item['description'] as String?),
         imageUrl: Value(item['image_url'] as String?),
         conclusion: Value(item['conclusion'] as String?),
         isActive: Value(item['is_active'] as bool? ?? true),
         type: Value(item['type'] as String? ?? 'Annonce'),
-        createdAt: DateTime.parse(item['created_at'] as String? ?? '2023-01-01T00:00:00Z'),
+        createdAt: Value(DateTime.parse(item['created_at'] as String? ?? '2023-01-01T00:00:00Z')),
       )).toList();
 
       await db.transaction(() async {
@@ -201,7 +241,7 @@ class SyncService {
       final response = await _supabase.from('company_info').select().limit(1);
       if (response.isNotEmpty) {
         final info = response.first;
-        final infoToSync = CompanyInfoCompanion.insert(
+        final infoToSync = CompanyInfoCompanion(
           id: Value(info['id'] as int),
           name: Value(info['name'] as String?),
           presentation: Value(info['presentation'] as String?),
