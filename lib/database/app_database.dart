@@ -47,7 +47,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 26; // ✅ VERSION AUGMENTÉE POUR FORCER LA MIGRATION
+  int get schemaVersion => 26;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -92,6 +92,23 @@ class AppDatabase extends _$AppDatabase {
 
   Stream<List<OrderWithStatus>> watchAllOrdersWithStatus() => _watchOrdersWithStatus(null);
   Stream<List<OrderWithStatus>> watchUserOrdersWithStatus(String userId) => _watchOrdersWithStatus(userId);
+
+  Future<List<Order>> getArchivedOrders(DateTime? start, DateTime? end) {
+    var query = select(orders)..where((o) => o.isArchived.equals(true));
+
+    if (start != null) {
+      // ✅ CORRECTION FINALE ET ABSOLUE
+      query.where((o) => o.createdAt.isBiggerOrEqualValue(start));
+    }
+    if (end != null) {
+      final endOfDay = DateTime(end.year, end.month, end.day + 1);
+      query.where((o) => o.createdAt.isSmallerThanValue(endOfDay));
+    }
+
+    query.orderBy([(o) => OrderingTerm(expression: o.createdAt, mode: OrderingMode.desc)]);
+
+    return query.get();
+  }
 
   Future<List<SavedCartItem>> getAllSavedCartItems() => select(savedCartItems).get();
   Future<void> saveCartItem(SavedCartItemsCompanion item) => into(savedCartItems).insert(item, mode: InsertMode.replace);

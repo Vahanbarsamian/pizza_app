@@ -8,9 +8,10 @@ class Orders extends Table {
   TextColumn get pickupTime => text().named('pickup_time').nullable()();
   TextColumn get paymentMethod => text().named('payment_method').nullable()(); 
   RealColumn get total => real().named('total')();
-  // La colonne 'status' est supprimée d'ici
   DateTimeColumn get createdAt => dateTime().named('created_at')();
-  DateTimeColumn get updatedAt => dateTime().named('updated_at').nullable()(); // ✅ NOUVEAU
+  DateTimeColumn get updatedAt => dateTime().named('updated_at').nullable()();
+  // ✅ CORRIGÉ: Colonne rendue nullable pour la compatibilité
+  BoolColumn get isArchived => boolean().named('is_archived').nullable()();
 }
 
 @DataClassName('OrderItem')
@@ -24,7 +25,6 @@ class OrderItems extends Table {
   TextColumn get optionsDescription => text().named('options_description').nullable()();
 }
 
-// NOUVEAU: Table pour l'historique des statuts
 @DataClassName('OrderStatusHistory')
 class OrderStatusHistories extends Table {
   IntColumn get id => integer().autoIncrement()();

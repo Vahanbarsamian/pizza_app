@@ -9,6 +9,31 @@ class AdminService {
 
   AdminService({required AppDatabase db}) : _db = db;
 
+  Future<void> archiveTodaysWork() async {
+    final now = DateTime.now();
+    final startOfDay = DateTime(now.year, now.month, now.day).toIso8601String();
+    final endOfDay = DateTime(now.year, now.month, now.day, 23, 59, 59).toIso8601String();
+
+    final finishedOrdersResponse = await _supabase
+        .from('order_status_histories')
+        .select('order_id')
+        .eq('status', 'Terminée')
+        .gte('created_at', startOfDay)
+        .lte('created_at', endOfDay);
+
+    final orderIds = finishedOrdersResponse.map((row) => row['order_id'] as int).toSet().toList();
+
+    if (orderIds.isEmpty) {
+      print('ℹ️ Aucune commande terminée à archiver aujourd\'hui.');
+      return;
+    }
+
+    // ✅ CORRIGÉ: Utilisation de la syntaxe .filter()
+    await _supabase.from('orders').update({'is_archived': true}).filter('id', 'in', orderIds);
+
+    print('✅ ${orderIds.length} commande(s) archivée(s).');
+  }
+
   Future<Map<String, dynamic>> saveProduct({
     int? id,
     required String name,
@@ -106,7 +131,6 @@ class AdminService {
     await _supabase.from('announcements').delete().eq('id', id);
   }
 
-  // ✅ CORRIGÉ: Met à jour le statut en créant une nouvelle entrée dans l'historique
   Future<void> updateOrderStatus(int orderId, String status) async {
     final now = DateTime.now();
     await _supabase.from('order_status_histories').insert({
@@ -114,7 +138,6 @@ class AdminService {
       'status': status,
       'created_at': now.toIso8601String(),
     });
-    // Met également à jour le champ `updated_at` de la commande principale pour le tri
     await _supabase.from('orders').update({'updated_at': now.toIso8601String()}).eq('id', orderId);
   }
 }

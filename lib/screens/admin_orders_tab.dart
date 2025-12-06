@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import '../database/app_database.dart';
 import '../services/sync_service.dart';
 import '../services/preferences_service.dart';
+import '../services/admin_service.dart';
 import 'order_detail_screen.dart';
 
 class AdminOrdersTab extends StatefulWidget {
@@ -20,7 +21,6 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> with SingleTickerProvid
   final AudioPlayer _audioPlayer = AudioPlayer();
   RealtimeChannel? _ordersChannel;
   late TabController _tabController;
-  bool _showArchiveButton = true;
 
   DateTime? _filterStartDate, _filterEndDate, _archiveStartDate, _archiveEndDate;
   bool _areOrdersOpen = true;
@@ -29,10 +29,8 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> with SingleTickerProvid
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-    _tabController.addListener(() {
-      if (mounted) setState(() => _showArchiveButton = _tabController.index == 0);
-    });
+    _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(() => setState(() {}));
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _listenToNewOrders();
     });
@@ -48,7 +46,6 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> with SingleTickerProvid
       table: 'orders',
       callback: (payload) {
         if (mounted) {
-          print('🔔 Nouvelle commande détectée !');
           if (prefs.visualNotification) {
             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('🔔 Nouvelle commande reçue !'), backgroundColor: Colors.blue));
           }
@@ -59,6 +56,32 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> with SingleTickerProvid
         }
       },
     ).subscribe();
+  }
+
+  Future<void> _archiveWork() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Confirmer l\'archivage'),
+        content: const Text('Voulez-vous vraiment archiver toutes les commandes terminées aujourd\'hui ?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Annuler')),
+          TextButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Archiver', style: TextStyle(color: Colors.red))),
+        ],
+      ),
+    ) ?? false;
+
+    if (confirmed && mounted) {
+      final adminService = context.read<AdminService>();
+      final syncService = context.read<SyncService>();
+      try {
+        await adminService.archiveTodaysWork();
+        await syncService.syncAll();
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Archivage terminé.'), backgroundColor: Colors.green));
+      } catch (e) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red));
+      }
+    }
   }
 
   @override
@@ -75,18 +98,12 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> with SingleTickerProvid
       appBar: AppBar(
         backgroundColor: Theme.of(context).canvasColor,
         automaticallyImplyLeading: false,
-        actions: [
-          if (_showArchiveButton)
-            TextButton.icon(
-              icon: const Icon(Icons.archive_outlined),
-              label: const Text('Archiver le travail du jour'),
-              onPressed: () { /* TODO */ },
-            ),
-        ],
+        actions: const [],
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
             Tab(icon: Icon(Icons.list_alt), text: 'Commandes'),
+            Tab(icon: Icon(Icons.inventory_2_outlined), text: 'Archives'),
             Tab(icon: Icon(Icons.settings), text: 'Réglages'),
           ],
         ),
@@ -95,6 +112,15 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> with SingleTickerProvid
         controller: _tabController,
         children: [
           OrdersList(startDate: _filterStartDate, endDate: _filterEndDate),
+          ArchivesTab(
+            archiveStartDate: _archiveStartDate,
+            archiveEndDate: _archiveEndDate,
+            onArchiveDateChanged: (start, end) => setState(() {
+              _archiveStartDate = start;
+              _archiveEndDate = end;
+            }),
+            onArchivePressed: _archiveWork,
+          ),
           SettingsTab(
             initialFilterStartDate: _filterStartDate,
             initialFilterEndDate: _filterEndDate,
@@ -103,8 +129,6 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> with SingleTickerProvid
             vacationEndDate: _vacationEndDate,
             tempClosureStartDate: _tempClosureStartDate,
             tempClosureEndDate: _tempClosureEndDate,
-            archiveStartDate: _archiveStartDate,
-            archiveEndDate: _archiveEndDate,
             onFilterDateChanged: (start, end) => setState(() {
               _filterStartDate = start;
               _filterEndDate = end;
@@ -117,10 +141,6 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> with SingleTickerProvid
             onTempClosureDateChanged: (start, end) => setState(() {
               _tempClosureStartDate = start;
               _tempClosureEndDate = end;
-            }),
-            onArchiveDateChanged: (start, end) => setState(() {
-              _archiveStartDate = start;
-              _archiveEndDate = end;
             }),
           ),
         ],
@@ -142,6 +162,8 @@ class OrdersList extends StatelessWidget {
       builder: (context, snapshot) {
         if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
         var allOrders = snapshot.data ?? [];
+        allOrders = allOrders.where((o) => o.order.isArchived != true).toList();
+
         if (startDate != null) {
           final startOfDay = DateTime(startDate!.year, startDate!.month, startDate!.day);
           allOrders = allOrders.where((o) => o.order.createdAt.isAfter(startOfDay)).toList();
@@ -186,15 +208,15 @@ class OrdersList extends StatelessWidget {
 }
 
 class SettingsTab extends StatelessWidget {
-  final DateTime? initialFilterStartDate, initialFilterEndDate, vacationStartDate, vacationEndDate, tempClosureStartDate, tempClosureEndDate, archiveStartDate, archiveEndDate;
+  final DateTime? initialFilterStartDate, initialFilterEndDate, vacationStartDate, vacationEndDate, tempClosureStartDate, tempClosureEndDate;
   final bool areOrdersOpen;
-  final Function(DateTime?, DateTime?) onFilterDateChanged, onVacationDateChanged, onTempClosureDateChanged, onArchiveDateChanged;
+  final Function(DateTime?, DateTime?) onFilterDateChanged, onVacationDateChanged, onTempClosureDateChanged;
   final Function(bool) onOrdersOpenChanged;
 
   const SettingsTab({
     super.key,
-    required this.onFilterDateChanged, required this.onOrdersOpenChanged, required this.onVacationDateChanged, required this.onTempClosureDateChanged, required this.onArchiveDateChanged,
-    this.initialFilterStartDate, this.initialFilterEndDate, required this.areOrdersOpen, this.vacationStartDate, this.vacationEndDate, this.tempClosureStartDate, this.tempClosureEndDate, this.archiveStartDate, this.archiveEndDate,
+    required this.onFilterDateChanged, required this.onOrdersOpenChanged, required this.onVacationDateChanged, required this.onTempClosureDateChanged,
+    this.initialFilterStartDate, this.initialFilterEndDate, required this.areOrdersOpen, this.vacationStartDate, this.vacationEndDate, this.tempClosureStartDate, this.tempClosureEndDate,
   });
 
   Future<void> _selectDate(BuildContext context, {required DateTime? initialDate, required Function(DateTime) onDateSelected}) async {
@@ -221,13 +243,6 @@ class SettingsTab extends StatelessWidget {
         _buildDateRangeCard(context, title: 'En congés', startDate: vacationStartDate, endDate: vacationEndDate, onStartDateSelected: (date) => onVacationDateChanged(date, vacationEndDate), onEndDateSelected: (date) => onVacationDateChanged(vacationStartDate, date)),
         _buildDateRangeCard(context, title: 'Fermeture temporaire', startDate: tempClosureStartDate, endDate: tempClosureEndDate, onStartDateSelected: (date) => onTempClosureDateChanged(date, tempClosureEndDate), onEndDateSelected: (date) => onTempClosureDateChanged(tempClosureStartDate, date)),
         const Card(child: ListTile(title: Text('Reservation complete'), trailing: Icon(Icons.copy_all_outlined))),
-        const Divider(height: 32),
-        // ✅ CORRIGÉ: Section Archive restaurée
-        _buildSectionTitle(context, 'Visualiser les archives'),
-        Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
-          ElevatedButton.icon(icon: const Icon(Icons.inventory_2_outlined), label: Text(archiveStartDate == null ? 'Date de début' : dateFormat.format(archiveStartDate!)), onPressed: () => _selectDate(context, initialDate: archiveStartDate, onDateSelected: (date) => onArchiveDateChanged(date, archiveEndDate))),
-          ElevatedButton.icon(icon: const Icon(Icons.inventory), label: Text(archiveEndDate == null ? 'Date de fin' : dateFormat.format(archiveEndDate!)), onPressed: () => _selectDate(context, initialDate: archiveEndDate, onDateSelected: (date) => onArchiveDateChanged(archiveStartDate, date))),
-        ]),
       ],
     );
   }
@@ -239,5 +254,98 @@ class SettingsTab extends StatelessWidget {
 
   Widget _buildSectionTitle(BuildContext context, String title) {
     return Padding(padding: const EdgeInsets.only(bottom: 8.0, top: 8.0), child: Text(title, style: Theme.of(context).textTheme.titleLarge));
+  }
+}
+
+class ArchivesTab extends StatefulWidget {
+  final DateTime? archiveStartDate;
+  final DateTime? archiveEndDate;
+  final Function(DateTime?, DateTime?) onArchiveDateChanged;
+  final Future<void> Function() onArchivePressed;
+
+  const ArchivesTab({super.key, this.archiveStartDate, this.archiveEndDate, required this.onArchiveDateChanged, required this.onArchivePressed});
+
+  @override
+  State<ArchivesTab> createState() => _ArchivesTabState();
+}
+
+class _ArchivesTabState extends State<ArchivesTab> {
+  List<Order> _archivedOrders = [];
+  bool _isLoading = false;
+
+  Future<void> _fetchArchives() async {
+    setState(() => _isLoading = true);
+    final db = context.read<AppDatabase>();
+    try {
+      final results = await db.getArchivedOrders(widget.archiveStartDate, widget.archiveEndDate);
+      setState(() {
+        _archivedOrders = results;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red));
+    }
+  }
+
+  Future<void> _selectDate(BuildContext context, {required DateTime? initialDate, required Function(DateTime) onDateSelected}) async {
+    final newDate = await showDatePicker(context: context, initialDate: initialDate ?? DateTime.now(), firstDate: DateTime(2020), lastDate: DateTime(2100));
+    if (newDate != null) onDateSelected(newDate);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final dateFormat = DateFormat('dd/MM/yyyy');
+    return Column(
+      children: [
+        Card(
+          margin: const EdgeInsets.all(16.0),
+          elevation: 4,
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              children: [
+                Text('Actions', style: Theme.of(context).textTheme.titleLarge),
+                const SizedBox(height: 8),
+                TextButton.icon(icon: const Icon(Icons.archive_outlined, color: Colors.red), label: const Text('Archiver les commandes terminées du jour', style: TextStyle(color: Colors.red)), onPressed: widget.onArchivePressed),
+              ],
+            ),
+          ),
+        ),
+        Card(
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          elevation: 4,
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              children: [
+                Text('Rechercher dans les archives', style: Theme.of(context).textTheme.titleLarge),
+                const SizedBox(height: 8),
+                Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
+                  ElevatedButton.icon(icon: const Icon(Icons.calendar_today_outlined), label: Text(widget.archiveStartDate == null ? 'Début' : dateFormat.format(widget.archiveStartDate!)), onPressed: () => _selectDate(context, initialDate: widget.archiveStartDate, onDateSelected: (date) => widget.onArchiveDateChanged(date, widget.archiveEndDate))),
+                  ElevatedButton.icon(icon: const Icon(Icons.calendar_today), label: Text(widget.archiveEndDate == null ? 'Fin' : dateFormat.format(widget.archiveEndDate!)), onPressed: () => _selectDate(context, initialDate: widget.archiveEndDate, onDateSelected: (date) => widget.onArchiveDateChanged(widget.archiveStartDate, date))),
+                ]),
+                const SizedBox(height: 8),
+                SizedBox(width: double.infinity, child: ElevatedButton(onPressed: _fetchArchives, child: const Text('Afficher'))),
+              ],
+            ),
+          ),
+        ),
+        Expanded(
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _archivedOrders.isEmpty
+                  ? const Center(child: Text('Aucun résultat pour cette période.'))
+                  : ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: _archivedOrders.length,
+                      itemBuilder: (context, index) {
+                        final order = _archivedOrders[index];
+                        return Card(child: ListTile(title: Text('Commande de ${order.referenceName ?? 'N/A'}'), subtitle: Text('Archivée le ${dateFormat.format(order.createdAt)}'), trailing: Text('${order.total.toStringAsFixed(2)} €')));
+                      },
+                    ),
+        )
+      ],
+    );
   }
 }

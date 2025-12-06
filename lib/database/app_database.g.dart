@@ -884,6 +884,15 @@ class $OrdersTable extends Orders with TableInfo<$OrdersTable, Order> {
   late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
       'updated_at', aliasedName, true,
       type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _isArchivedMeta =
+      const VerificationMeta('isArchived');
+  @override
+  late final GeneratedColumn<bool> isArchived = GeneratedColumn<bool>(
+      'is_archived', aliasedName, true,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("is_archived" IN (0, 1))'));
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -893,7 +902,8 @@ class $OrdersTable extends Orders with TableInfo<$OrdersTable, Order> {
         paymentMethod,
         total,
         createdAt,
-        updatedAt
+        updatedAt,
+        isArchived
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -948,6 +958,12 @@ class $OrdersTable extends Orders with TableInfo<$OrdersTable, Order> {
       context.handle(_updatedAtMeta,
           updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
     }
+    if (data.containsKey('is_archived')) {
+      context.handle(
+          _isArchivedMeta,
+          isArchived.isAcceptableOrUnknown(
+              data['is_archived']!, _isArchivedMeta));
+    }
     return context;
   }
 
@@ -973,6 +989,8 @@ class $OrdersTable extends Orders with TableInfo<$OrdersTable, Order> {
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
       updatedAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at']),
+      isArchived: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_archived']),
     );
   }
 
@@ -991,6 +1009,7 @@ class Order extends DataClass implements Insertable<Order> {
   final double total;
   final DateTime createdAt;
   final DateTime? updatedAt;
+  final bool? isArchived;
   const Order(
       {required this.id,
       required this.userId,
@@ -999,7 +1018,8 @@ class Order extends DataClass implements Insertable<Order> {
       this.paymentMethod,
       required this.total,
       required this.createdAt,
-      this.updatedAt});
+      this.updatedAt,
+      this.isArchived});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -1018,6 +1038,9 @@ class Order extends DataClass implements Insertable<Order> {
     map['created_at'] = Variable<DateTime>(createdAt);
     if (!nullToAbsent || updatedAt != null) {
       map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
+    if (!nullToAbsent || isArchived != null) {
+      map['is_archived'] = Variable<bool>(isArchived);
     }
     return map;
   }
@@ -1040,6 +1063,9 @@ class Order extends DataClass implements Insertable<Order> {
       updatedAt: updatedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(updatedAt),
+      isArchived: isArchived == null && nullToAbsent
+          ? const Value.absent()
+          : Value(isArchived),
     );
   }
 
@@ -1055,6 +1081,7 @@ class Order extends DataClass implements Insertable<Order> {
       total: serializer.fromJson<double>(json['total']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
+      isArchived: serializer.fromJson<bool?>(json['isArchived']),
     );
   }
   @override
@@ -1069,6 +1096,7 @@ class Order extends DataClass implements Insertable<Order> {
       'total': serializer.toJson<double>(total),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime?>(updatedAt),
+      'isArchived': serializer.toJson<bool?>(isArchived),
     };
   }
 
@@ -1080,7 +1108,8 @@ class Order extends DataClass implements Insertable<Order> {
           Value<String?> paymentMethod = const Value.absent(),
           double? total,
           DateTime? createdAt,
-          Value<DateTime?> updatedAt = const Value.absent()}) =>
+          Value<DateTime?> updatedAt = const Value.absent(),
+          Value<bool?> isArchived = const Value.absent()}) =>
       Order(
         id: id ?? this.id,
         userId: userId ?? this.userId,
@@ -1092,6 +1121,7 @@ class Order extends DataClass implements Insertable<Order> {
         total: total ?? this.total,
         createdAt: createdAt ?? this.createdAt,
         updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+        isArchived: isArchived.present ? isArchived.value : this.isArchived,
       );
   Order copyWithCompanion(OrdersCompanion data) {
     return Order(
@@ -1108,6 +1138,8 @@ class Order extends DataClass implements Insertable<Order> {
       total: data.total.present ? data.total.value : this.total,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      isArchived:
+          data.isArchived.present ? data.isArchived.value : this.isArchived,
     );
   }
 
@@ -1121,14 +1153,15 @@ class Order extends DataClass implements Insertable<Order> {
           ..write('paymentMethod: $paymentMethod, ')
           ..write('total: $total, ')
           ..write('createdAt: $createdAt, ')
-          ..write('updatedAt: $updatedAt')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('isArchived: $isArchived')
           ..write(')'))
         .toString();
   }
 
   @override
   int get hashCode => Object.hash(id, userId, referenceName, pickupTime,
-      paymentMethod, total, createdAt, updatedAt);
+      paymentMethod, total, createdAt, updatedAt, isArchived);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1140,7 +1173,8 @@ class Order extends DataClass implements Insertable<Order> {
           other.paymentMethod == this.paymentMethod &&
           other.total == this.total &&
           other.createdAt == this.createdAt &&
-          other.updatedAt == this.updatedAt);
+          other.updatedAt == this.updatedAt &&
+          other.isArchived == this.isArchived);
 }
 
 class OrdersCompanion extends UpdateCompanion<Order> {
@@ -1152,6 +1186,7 @@ class OrdersCompanion extends UpdateCompanion<Order> {
   final Value<double> total;
   final Value<DateTime> createdAt;
   final Value<DateTime?> updatedAt;
+  final Value<bool?> isArchived;
   const OrdersCompanion({
     this.id = const Value.absent(),
     this.userId = const Value.absent(),
@@ -1161,6 +1196,7 @@ class OrdersCompanion extends UpdateCompanion<Order> {
     this.total = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
+    this.isArchived = const Value.absent(),
   });
   OrdersCompanion.insert({
     this.id = const Value.absent(),
@@ -1171,6 +1207,7 @@ class OrdersCompanion extends UpdateCompanion<Order> {
     required double total,
     required DateTime createdAt,
     this.updatedAt = const Value.absent(),
+    this.isArchived = const Value.absent(),
   })  : userId = Value(userId),
         total = Value(total),
         createdAt = Value(createdAt);
@@ -1183,6 +1220,7 @@ class OrdersCompanion extends UpdateCompanion<Order> {
     Expression<double>? total,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
+    Expression<bool>? isArchived,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1193,6 +1231,7 @@ class OrdersCompanion extends UpdateCompanion<Order> {
       if (total != null) 'total': total,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
+      if (isArchived != null) 'is_archived': isArchived,
     });
   }
 
@@ -1204,7 +1243,8 @@ class OrdersCompanion extends UpdateCompanion<Order> {
       Value<String?>? paymentMethod,
       Value<double>? total,
       Value<DateTime>? createdAt,
-      Value<DateTime?>? updatedAt}) {
+      Value<DateTime?>? updatedAt,
+      Value<bool?>? isArchived}) {
     return OrdersCompanion(
       id: id ?? this.id,
       userId: userId ?? this.userId,
@@ -1214,6 +1254,7 @@ class OrdersCompanion extends UpdateCompanion<Order> {
       total: total ?? this.total,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      isArchived: isArchived ?? this.isArchived,
     );
   }
 
@@ -1244,6 +1285,9 @@ class OrdersCompanion extends UpdateCompanion<Order> {
     if (updatedAt.present) {
       map['updated_at'] = Variable<DateTime>(updatedAt.value);
     }
+    if (isArchived.present) {
+      map['is_archived'] = Variable<bool>(isArchived.value);
+    }
     return map;
   }
 
@@ -1257,7 +1301,8 @@ class OrdersCompanion extends UpdateCompanion<Order> {
           ..write('paymentMethod: $paymentMethod, ')
           ..write('total: $total, ')
           ..write('createdAt: $createdAt, ')
-          ..write('updatedAt: $updatedAt')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('isArchived: $isArchived')
           ..write(')'))
         .toString();
   }
@@ -5039,6 +5084,7 @@ typedef $$OrdersTableCreateCompanionBuilder = OrdersCompanion Function({
   required double total,
   required DateTime createdAt,
   Value<DateTime?> updatedAt,
+  Value<bool?> isArchived,
 });
 typedef $$OrdersTableUpdateCompanionBuilder = OrdersCompanion Function({
   Value<int> id,
@@ -5049,6 +5095,7 @@ typedef $$OrdersTableUpdateCompanionBuilder = OrdersCompanion Function({
   Value<double> total,
   Value<DateTime> createdAt,
   Value<DateTime?> updatedAt,
+  Value<bool?> isArchived,
 });
 
 final class $$OrdersTableReferences
@@ -5135,6 +5182,9 @@ class $$OrdersTableFilterComposer
 
   ColumnFilters<DateTime> get updatedAt => $composableBuilder(
       column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isArchived => $composableBuilder(
+      column: $table.isArchived, builder: (column) => ColumnFilters(column));
 
   Expression<bool> orderItemsRefs(
       Expression<bool> Function($$OrderItemsTableFilterComposer f) f) {
@@ -5235,6 +5285,9 @@ class $$OrdersTableOrderingComposer
 
   ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
       column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get isArchived => $composableBuilder(
+      column: $table.isArchived, builder: (column) => ColumnOrderings(column));
 }
 
 class $$OrdersTableAnnotationComposer
@@ -5269,6 +5322,9 @@ class $$OrdersTableAnnotationComposer
 
   GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<bool> get isArchived => $composableBuilder(
+      column: $table.isArchived, builder: (column) => column);
 
   Expression<T> orderItemsRefs<T extends Object>(
       Expression<T> Function($$OrderItemsTableAnnotationComposer a) f) {
@@ -5370,6 +5426,7 @@ class $$OrdersTableTableManager extends RootTableManager<
             Value<double> total = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime?> updatedAt = const Value.absent(),
+            Value<bool?> isArchived = const Value.absent(),
           }) =>
               OrdersCompanion(
             id: id,
@@ -5380,6 +5437,7 @@ class $$OrdersTableTableManager extends RootTableManager<
             total: total,
             createdAt: createdAt,
             updatedAt: updatedAt,
+            isArchived: isArchived,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -5390,6 +5448,7 @@ class $$OrdersTableTableManager extends RootTableManager<
             required double total,
             required DateTime createdAt,
             Value<DateTime?> updatedAt = const Value.absent(),
+            Value<bool?> isArchived = const Value.absent(),
           }) =>
               OrdersCompanion.insert(
             id: id,
@@ -5400,6 +5459,7 @@ class $$OrdersTableTableManager extends RootTableManager<
             total: total,
             createdAt: createdAt,
             updatedAt: updatedAt,
+            isArchived: isArchived,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) =>
