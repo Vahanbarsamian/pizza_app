@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../database/app_database.dart';
+import '../database/product.dart';
 import '../services/sync_service.dart';
 import '../services/notification_service.dart';
 
-class HomeScreen extends StatefulWidget {
+class DebugScreen extends StatefulWidget {
   @override
-  _HomeScreenState createState() => _HomeScreenState();
+  _DebugScreenState createState() => _DebugScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _DebugScreenState extends State<DebugScreen> {
   bool _isSyncing = false;
 
   Future<void> _syncData() async {

@@ -17,81 +17,119 @@ class AdminOrdersTab extends StatefulWidget {
 
 class _AdminOrdersTabState extends State<AdminOrdersTab> {
   final AudioPlayer _audioPlayer = AudioPlayer();
+  RealtimeChannel? _ordersChannel;
 
   @override
   void initState() {
     super.initState();
-    _listenToNewOrders();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _listenToNewOrders();
+      }
+    });
   }
 
   void _listenToNewOrders() {
     final syncService = context.read<SyncService>();
     final prefs = context.read<PreferencesService>();
 
-    final ordersStream = Supabase.instance.client
-        .from('orders')
-        .stream(primaryKey: ['id']);
-
-    ordersStream.listen((List<Map<String, dynamic>> data) {
-      // This is a simple way to detect a new order.
-      // A more robust solution would check the payload.
-      if (mounted) {
-        if (prefs.visualNotification) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('🔔 Nouvelle commande reçue !'),
-            backgroundColor: Colors.blue,
-          ));
+    _ordersChannel = Supabase.instance.client.channel('public:orders');
+    _ordersChannel?.onPostgresChanges(
+      event: PostgresChangeEvent.insert,
+      schema: 'public',
+      table: 'orders',
+      callback: (payload) {
+        if (mounted) {
+          print('🔔 Nouvelle commande détectée !');
+          if (prefs.visualNotification) {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              content: Text('🔔 Nouvelle commande reçue !'),
+              backgroundColor: Colors.blue,
+            ));
+          }
+          if (prefs.soundNotification) {
+            _audioPlayer.play(AssetSource('sounds/notification.mp3'));
+          }
+          syncService.syncAll();
         }
-        if (prefs.soundNotification) {
-          _audioPlayer.play(AssetSource('sounds/notification.mp3'));
-        }
-        syncService.syncAll();
-      }
-    });
+      },
+    ).subscribe();
   }
 
   @override
   void dispose() {
-    Supabase.instance.client.removeAllChannels();
+    if (_ordersChannel != null) {
+      Supabase.instance.client.removeChannel(_ordersChannel!);
+    }
     _audioPlayer.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final db = Provider.of<AppDatabase>(context);
-
-    return Scaffold(
-      body: StreamBuilder<List<Order>>(
-        stream: db.watchAllOrders(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(child: Text('Erreur : ${snapshot.error}'));
-          }
-          final allOrders = snapshot.data ?? [];
-          if (allOrders.isEmpty) {
-            return const Center(child: Text('Aucune commande à afficher.'));
-          }
-
-          final toDoOrders = allOrders.where((o) => o.status == 'À faire').toList();
-          final readyOrders = allOrders.where((o) => o.status == 'Prête').toList();
-
-          return ListView(
-            children: [
-              _buildSection(context, 'À PRÉPARER', toDoOrders),
-              const Divider(height: 32, thickness: 1.5, indent: 16, endIndent: 16),
-              _buildSection(context, 'PRÊTES', readyOrders),
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          automaticallyImplyLeading: false, // Pas de bouton retour
+          flexibleSpace: const Column(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [ 
+              TabBar(
+                tabs: [
+                  Tab(icon: Icon(Icons.list_alt), text: 'Commandes'),
+                  Tab(icon: Icon(Icons.settings), text: 'Réglages'),
+                ],
+              ),
             ],
-          );
-        },
+          ),
+        ),
+        body: const TabBarView(
+          children: [
+            OrdersList(),
+            Center(child: Text('Écran des réglages pour les commandes')),
+          ],
+        ),
       ),
     );
   }
+}
 
-  Widget _buildSection(BuildContext context, String title, List<Order> orders) {
+class OrdersList extends StatelessWidget {
+  const OrdersList({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final db = Provider.of<AppDatabase>(context);
+    return StreamBuilder<List<OrderWithStatus>>(
+      stream: db.watchAllOrdersWithStatus(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError) {
+          return Center(child: Text('Erreur : ${snapshot.error}'));
+        }
+        final allOrders = snapshot.data ?? [];
+        if (allOrders.isEmpty) {
+          return const Center(child: Text('Aucune commande à afficher.'));
+        }
+
+        final toDoOrders = allOrders.where((o) => o.status == 'À faire').toList();
+        final readyOrders = allOrders.where((o) => o.status == 'Prête').toList();
+
+        return ListView(
+          children: [
+            _buildSection(context, 'À PRÉPARER', toDoOrders),
+            const Divider(height: 32, thickness: 1.5, indent: 16, endIndent: 16),
+            _buildSection(context, 'PRÊTES', readyOrders),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildSection(BuildContext context, String title, List<OrderWithStatus> orders) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -122,7 +160,8 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> {
             physics: const NeverScrollableScrollPhysics(),
             itemCount: orders.length,
             itemBuilder: (context, index) {
-              final order = orders[index];
+              final orderWithStatus = orders[index];
+              final order = orderWithStatus.order;
               return Card(
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                 child: ListTile(
@@ -140,7 +179,7 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> {
                   onTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (context) => OrderDetailScreen(order: order),
+                        builder: (context) => OrderDetailScreen(order: order, status: orderWithStatus.status),
                       ),
                     );
                   },

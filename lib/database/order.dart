@@ -1,6 +1,5 @@
 import 'package:drift/drift.dart';
 
-// Table pour les informations générales de la commande
 @DataClassName('Order')
 class Orders extends Table {
   IntColumn get id => integer().autoIncrement()();
@@ -9,11 +8,11 @@ class Orders extends Table {
   TextColumn get pickupTime => text().named('pickup_time').nullable()();
   TextColumn get paymentMethod => text().named('payment_method').nullable()(); 
   RealColumn get total => real().named('total')();
-  TextColumn get status => text().withDefault(const Constant('À faire'))();
+  // La colonne 'status' est supprimée d'ici
   DateTimeColumn get createdAt => dateTime().named('created_at')();
+  DateTimeColumn get updatedAt => dateTime().named('updated_at').nullable()(); // ✅ NOUVEAU
 }
 
-// Table pour les articles spécifiques d'une commande
 @DataClassName('OrderItem')
 class OrderItems extends Table {
   IntColumn get id => integer().autoIncrement()();
@@ -23,4 +22,13 @@ class OrderItems extends Table {
   RealColumn get unitPrice => real().named('unit_price')();
   TextColumn get productName => text().named('product_name')();
   TextColumn get optionsDescription => text().named('options_description').nullable()();
+}
+
+// NOUVEAU: Table pour l'historique des statuts
+@DataClassName('OrderStatusHistory')
+class OrderStatusHistories extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get orderId => integer().named('order_id').references(Orders, #id)();
+  TextColumn get status => text()();
+  DateTimeColumn get createdAt => dateTime().named('created_at')();
 }

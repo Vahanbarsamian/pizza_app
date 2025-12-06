@@ -1,32 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import '../../main.dart';
+import 'package:provider/provider.dart';
+
 import '../database/app_database.dart';
 import '../product.dart';
 import '../option.dart';
 
 class AdminDashboard extends StatefulWidget {
+  const AdminDashboard({super.key});
+
   @override
   _AdminDashboardState createState() => _AdminDashboardState();
 }
 
 class _AdminDashboardState extends State<AdminDashboard> {
   Map<String, dynamic> stats = {};
-  late Future<List<Product>> productsFuture;
-  late Future<List<Product>> promoProductsFuture;
-  late Future<double> avgPriceFuture;
+  //late Future<List<Product>> productsFuture;
+  //late Future<List<Product>> promoProductsFuture;
+  //late Future<double?> avgPriceFuture;
   TextEditingController discountController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    productsFuture = database.productDao.getAllProducts();
-    promoProductsFuture = database.productDao.getProductsWithDiscount();
-    avgPriceFuture = database.productDao.getAveragePrice();
-    loadStats();
+    // Defer database access until context is available
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      loadStats();
+    });
   }
 
   Future<void> loadStats() async {
+    if (!mounted) return;
+    final database = Provider.of<AppDatabase>(context, listen: false);
     final allProducts = await database.productDao.getAllProducts();
     final promoProducts = await database.productDao.getProductsWithDiscount();
     final avgPrice = await database.productDao.getAveragePrice();
@@ -35,13 +40,15 @@ class _AdminDashboardState extends State<AdminDashboard> {
       stats = {
         'totalProducts': allProducts.length,
         'promoProducts': promoProducts.length,
-        'totalRevenue': allProducts.fold(0.0, (sum, p) => sum + (p.price * (p.hasGlobalDiscount ? (1 - p.discountPercentage! / 100) : 1))),
+        'totalRevenue': allProducts.fold(0.0, (sum, p) => sum + (p.price * (p.hasGlobalDiscount ? (1 - (p.discountPercentage ?? 0) / 100) : 1))),
         'avgPrice': avgPrice ?? 0.0,
       };
     });
   }
 
   Future<void> applyGlobalDiscount() async {
+    if (!mounted) return;
+    final database = Provider.of<AppDatabase>(context, listen: false);
     final percentage = double.tryParse(discountController.text) ?? 0.0;
     if (percentage > 0) {
       await database.productDao.applyGlobalDiscount(percentage, true);
@@ -54,8 +61,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 
   Future<void> createOptionForProduct(int productId) async {
+    if (!mounted) return;
+    final database = Provider.of<AppDatabase>(context, listen: false);
     final name = 'Extra fromage';
-    await database.optionDao.insertOption(Option(
+    await database.optionDao.insertOption(OptionsCompanion.insert(
       productId: productId,
       name: name,
       price: 2.5,
@@ -87,9 +96,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
             ),
 
             Card(
-              margin: EdgeInsets.all(16),
+              margin: const EdgeInsets.all(16),
               child: Padding(
-                padding: EdgeInsets.all(16),
+                padding: const EdgeInsets.all(16),
                 child: Column(
                   children: [
                     Text('Remise Globale', style: Theme.of(context).textTheme.headlineSmall),
@@ -99,7 +108,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       decoration: InputDecoration(
                         labelText: 'Pourcentage % (ex: 20)',
                         suffixIcon: IconButton(
-                          icon: Icon(Icons.percent),
+                          icon: const Icon(Icons.percent),
                           onPressed: applyGlobalDiscount,
                         ),
                       ),
@@ -111,8 +120,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
             Container(
               height: 200,
-              padding: EdgeInsets.all(20),
-              margin: EdgeInsets.all(16),
+              padding: const EdgeInsets.all(20),
+              margin: const EdgeInsets.all(16),
               child: BarChart(
                 BarChartData(
                   barGroups: [
@@ -129,14 +138,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                ElevatedButton(onPressed: () => Navigator.pushNamed(context, '/admin/products'), child: Text("Produits")),
-                ElevatedButton(onPressed: () => Navigator.pushNamed(context, '/admin/pages'), child: Text("Pages")),
+                ElevatedButton(onPressed: () => Navigator.pushNamed(context, '/admin/products'), child: const Text("Produits")),
+                ElevatedButton(onPressed: () => Navigator.pushNamed(context, '/admin/pages'), child: const Text("Pages")),
                 ElevatedButton(
                   onPressed: () async {
                     await loadStats();
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('✅ Stats rechargées')));
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ Stats rechargées')));
                   },
-                  child: Text("🔄 Refresh"),
+                  child: const Text("🔄 Refresh"),
                 ),
               ],
             ),
@@ -166,10 +175,10 @@ class StatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       child: Padding(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            Text(title, style: TextStyle(fontSize: 12)),
+            Text(title, style: const TextStyle(fontSize: 12)),
             isPrice
                 ? Text.rich(
                     TextSpan(

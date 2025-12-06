@@ -115,7 +115,7 @@ class _PizzaDetailScreenState extends State<PizzaDetailScreen> {
                       ),
                       selected: isSelected,
                       selectedColor: Colors.orange.shade200,
-                      onSelected: (selected) {
+                      onSelected: (selected) { // ✅ CORRIGÉ
                         setState(() {
                           if (selected && canAddMore) {
                             _selectedSupplements.add(ingredient);
@@ -161,7 +161,7 @@ class _PizzaDetailScreenState extends State<PizzaDetailScreen> {
                     foregroundColor: Colors.white,
                     textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     padding: const EdgeInsets.symmetric(vertical: 12),
-                    minimumSize: const Size(double.infinity, 50), // Occupe toute la largeur disponible
+                    minimumSize: const Size(double.infinity, 50),
                   ),
                   onPressed: () {
                     cartService.addToCart(widget.product, ingredients: _selectedSupplements);

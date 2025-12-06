@@ -54,6 +54,12 @@ class _AdminInfoTabState extends State<AdminInfoTab> {
         address: Value(_addressController.text),
         phone: Value(_phoneController.text),
         email: Value(_emailController.text),
+        facebookUrl: Value(initialData.facebookUrl),
+        instagramUrl: Value(initialData.instagramUrl),
+        xUrl: Value(initialData.xUrl),
+        whatsappPhone: Value(initialData.whatsappPhone),
+        latitude: Value(initialData.latitude),
+        longitude: Value(initialData.longitude),
       );
 
       await adminService.saveCompanyInfo(updatedInfo);
@@ -70,14 +76,18 @@ class _AdminInfoTabState extends State<AdminInfoTab> {
     final db = Provider.of<AppDatabase>(context);
     final prefs = Provider.of<PreferencesService>(context);
 
-    return StreamBuilder<CompanyInfoData>(
+    return StreamBuilder<CompanyInfoData?>(
       stream: db.watchCompanyInfo(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        final info = snapshot.data!;
+        final info = snapshot.data;
+        if (info == null) {
+          return const Center(child: Text('Aucune information sur l\'entreprise trouvée.'));
+        }
+
         _nameController.text = info.name ?? '';
         _presentationController.text = info.presentation ?? '';
         _addressController.text = info.address ?? '';

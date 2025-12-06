@@ -1,8 +1,6 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -25,10 +23,16 @@ class _AboutUsScreenState extends State<AboutUsScreen> {
     super.didChangeDependencies();
     final db = Provider.of<AppDatabase>(context, listen: false);
     db.watchCompanyInfo().first.then((info) {
-      if (info.latitude != null && info.longitude != null) {
+      if (info != null && info.latitude != null && info.longitude != null) {
         if (mounted) {
           setState(() {
             _mapCenter = LatLng(info.latitude!, info.longitude!);
+            _isLoadingMap = false;
+          });
+        }
+      } else {
+         if (mounted) {
+          setState(() {
             _isLoadingMap = false;
           });
         }
@@ -38,12 +42,16 @@ class _AboutUsScreenState extends State<AboutUsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<CompanyInfoData>(
+    return StreamBuilder<CompanyInfoData?>(
       stream: Provider.of<AppDatabase>(context).watchCompanyInfo(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-
-        final info = snapshot.data!;
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final info = snapshot.data;
+        if (info == null) {
+           return const Center(child: Text('Informations sur l\'établissement non disponibles.'));
+        }
 
         return ListView(
           padding: const EdgeInsets.all(16.0),

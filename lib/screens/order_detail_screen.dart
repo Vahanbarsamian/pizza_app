@@ -10,24 +10,28 @@ import 'add_review_screen.dart';
 
 class OrderDetailScreen extends StatelessWidget {
   final Order order;
+  final String status;
 
-  const OrderDetailScreen({super.key, required this.order});
+  const OrderDetailScreen({super.key, required this.order, required this.status});
 
   Future<void> _updateOrderStatus(BuildContext context, String newStatus) async {
     final adminService = context.read<AdminService>();
     final syncService = context.read<SyncService>();
     try {
-      // NOTE: Il faudrait une méthode dédiée dans le service pour ne mettre à jour que le statut.
-      // Pour l'instant, on réutilise saveOrder qui n'existe pas encore, on va la créer.
-      // adminService.updateOrderStatus(order.id, newStatus);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Statut mis à jour: $newStatus'), backgroundColor: Colors.green),
-      );
+      await adminService.updateOrderStatus(order.id, newStatus);
       await syncService.syncAll();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Statut mis à jour: $newStatus'), backgroundColor: Colors.green),
+        );
+        Navigator.of(context).pop();
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red),
-      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 
@@ -59,7 +63,7 @@ class OrderDetailScreen extends StatelessWidget {
           return ListView(
             padding: const EdgeInsets.all(16.0),
             children: [
-              _buildOrderSummary(context, totalItems),
+              _buildOrderSummary(context, totalItems, authService.isAdmin),
               const Divider(height: 32),
               Text('Détails des articles', style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 8),
@@ -68,32 +72,73 @@ class OrderDetailScreen extends StatelessWidget {
           );
         },
       ),
-      bottomNavigationBar: authService.isAdmin && order.status == 'À faire'
-          ? Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: ElevatedButton.icon(
-                icon: const Icon(Icons.check_circle_outline),
-                label: const Text('Marquer comme PRÊTE'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-                onPressed: () => _updateOrderStatus(context, 'Prête'),
-              ),
-            )
-          : null,
+      bottomNavigationBar: _buildBottomBar(context, authService),
     );
   }
 
-  Widget _buildOrderSummary(BuildContext context, int totalItems) {
+  Widget? _buildBottomBar(BuildContext context, AuthService authService) {
+    if (authService.isAdmin) {
+      if (status == 'À faire') {
+        return _buildAdminButton(context, 'Marquer comme PRÊTE', 'Prête', Colors.green);
+      }
+      if (status == 'Prête') {
+        return _buildAdminButton(context, 'Marquer comme TERMINÉE', 'Terminée', Colors.blue);
+      }
+      return null;
+    }
+
+    return StreamBuilder<Review?>(
+      stream: context.read<AppDatabase>().watchReviewForOrder(order.id),
+      builder: (context, snapshot) {
+        final hasReview = snapshot.hasData && snapshot.data != null;
+        if (hasReview || status != 'Terminée') {
+          return const SizedBox.shrink();
+        }
+        return Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: ElevatedButton.icon(
+            icon: const Icon(Icons.rate_review_outlined),
+            label: const Text('Laisser un avis'),
+            onPressed: () {
+              Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => AddReviewScreen(order: order),
+              ));
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildAdminButton(BuildContext context, String label, String newStatus, Color color) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: ElevatedButton.icon(
+        icon: const Icon(Icons.check_circle_outline),
+        label: Text(label),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: color,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+        ),
+        onPressed: () => _updateOrderStatus(context, newStatus),
+      ),
+    );
+  }
+
+  Widget _buildOrderSummary(BuildContext context, int totalItems, bool isAdmin) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSummaryRow('Statut:', order.status, isStatus: true),
+            // ✅ CORRIGÉ: Logique d'affichage du statut conditionnelle
+            if (isAdmin)
+              _buildSummaryRow('Statut:', status, isStatus: true)
+            else
+              _buildSummaryRow('Statut:', 'Payé le ${DateFormat('dd/MM/yyyy').format(order.createdAt)}', color: Colors.red),
+            
             _buildSummaryRow('Référence:', order.referenceName ?? 'Non spécifié'),
             _buildSummaryRow('Heure de retrait:', order.pickupTime ?? 'Non spécifiée'),
             _buildSummaryRow('Date:', DateFormat('dd/MM/yyyy HH:mm', 'fr_FR').format(order.createdAt)),
@@ -121,15 +166,23 @@ class OrderDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSummaryRow(String label, String value, {bool isStatus = false}) {
-    final statusColor = value == 'À faire' ? Colors.red : Colors.green;
+  Widget _buildSummaryRow(String label, String value, {bool isStatus = false, Color? color}) {
+    Color getStatusColor() {
+      switch (value) {
+        case 'À faire': return Colors.red;
+        case 'Prête': return Colors.green;
+        case 'Terminée': return Colors.blueGrey;
+        default: return Colors.black;
+      }
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: TextStyle(color: Colors.grey.shade600)),
-          Text(value, style: TextStyle(fontWeight: FontWeight.bold, color: isStatus ? statusColor : null, fontSize: isStatus ? 18 : null)),
+          Text(value, style: TextStyle(fontWeight: FontWeight.bold, color: color ?? (isStatus ? getStatusColor() : null), fontSize: isStatus ? 18 : null)),
         ],
       ),
     );

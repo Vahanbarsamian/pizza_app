@@ -32,7 +32,6 @@ class _MenuScreenState extends State<MenuScreen> {
     final db = context.watch<AppDatabase>();
     final authService = context.watch<AuthService>();
 
-    // ✅ CORRIGÉ: Le Scaffold a été retiré.
     return RefreshIndicator(
       onRefresh: _refreshData,
       child: StreamBuilder<List<Product>>(
@@ -53,7 +52,7 @@ class _MenuScreenState extends State<MenuScreen> {
             padding: const EdgeInsets.all(16.0),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
-              childAspectRatio: 0.70, // Ajusté pour le prix
+              childAspectRatio: 0.70,
             ),
             itemCount: pizzas.length,
             itemBuilder: (context, index) {
@@ -76,8 +75,8 @@ class PizzaCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasImage = pizza.image != null && pizza.image!.isNotEmpty;
-    final reducedPrice = pizza.basePrice * (1 - pizza.discountPercentage);
     final hasDiscount = pizza.discountPercentage > 0;
+    final reducedPrice = pizza.basePrice * (1 - pizza.discountPercentage);
     final isNew = DateTime.now().difference(pizza.createdAt).inDays <= 15;
 
     return Card(
@@ -142,27 +141,39 @@ class PizzaCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
+                  // ✅ CORRIGÉ: Logique d'affichage du prix
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
                     children: [
                       if (hasDiscount)
                         Text(
-                          '${pizza.basePrice.toStringAsFixed(2)}€',
+                          '${pizza.basePrice.toStringAsFixed(2)} €',
                           style: const TextStyle(
                             fontSize: 14,
                             color: Colors.grey,
                             decoration: TextDecoration.lineThrough,
-                            decorationColor: Colors.red, 
-                            decorationThickness: 2.0,
                           ),
                         ),
                       const SizedBox(width: 4),
-                      Text(
-                        '${(hasDiscount ? reducedPrice : pizza.basePrice).toStringAsFixed(2)}€',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: hasDiscount ? Colors.red : Colors.black,
+                      Text.rich(
+                        TextSpan(
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: hasDiscount ? Colors.red : Colors.black,
+                          ),
+                          children: [
+                            TextSpan(text: (hasDiscount ? reducedPrice : pizza.basePrice).toStringAsFixed(2)),
+                            const TextSpan(
+                              text: ' € TTC',
+                              style: TextStyle(
+                                fontSize: 10, 
+                                fontWeight: FontWeight.normal,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],

@@ -79,7 +79,7 @@ class CartService extends ChangeNotifier {
         quantity: newQuantity,
       ));
        _saveItemToDb(_items[itemId]!);
-    }
+    } 
     notifyListeners();
   }
 

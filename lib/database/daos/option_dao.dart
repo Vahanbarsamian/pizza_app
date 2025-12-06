@@ -1,29 +1,16 @@
-/*import 'package:floor/floor.dart';
-import '../option.dart';
-//import 'dao/app_database.dart';
+import 'package:drift/drift.dart';
+import '../../option.dart';
+import '../app_database.dart';
 
-@dao
-abstract class OptionDao {
-  @Query('SELECT * FROM options WHERE product_id = :productId AND is_active = 1')
-  Future<List<Option>> getOptionsForProduct(int productId);
+part 'option_dao.g.dart';
 
-  @Query('SELECT * FROM options WHERE is_active = 1')
-  Future<List<Option>> getAllActiveOptions();
+@DriftAccessor(tables: [Options])
+class OptionDao extends DatabaseAccessor<AppDatabase> with _$OptionDaoMixin {
+  OptionDao(AppDatabase db) : super(db);
 
-  @insert
-  Future<void> insertOption(Option option);
+  Future<List<Option>> getOptionsForProduct(int productId) {
+    return (select(options)..where((o) => o.productId.equals(productId))).get();
+  }
 
-  @update
-  Future<void> updateOption(Option option);
-
-  @delete
-  Future<void> deleteOption(Option option);
-
-  @Query('DELETE FROM options WHERE product_id = :productId')
-  Future<void> deleteOptionsForProduct(int productId);
-  // ✅ BONUS : Compter options par produit (utile pour UI)
-  @Query('SELECT COUNT(*) FROM options WHERE product_id = :productId AND is_active = 1')
-  Future<int?> countOptionsForProduct(int productId);
+  Future<void> insertOption(Option option) => into(options).insert(option);
 }
-
- */

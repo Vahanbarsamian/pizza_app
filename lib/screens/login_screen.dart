@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import 'admin_login_screen.dart';
 import 'admin_screen.dart';
+import 'main_screen.dart'; // NÉCESSAIRE pour la redirection
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -16,8 +17,6 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLogin = true;
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _nameController = TextEditingController(); // Gardé pour la compatibilité, mais plus utilisé
-  final _postalCodeController = TextEditingController();
   bool _isLoading = false;
   bool _isPasswordVisible = false;
 
@@ -32,8 +31,6 @@ class _LoginScreenState extends State<LoginScreen> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
-    _nameController.dispose();
-    _postalCodeController.dispose();
     super.dispose();
   }
 
@@ -52,16 +49,27 @@ class _LoginScreenState extends State<LoginScreen> {
           password: _passwordController.text,
         );
       }
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Connexion réussie !'), backgroundColor: Colors.green),
+          const SnackBar(
+            content: Text('Connexion réussie !'),
+            backgroundColor: Colors.green,
+          ),
         );
-        Navigator.of(context).pop();
+        await Future.delayed(const Duration(seconds: 1));
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const MainScreen()),
+          (route) => false, 
+        );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Votre connexion a échoué: ${e.toString()}'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('Échec: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {
@@ -70,7 +78,20 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _resetPassword() async {
-    // ... (inchangé)
+    if (_emailController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Veuillez entrer votre email pour réinitialiser le mot de passe.'), backgroundColor: Colors.amber));
+      return;
+    }
+    try {
+      await Provider.of<AuthService>(context, listen: false).sendPasswordReset(email: _emailController.text);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Un email de réinitialisation a été envoyé.'), backgroundColor: Colors.blue));
+      }
+    } catch (e) {
+       if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e')));
+      }
+    }
   }
   
   @override
@@ -166,7 +187,11 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 16),
                         ElevatedButton(
                           onPressed: _isLoading ? null : _submit,
-                          style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            backgroundColor: Theme.of(context).primaryColor, // ✅ COULEUR DE FOND
+                            foregroundColor: Colors.white, // ✅ COULEUR DU TEXTE
+                          ),
                           child: _isLoading ? const CircularProgressIndicator() : Text(_isLogin ? 'Se connecter' : 'S\'inscrire'),
                         ),
                         TextButton(

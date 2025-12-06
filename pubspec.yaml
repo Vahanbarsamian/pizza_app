@@ -11,7 +11,7 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.8
   supabase_flutter: ^2.5.0
-  flutter_stripe: ^10.0.0
+  flutter_stripe: ^10.2.0 # ✅ AJOUTÉ
   flutter_map: ^6.1.0
   latlong2: ^0.9.0
   http: ^1.1.0
@@ -27,6 +27,7 @@ dependencies:
   intl: ^0.19.0
   audioplayers: ^6.0.0
   shared_preferences: ^2.2.3
+  fl_chart: ^0.68.0 # Déjà présent
 
 dev_dependencies:
   flutter_test:

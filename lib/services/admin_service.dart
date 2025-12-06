@@ -106,8 +106,15 @@ class AdminService {
     await _supabase.from('announcements').delete().eq('id', id);
   }
 
-  // ✅ NOUVEAU: Méthode pour mettre à jour le statut d'une commande
+  // ✅ CORRIGÉ: Met à jour le statut en créant une nouvelle entrée dans l'historique
   Future<void> updateOrderStatus(int orderId, String status) async {
-    await _supabase.from('orders').update({'status': status}).eq('id', orderId);
+    final now = DateTime.now();
+    await _supabase.from('order_status_histories').insert({
+      'order_id': orderId,
+      'status': status,
+      'created_at': now.toIso8601String(),
+    });
+    // Met également à jour le champ `updated_at` de la commande principale pour le tri
+    await _supabase.from('orders').update({'updated_at': now.toIso8601String()}).eq('id', orderId);
   }
 }

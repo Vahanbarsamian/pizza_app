@@ -3,15 +3,13 @@ import 'package:provider/provider.dart';
 
 import '../services/auth_service.dart';
 import 'order_history_screen.dart';
-import 'my_reviews_screen.dart'; // ✅ NOUVEAU
+import 'my_reviews_screen.dart';
 
 class ClientAreaScreen extends StatelessWidget {
   const ClientAreaScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final authService = context.watch<AuthService>();
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Mon Espace Client'),
@@ -35,9 +33,8 @@ class ClientAreaScreen extends StatelessWidget {
             icon: Icons.credit_card,
             title: 'Mon Moyen de Paiement',
             subtitle: 'Gérer vos cartes de crédit (bientôt disponible)',
-            onTap: null, // Désactivé pour le moment
+            onTap: null,
           ),
-          // ✅ CORRIGÉ: Option "Mes Avis" maintenant activée
           _buildMenuOption(
             context,
             icon: Icons.reviews_outlined,
@@ -47,7 +44,6 @@ class ClientAreaScreen extends StatelessWidget {
                Navigator.of(context).push(MaterialPageRoute(builder: (_) => const MyReviewsScreen()));
             },
           ),
-          // La carte de fidélité sera ajoutée ici conditionnellement plus tard
         ],
       ),
     );

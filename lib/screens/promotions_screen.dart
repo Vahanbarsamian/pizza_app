@@ -14,7 +14,6 @@ class PromotionsScreen extends StatelessWidget {
     final db = Provider.of<AppDatabase>(context);
     final authService = context.watch<AuthService>();
 
-    // ✅ CORRIGÉ: Le Scaffold a été retiré.
     return StreamBuilder<List<Announcement>>(
       stream: db.watchAllAnnouncements(),
       builder: (context, snapshot) {

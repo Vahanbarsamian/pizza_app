@@ -15,17 +15,28 @@ class OrderService {
     }
 
     try {
+      final now = DateTime.now();
+      // Étape 1: Créer la commande principale (sans le statut)
       final orderResponse = await _supabase.from('orders').insert({
         'user_id': userId,
         'total': cart.totalPrice,
         'reference_name': referenceName,
         'pickup_time': pickupTime,
         'payment_method': paymentMethod,
-        'status': 'À faire', // ✅ NOUVEAU: Statut par défaut
+        'created_at': now.toIso8601String(),
+        'updated_at': now.toIso8601String(),
       }).select();
 
       final orderId = orderResponse.first['id'] as int;
 
+      // ✅ Étape 2: Créer l'entrée initiale dans l'historique des statuts
+      await _supabase.from('order_status_histories').insert({
+        'order_id': orderId,
+        'status': 'À faire',
+        'created_at': now.toIso8601String(),
+      });
+
+      // Étape 3: Insérer les articles de la commande
       final itemsToInsert = cart.items.values.map((cartItem) => {
         'order_id': orderId,
         'product_id': cartItem.product.id,

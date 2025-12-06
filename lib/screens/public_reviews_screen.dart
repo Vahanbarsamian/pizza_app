@@ -4,6 +4,10 @@ import 'package:intl/intl.dart';
 
 import '../database/app_database.dart';
 import '../services/public_review_service.dart';
+import '../services/auth_service.dart';
+import '../services/review_service.dart';
+import '../services/sync_service.dart';
+import 'add_review_screen.dart';
 
 class PublicReviewsScreen extends StatelessWidget {
   const PublicReviewsScreen({super.key});
@@ -12,7 +16,6 @@ class PublicReviewsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final reviewService = context.watch<PublicReviewService>();
 
-    // ✅ CORRIGÉ: Le Scaffold a été retiré pour éviter les conflits.
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -65,6 +68,8 @@ class PublicReviewsScreen extends StatelessWidget {
   }
 
   Widget _buildFilterChips(BuildContext context, PublicReviewService service) {
+    const activeColor = Color(0xFFE6E6FA); // Mauve pâle unifié
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Wrap(
@@ -74,21 +79,25 @@ class PublicReviewsScreen extends StatelessWidget {
           ChoiceChip(
             label: const Text('Tout'),
             selected: service.activeFilter == ReviewFilter.all,
+            selectedColor: activeColor,
             onSelected: (_) => service.setFilter(ReviewFilter.all),
           ),
           ChoiceChip(
             label: const Text('Semaine'),
             selected: service.activeFilter == ReviewFilter.week,
+            selectedColor: activeColor,
             onSelected: (_) => service.setFilter(ReviewFilter.week),
           ),
           ChoiceChip(
             label: const Text('Mois'),
             selected: service.activeFilter == ReviewFilter.month,
+            selectedColor: activeColor,
             onSelected: (_) => service.setFilter(ReviewFilter.month),
           ),
           ChoiceChip(
             label: const Text('Année'),
             selected: service.activeFilter == ReviewFilter.year,
+            selectedColor: activeColor,
             onSelected: (_) => service.setFilter(ReviewFilter.year),
           ),
         ],
@@ -102,10 +111,43 @@ class PublicReviewCard extends StatelessWidget {
 
   const PublicReviewCard({super.key, required this.reviewWithOrder});
 
+  Future<void> _deleteReview(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Confirmer la suppression'),
+        content: const Text('Êtes-vous sûr de vouloir supprimer cet avis ?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Annuler')),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Supprimer', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      try {
+        final reviewService = context.read<ReviewService>();
+        await reviewService.deleteReview(reviewWithOrder.review.id);
+        await context.read<SyncService>().syncAll();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Avis supprimé.'), backgroundColor: Colors.green),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final review = reviewWithOrder.review;
     final order = reviewWithOrder.order;
+    final authService = context.watch<AuthService>();
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8.0),
@@ -142,6 +184,29 @@ class PublicReviewCard extends StatelessWidget {
                 );
               }),
             ),
+            const SizedBox(height: 12),
+            if (authService.currentUser?.id == review.userId)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton.icon(
+                    icon: const Icon(Icons.edit, size: 18),
+                    label: const Text('Modifier'),
+                    onPressed: () {
+                      Navigator.of(context).push(MaterialPageRoute(
+                        builder: (_) => AddReviewScreen(order: order, existingReview: review),
+                      ));
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  TextButton.icon(
+                    icon: const Icon(Icons.delete, size: 18),
+                    label: const Text('Supprimer'),
+                    style: TextButton.styleFrom(foregroundColor: Colors.red),
+                    onPressed: () => _deleteReview(context),
+                  ),
+                ],
+              )
           ],
         ),
       ),

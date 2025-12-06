@@ -17,7 +17,7 @@ class SupabaseApi {
         .from('admins')
         .select()
         .eq('email', email)
-        .eq('password', password)
+        .eq('password', password) // ATTENTION: Mot de passe en clair, pour démo uniquement
         .maybeSingle();
     return data != null ? Admin.fromJson(data) : null;
   }

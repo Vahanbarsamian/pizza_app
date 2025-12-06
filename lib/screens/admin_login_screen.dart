@@ -54,7 +54,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Votre connexion a échoué: ${e.toString()}'), backgroundColor: Colors.red));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -150,7 +150,11 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                         const SizedBox(height: 16),
                         ElevatedButton(
                           onPressed: _isLoading ? null : _signIn,
-                          style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            backgroundColor: Theme.of(context).primaryColor, // ✅ COULEUR DE FOND
+                            foregroundColor: Colors.white, // ✅ COULEUR DU TEXTE
+                          ),
                           child: _isLoading ? const CircularProgressIndicator() : const Text('Se connecter'),
                         ),
                       ],

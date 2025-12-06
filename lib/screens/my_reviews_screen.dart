@@ -97,6 +97,7 @@ class ReviewCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final review = reviewWithOrder.review;
     final order = reviewWithOrder.order;
+    final authService = context.watch<AuthService>();
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8.0),
@@ -134,27 +135,29 @@ class ReviewCard extends StatelessWidget {
               }),
             ),
             const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton.icon(
-                  icon: const Icon(Icons.edit, size: 18),
-                  label: const Text('Modifier'),
-                  onPressed: () {
-                    Navigator.of(context).push(MaterialPageRoute(
-                      builder: (_) => AddReviewScreen(order: order, existingReview: review),
-                    ));
-                  },
-                ),
-                const SizedBox(width: 8),
-                TextButton.icon(
-                  icon: const Icon(Icons.delete, size: 18),
-                  label: const Text('Supprimer'),
-                  style: TextButton.styleFrom(foregroundColor: Colors.red),
-                  onPressed: () => _deleteReview(context),
-                ),
-              ],
-            )
+            // ✅ CORRIGÉ: Affiche les boutons uniquement si l'utilisateur est l'auteur de l'avis
+            if (authService.currentUser?.id == review.userId)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton.icon(
+                    icon: const Icon(Icons.edit, size: 18),
+                    label: const Text('Modifier'),
+                    onPressed: () {
+                      Navigator.of(context).push(MaterialPageRoute(
+                        builder: (_) => AddReviewScreen(order: order, existingReview: review),
+                      ));
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  TextButton.icon(
+                    icon: const Icon(Icons.delete, size: 18),
+                    label: const Text('Supprimer'),
+                    style: TextButton.styleFrom(foregroundColor: Colors.red),
+                    onPressed: () => _deleteReview(context),
+                  ),
+                ],
+              )
           ],
         ),
       ),

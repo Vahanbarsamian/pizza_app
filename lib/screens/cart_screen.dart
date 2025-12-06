@@ -18,9 +18,6 @@ class CartScreen extends StatelessWidget {
     final user = authService.currentUser;
 
     if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Veuillez vous connecter pour commander.'), backgroundColor: Colors.amber),
-      );
       Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LoginScreen()));
       return;
     }
@@ -116,6 +113,7 @@ class CartScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final cartService = context.watch<CartService>();
     final authService = context.watch<AuthService>();
+    final bool isLoggedIn = authService.currentUser != null;
 
     return Scaffold(
       appBar: AppBar(
@@ -140,20 +138,7 @@ class CartScreen extends StatelessWidget {
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text.rich(
-                        TextSpan(
-                          style: const TextStyle(fontSize: 16),
-                          children: [
-                            TextSpan(text: (item.finalPrice * item.quantity).toStringAsFixed(2), style: const TextStyle(fontWeight: FontWeight.bold)),
-                            const TextSpan(text: ' € TTC', style: TextStyle(fontSize: 10, color: Colors.grey)),
-                          ],
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete_outline, color: Colors.red),
-                        tooltip: 'Supprimer complètement',
-                        onPressed: () => cartService.removeItem(itemId),
-                      ),
+                      Text('${(item.finalPrice * item.quantity).toStringAsFixed(2)} €'),
                       IconButton(
                         icon: const Icon(Icons.remove_circle_outline),
                         onPressed: () => cartService.updateQuantity(itemId, item.quantity - 1),
@@ -163,59 +148,53 @@ class CartScreen extends StatelessWidget {
                         icon: const Icon(Icons.add_circle_outline),
                         onPressed: () => cartService.updateQuantity(itemId, item.quantity + 1),
                       ),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline, color: Colors.red),
+                        tooltip: 'Supprimer complètement',
+                        onPressed: () => cartService.removeItem(itemId),
+                      ),
                     ],
                   ),
                 );
               },
             ),
       bottomNavigationBar: cartService.items.isNotEmpty
-          ? BottomAppBar(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text.rich(
-                        TextSpan(
-                          style: Theme.of(context).textTheme.titleLarge,
-                          children: [
-                            const TextSpan(text: 'Total: '),
-                            TextSpan(text: cartService.totalPrice.toStringAsFixed(2), style: const TextStyle(fontWeight: FontWeight.bold)),
-                            const TextSpan(text: ' € TTC', style: TextStyle(fontSize: 12, fontWeight: FontWeight.normal)),
-                          ],
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
+          ? Container(
+              padding: const EdgeInsets.all(16.0),
+              decoration: BoxDecoration(
+                color: Theme.of(context).cardColor,
+                boxShadow: const [
+                  BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, -2)),
+                ],
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Total: ${cartService.totalPrice.toStringAsFixed(2)} €',
+                      style: Theme.of(context).textTheme.headlineSmall,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Consumer<AuthService>(
-                        builder: (context, auth, child) {
-                          final buttonStyle = ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
-                            foregroundColor: Colors.white,
-                            textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                          );
-                          if (auth.currentUser != null) {
-                            return ElevatedButton(
-                              onPressed: () => _checkout(context),
-                              style: buttonStyle,
-                              child: const Text('Payer'),
-                            );
-                          } else {
-                            return ElevatedButton(
-                              onPressed: () {
-                                Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LoginScreen()));
-                              },
-                              style: buttonStyle,
-                              child: const Text('Connexion'),
-                            );
-                          }
-                        },
-                      ),
+                  ),
+                  const SizedBox(width: 16),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                      textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
-                  ],
-                ),
+                    onPressed: () {
+                      if (isLoggedIn) {
+                        _checkout(context);
+                      } else {
+                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LoginScreen()));
+                      }
+                    },
+                    child: Text(isLoggedIn ? 'Payer' : 'Connexion'),
+                  )
+                ],
               ),
             )
           : null,

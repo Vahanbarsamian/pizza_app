@@ -74,7 +74,19 @@ class _MainScreenState extends State<MainScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        // ✅ CORRIGÉ: Ajout du nom de l'enseigne à gauche
+        leading: const Padding(
+          padding: EdgeInsets.only(left: 16.0),
+          child: Center(
+            child: Text(
+              'Pizza Mania',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ),
+        leadingWidth: 150, // Ajuster la largeur pour le texte
         title: Text(_appBarTitles[_selectedIndex]),
+        centerTitle: true, // Pour s'assurer que le titre principal reste centré
         actions: <Widget>[
           Badge(
             label: Text(cartService.itemCount.toString()),
@@ -91,7 +103,6 @@ class _MainScreenState extends State<MainScreen> {
               },
             ),
           ),
-          // ✅ Le bouton "Mon Espace" ne s'affiche que pour les utilisateurs NON-admin
           if (authService.currentUser != null && !authService.isAdmin)
             IconButton(
               tooltip: 'Mon Espace Client',
@@ -166,7 +177,6 @@ class _MainScreenState extends State<MainScreen> {
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
       ),
-       // ✅ CORRECTION FINALE: Le bouton flottant n'apparait que si l'ADMIN est connecté
        floatingActionButton: authService.isAdmin
           ? FloatingActionButton(
               onPressed: () {

@@ -34,11 +34,10 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
       _nameController.text = product.name;
       _priceController.text = product.basePrice.toString();
       _descriptionController.text = product.description ?? '';
-      _discountController.text = (product.discountPercentage * 100).toString();
+      _discountController.text = (product.discountPercentage * 100).toStringAsFixed(0);
       _maxSupplementsValue = product.maxSupplements ?? 4;
 
       final db = Provider.of<AppDatabase>(context, listen: false);
-      // Query only the links to get specifically associated ingredients
       final query = db.select(db.productIngredientLinks)..where((link) => link.productId.equals(product.id));
       query.get().then((links) {
           if (mounted) {
@@ -84,7 +83,7 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
         Navigator.of(context).pop();
       }
     } catch (e, stacktrace) {
-      debugPrint('Erreur lors de la sauvegarde: $e\\n$stacktrace');
+      debugPrint('Erreur lors de la sauvegarde: $e\n$stacktrace');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e')));
       }
