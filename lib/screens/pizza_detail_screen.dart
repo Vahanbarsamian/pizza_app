@@ -4,6 +4,12 @@ import 'package:provider/provider.dart';
 
 import '../database/app_database.dart';
 import '../services/cart_service.dart';
+import '../services/auth_service.dart';
+import 'login_screen.dart';
+
+String formatPrice(double price) {
+  return '${price.toStringAsFixed(2)} € TTC';
+}
 
 class PizzaDetailScreen extends StatefulWidget {
   final Product product;
@@ -16,16 +22,18 @@ class PizzaDetailScreen extends StatefulWidget {
 }
 
 class _PizzaDetailScreenState extends State<PizzaDetailScreen> {
+  List<Ingredient> _removedBaseIngredients = [];
   List<Ingredient> _selectedSupplements = [];
 
   @override
   Widget build(BuildContext context) {
-    final cartService = Provider.of<CartService>(context);
-    final db = Provider.of<AppDatabase>(context);
-    final hasImage = widget.product.image != null && widget.product.image!.isNotEmpty;
-    final maxSupplements = widget.product.maxSupplements ?? 4;
-    final canAddMore = _selectedSupplements.length < maxSupplements;
+    final cartService = Provider.of<CartService>(context, listen: false);
+    final db = Provider.of<AppDatabase>(context, listen: false);
+    final authService = context.watch<AuthService>();
+    final isLoggedIn = authService.currentUser != null;
 
+    final hasImage = widget.product.image != null && widget.product.image!.isNotEmpty;
+    
     final hasDiscount = widget.product.discountPercentage > 0;
     final reducedPrice = widget.product.basePrice * (1 - widget.product.discountPercentage);
     
@@ -54,7 +62,6 @@ class _PizzaDetailScreenState extends State<PizzaDetailScreen> {
             const SizedBox(height: 16),
             Text(widget.product.name, style: Theme.of(context).textTheme.headlineMedium),
             const SizedBox(height: 12),
-            // ✅ CORRIGÉ: Logique d'affichage du prix restaurée et correcte
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -62,7 +69,7 @@ class _PizzaDetailScreenState extends State<PizzaDetailScreen> {
               children: [
                 if (hasDiscount)
                   Text(
-                    '${widget.product.basePrice.toStringAsFixed(2)} €',
+                    formatPrice(widget.product.basePrice),
                     style: const TextStyle(
                       fontSize: 20,
                       color: Colors.grey,
@@ -70,17 +77,12 @@ class _PizzaDetailScreenState extends State<PizzaDetailScreen> {
                     ),
                   ),
                 const SizedBox(width: 8),
-                Text.rich(
-                  TextSpan(
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: hasDiscount ? Colors.red : Colors.black,
-                    ),
-                    children: [
-                      TextSpan(text: (hasDiscount ? reducedPrice : widget.product.basePrice).toStringAsFixed(2)),
-                      const TextSpan(text: ' € TTC', style: TextStyle(fontSize: 14, fontWeight: FontWeight.normal)),
-                    ],
+                Text(
+                  formatPrice(hasDiscount ? reducedPrice : widget.product.basePrice),
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: hasDiscount ? Colors.red : Colors.black,
                   ),
                 ),
               ],
@@ -91,42 +93,24 @@ class _PizzaDetailScreenState extends State<PizzaDetailScreen> {
                 padding: const EdgeInsets.only(top: 8.0),
                 child: Text(widget.product.description!, style: Theme.of(context).textTheme.bodyMedium),
               ),
-            const SizedBox(height: 24),
-            Text('Suppléments (max $maxSupplements)', style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 8),
-            StreamBuilder<List<Ingredient>>(
-              stream: db.watchIngredientsForProduct(widget.product.id),
+            
+            StreamBuilder<Map<String, List<Ingredient>>>(
+              stream: db.watchIngredientsForProductSeparated(widget.product.id),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-                final ingredients = snapshot.data!;
-                return Wrap(
-                  spacing: 8.0,
-                  runSpacing: 4.0,
-                  children: ingredients.map((ingredient) {
-                    final isSelected = _selectedSupplements.contains(ingredient);
-                    return ChoiceChip(
-                      label: Text.rich(
-                        TextSpan(
-                          children: [
-                            TextSpan(text: '${ingredient.name} (+'),
-                            TextSpan(text: ingredient.price.toStringAsFixed(2), style: const TextStyle(fontWeight: FontWeight.bold)),
-                            const TextSpan(text: ' € TTC)'),
-                          ],
-                        ),
-                      ),
-                      selected: isSelected,
-                      selectedColor: Colors.orange.shade200,
-                      onSelected: (selected) {
-                        setState(() {
-                          if (selected && canAddMore) {
-                            _selectedSupplements.add(ingredient);
-                          } else if (!selected) {
-                            _selectedSupplements.remove(ingredient);
-                          }
-                        });
-                      },
-                    );
-                  }).toList(),
+
+                final baseIngredients = snapshot.data!['base'] ?? [];
+                final supplements = snapshot.data!['supplements'] ?? [];
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (baseIngredients.isNotEmpty)
+                      _buildBaseIngredientsSection(baseIngredients),
+                    
+                    if (supplements.isNotEmpty)
+                      _buildSupplementsSection(supplements),
+                  ],
                 );
               },
             ),
@@ -141,22 +125,17 @@ class _PizzaDetailScreenState extends State<PizzaDetailScreen> {
             children: [
               Flexible(
                 flex: 2,
-                child: Text.rich(
-                  TextSpan(
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontSize: 22),
-                    children: [
-                      TextSpan(text: totalPrice.toStringAsFixed(2), style: const TextStyle(fontWeight: FontWeight.bold)),
-                      const TextSpan(text: ' € TTC', style: TextStyle(fontSize: 14, fontWeight: FontWeight.normal)),
-                    ],
-                  ),
+                child: Text(
+                  formatPrice(totalPrice),
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontSize: 22, fontWeight: FontWeight.bold),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
               Flexible(
                 flex: 3,
                 child: ElevatedButton.icon(
-                  icon: const Icon(Icons.shopping_cart_checkout),
-                  label: Text(widget.ordersEnabled ? 'Ajouter au Panier' : 'Commandes fermées'),
+                  icon: Icon(isLoggedIn ? Icons.shopping_cart_checkout : Icons.login),
+                  label: Text(isLoggedIn ? (widget.ordersEnabled ? 'Ajouter au Panier' : 'Commandes fermées') : 'Connexion'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: widget.ordersEnabled ? Colors.green : Colors.grey,
                     foregroundColor: Colors.white,
@@ -164,21 +143,96 @@ class _PizzaDetailScreenState extends State<PizzaDetailScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     minimumSize: const Size(double.infinity, 50),
                   ),
-                  onPressed: widget.ordersEnabled
-                      ? () {
-                          cartService.addToCart(widget.product, ingredients: _selectedSupplements);
-                          Navigator.of(context).pop();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Pizza ajoutée au panier !'), duration: Duration(seconds: 2)),
-                          );
-                        }
-                      : null,
+                  onPressed: () {
+                    if (!isLoggedIn) {
+                      Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LoginScreen()));
+                    } else if (widget.ordersEnabled) {
+                      cartService.addToCart(
+                        widget.product,
+                        addedSupplements: _selectedSupplements, 
+                        removedIngredients: _removedBaseIngredients
+                      );
+                      Navigator.of(context).pop();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Pizza ajoutée au panier !'), duration: Duration(seconds: 2)),
+                      );
+                    }
+                  },
                 ),
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildBaseIngredientsSection(List<Ingredient> ingredients) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 24),
+        Text('Composition', style: Theme.of(context).textTheme.titleLarge),
+        // ✅ AJOUTÉ: Texte d'aide
+        Padding(
+          padding: const EdgeInsets.only(top: 4, bottom: 8),
+          child: Text(
+            'Décochez pour retirer un ingrédient',
+            style: TextStyle(color: Colors.grey.shade700, fontStyle: FontStyle.italic),
+          ),
+        ),
+        ...ingredients.map<Widget>((ingredient) {
+          final isRemoved = _removedBaseIngredients.contains(ingredient);
+          return CheckboxListTile(
+            title: Text(ingredient.name, style: TextStyle(decoration: isRemoved ? TextDecoration.lineThrough : null)),
+            value: !isRemoved,
+            onChanged: (selected) {
+              setState(() {
+                if (selected == false) {
+                  _removedBaseIngredients.add(ingredient);
+                } else {
+                  _removedBaseIngredients.remove(ingredient);
+                }
+              });
+            },
+          );
+        }).toList(),
+      ],
+    );
+  }
+
+  Widget _buildSupplementsSection(List<Ingredient> ingredients) {
+    final maxSupplements = widget.product.maxSupplements ?? 4;
+    final canAddMore = _selectedSupplements.length < maxSupplements;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 24),
+        Text('Suppléments (max $maxSupplements)', style: Theme.of(context).textTheme.titleLarge),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8.0,
+          runSpacing: 4.0,
+          children: ingredients.map<Widget>((ingredient) {
+            final isSelected = _selectedSupplements.contains(ingredient);
+            return ChoiceChip(
+              label: Text.rich(TextSpan(children: [TextSpan(text: '${ingredient.name} (+'), TextSpan(text: ingredient.price.toStringAsFixed(2), style: const TextStyle(fontWeight: FontWeight.bold)), const TextSpan(text: ' € TTC)')])), 
+              selected: isSelected,
+              selectedColor: Colors.orange.shade200,
+              onSelected: (selected) {
+                setState(() {
+                  if (selected && canAddMore) {
+                    _selectedSupplements.add(ingredient);
+                  } else if (!selected) {
+                    _selectedSupplements.remove(ingredient);
+                  }
+                });
+              },
+            );
+          }).toList(),
+        ),
+      ],
     );
   }
 }

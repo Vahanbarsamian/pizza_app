@@ -41,14 +41,12 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 28; // ✅ CORRIGÉ: Version incrémentée
+  int get schemaVersion => 30;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (m) => m.createAll(),
         onUpgrade: (m, from, to) async {
-          // Votre stratégie actuelle supprime et recrée tout.
-          // C'est destructif mais simple et efficace pour le développement.
           for (final table in allTables) {
             await m.deleteTable(table.actualTableName);
           }
@@ -123,6 +121,37 @@ class AppDatabase extends _$AppDatabase {
   Stream<List<Announcement>> watchAllAnnouncements() => (select(announcements)..where((a) => a.isActive.equals(true))..orderBy([(a) => OrderingTerm(expression: a.createdAt, mode: OrderingMode.desc)])).watch();
   Stream<List<Product>> watchAllProducts() => (select(products)..orderBy([(p) => OrderingTerm(expression: p.createdAt, mode: OrderingMode.desc)])).watch();
   Stream<List<Ingredient>> watchAllIngredients() => select(ingredients).watch();
+  
+  Stream<Map<String, List<Ingredient>>> watchIngredientsForProductSeparated(int productId) {
+    final query = select(productIngredientLinks).join([
+      innerJoin(ingredients, ingredients.id.equalsExp(productIngredientLinks.ingredientId))
+    ])
+      ..where(productIngredientLinks.productId.equals(productId));
+
+    return query.watch().map((rows) {
+      final List<Ingredient> baseIngredients = [];
+      final List<Ingredient> supplementIngredients = [];
+
+      for (final row in rows) {
+        final ingredient = row.readTable(ingredients);
+        final link = row.readTable(productIngredientLinks);
+
+        if (link.isBaseIngredient) {
+          baseIngredients.add(ingredient);
+        } else {
+          supplementIngredients.add(ingredient);
+        }
+      }
+      baseIngredients.sort((a,b) => a.name.compareTo(b.name));
+      supplementIngredients.sort((a,b) => a.name.compareTo(b.name));
+      
+      return {
+        'base': baseIngredients,
+        'supplements': supplementIngredients,
+      };
+    });
+  }
+
   Stream<List<Ingredient>> watchIngredientsForProduct(int productId) {
     final specificIngredientsQuery = select(productIngredientLinks).join([innerJoin(ingredients, ingredients.id.equalsExp(productIngredientLinks.ingredientId))])..where(productIngredientLinks.productId.equals(productId));
     final globalIngredientsQuery = select(ingredients)..where((i) => i.isGlobal.equals(true));

@@ -16,7 +16,6 @@ class OrderService {
 
     try {
       final now = DateTime.now();
-      // Étape 1: Créer la commande principale (sans le statut)
       final orderResponse = await _supabase.from('orders').insert({
         'user_id': userId,
         'total': cart.totalPrice,
@@ -29,21 +28,30 @@ class OrderService {
 
       final orderId = orderResponse.first['id'] as int;
 
-      // ✅ Étape 2: Créer l'entrée initiale dans l'historique des statuts
       await _supabase.from('order_status_histories').insert({
         'order_id': orderId,
         'status': 'À faire',
         'created_at': now.toIso8601String(),
       });
 
-      // Étape 3: Insérer les articles de la commande
-      final itemsToInsert = cart.items.values.map((cartItem) => {
-        'order_id': orderId,
-        'product_id': cartItem.product.id,
-        'quantity': cartItem.quantity,
-        'unit_price': cartItem.finalPrice,
-        'product_name': cartItem.product.name,
-        'options_description': cartItem.selectedIngredients.map((i) => i.name).join(', '),
+      final itemsToInsert = cart.items.values.map((cartItem) {
+        // ✅ MODIFIÉ: Logique pour construire la description complète des options
+        final options = <String>[];
+        if (cartItem.selectedIngredients.isNotEmpty) {
+          options.add(cartItem.selectedIngredients.map((i) => '+ ${i.name}').join(', '));
+        }
+        if (cartItem.removedIngredients.isNotEmpty) {
+          options.add(cartItem.removedIngredients.map((i) => '(sans ${i.name})').join(', '));
+        }
+
+        return {
+          'order_id': orderId,
+          'product_id': cartItem.product.id,
+          'quantity': cartItem.quantity,
+          'unit_price': cartItem.finalPrice,
+          'product_name': cartItem.product.name,
+          'options_description': options.join(', '), // Utilise la description complète
+        };
       }).toList();
 
       await _supabase.from('order_items').insert(itemsToInsert);

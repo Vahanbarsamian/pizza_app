@@ -25,7 +25,6 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> with SingleTickerProvid
   late TabController _tabController;
   late TextEditingController _customClosureMessageController;
 
-  // State variables
   DateTime? _filterStartDate, _filterEndDate, _archiveStartDate, _archiveEndDate;
   bool _areOrdersOpen = true;
   DateTime? _vacationStartDate, _vacationEndDate, _tempClosureStartDate, _tempClosureEndDate;
@@ -51,7 +50,6 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> with SingleTickerProvid
         _areOrdersOpen = info.ordersEnabled;
         _vacationStartDate = info.closureStartDate;
         _vacationEndDate = info.closureEndDate;
-        // TODO: Also load temp closure dates
         if (info.closureMessageType != null) {
           try {
             _selectedClosureMessage = ClosureMessageType.values.byName(info.closureMessageType!);
@@ -88,7 +86,7 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> with SingleTickerProvid
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Confirmer l\'archivage'),
+        title: const Text("Confirmer l'archivage"), // ✅ CORRIGÉ
         content: const Text('Voulez-vous vraiment archiver toutes les commandes terminées aujourd\'hui ?'),
         actions: [
           TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Annuler')),
@@ -205,6 +203,18 @@ class OrdersList extends StatelessWidget {
   final DateTime? endDate;
   const OrdersList({super.key, this.startDate, this.endDate});
 
+  TimeOfDay _parsePickupTime(String timeStr) {
+    try {
+      final cleanedTime = timeStr.replaceAll('h', ':').replaceAll('H', ':');
+      final parts = cleanedTime.split(':');
+      final hour = int.parse(parts[0]);
+      final minute = parts.length > 1 ? int.parse(parts[1]) : 0;
+      return TimeOfDay(hour: hour, minute: minute);
+    } catch (e) {
+      return const TimeOfDay(hour: 23, minute: 59);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final db = Provider.of<AppDatabase>(context);
@@ -223,6 +233,20 @@ class OrdersList extends StatelessWidget {
           final endOfDay = DateTime(endDate!.year, endDate!.month, endDate!.day, 23, 59, 59);
           allOrders = allOrders.where((o) => o.order.createdAt.isBefore(endOfDay)).toList();
         }
+
+        allOrders.sort((a, b) {
+          final dateA = DateTime(a.order.createdAt.year, a.order.createdAt.month, a.order.createdAt.day);
+          final dateB = DateTime(b.order.createdAt.year, b.order.createdAt.month, b.order.createdAt.day);
+          int dateComparison = dateB.compareTo(dateA);
+          if (dateComparison != 0) return dateComparison;
+
+          final timeA = _parsePickupTime(a.order.pickupTime ?? '');
+          final timeB = _parsePickupTime(b.order.pickupTime ?? '');
+          final timeAValue = timeA.hour * 60 + timeA.minute;
+          final timeBValue = timeB.hour * 60 + timeB.minute;
+          return timeAValue.compareTo(timeBValue);
+        });
+
         if (allOrders.isEmpty) {
           return const Center(child: Text('Aucune commande à afficher pour cette période.'));
         }

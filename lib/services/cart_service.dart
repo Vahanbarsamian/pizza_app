@@ -11,10 +11,8 @@ class CartService extends ChangeNotifier {
   String? temporaryReferenceName;
   String? temporaryPickupTime;
 
-  // ✅ CORRIGÉ: Le chargement n'est plus dans le constructeur
   CartService(this._db);
 
-  // ✅ CORRIGÉ: La méthode est maintenant publique pour être appelée par le SplashScreen
   Future<void> loadCart() async {
     final savedItems = await _db.getAllSavedCartItems();
     final allProducts = await _db.getAllProducts(); 
@@ -23,12 +21,18 @@ class CartService extends ChangeNotifier {
     for (var savedItem in savedItems) {
       try {
         final product = allProducts.firstWhere((p) => p.id == savedItem.productId);
-        final ingredientIds = savedItem.selectedIngredients.split(',').where((id) => id.isNotEmpty).map(int.parse).toList();
-        final ingredients = allIngredients.where((i) => ingredientIds.contains(i.id)).toList();
+        
+        final selectedIds = savedItem.selectedIngredients.split(',').where((id) => id.isNotEmpty).map(int.parse).toList();
+        final selected = allIngredients.where((i) => selectedIds.contains(i.id)).toList();
+
+        // ✅ MODIFIÉ: On charge aussi les ingrédients retirés
+        final removedIds = savedItem.removedIngredients.split(',').where((id) => id.isNotEmpty).map(int.parse).toList();
+        final removed = allIngredients.where((i) => removedIds.contains(i.id)).toList();
 
         _items[savedItem.uniqueId] = CartItem(
           product: product,
-          selectedIngredients: ingredients,
+          selectedIngredients: selected,
+          removedIngredients: removed, // ✅ MODIFIÉ
           quantity: savedItem.quantity,
         );
       } catch (e) {
@@ -49,14 +53,20 @@ class CartService extends ChangeNotifier {
     return total;
   }
 
-  void addToCart(Product product, {List<Ingredient> ingredients = const []}) {
-    final cartItem = CartItem(product: product, selectedIngredients: ingredients);
+  // ✅ MODIFIÉ: Nouvelle signature de la méthode
+  void addToCart(Product product, {List<Ingredient> addedSupplements = const [], List<Ingredient> removedIngredients = const []}) {
+    final cartItem = CartItem(
+      product: product, 
+      selectedIngredients: addedSupplements,
+      removedIngredients: removedIngredients,
+    );
     final itemId = cartItem.uniqueId;
 
     if (_items.containsKey(itemId)) {
       _items.update(itemId, (existingItem) => CartItem(
         product: existingItem.product,
         selectedIngredients: existingItem.selectedIngredients,
+        removedIngredients: existingItem.removedIngredients,
         quantity: existingItem.quantity + 1,
       ));
     } else {
@@ -74,6 +84,7 @@ class CartService extends ChangeNotifier {
       _items.update(itemId, (existingItem) => CartItem(
         product: existingItem.product,
         selectedIngredients: existingItem.selectedIngredients,
+        removedIngredients: existingItem.removedIngredients,
         quantity: newQuantity,
       ));
        _saveItemToDb(_items[itemId]!);
@@ -99,6 +110,8 @@ class CartService extends ChangeNotifier {
       productId: Value(item.product.id),
       quantity: Value(item.quantity),
       selectedIngredients: Value(item.selectedIngredients.map((i) => i.id).join(',')),
+      // ✅ MODIFIÉ: On sauvegarde aussi les ingrédients retirés
+      removedIngredients: Value(item.removedIngredients.map((i) => i.id).join(',')),
     );
     return _db.saveCartItem(companion);
   }

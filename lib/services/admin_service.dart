@@ -95,11 +95,29 @@ class AdminService {
     }
   }
 
-  Future<void> updateProductIngredientLinks(int productId, List<int> ingredientIds) async {
+  Future<void> updateProductIngredients(int productId, List<int> baseIngredientIds, List<int> supplementIngredientIds) async {
     await _supabase.from('product_ingredient_links').delete().eq('product_id', productId);
-    if (ingredientIds.isNotEmpty) {
-      final links = ingredientIds.map((id) => {'product_id': productId, 'ingredient_id': id}).toList();
-      await _supabase.from('product_ingredient_links').insert(links);
+
+    final List<Map<String, dynamic>> linksToInsert = [];
+
+    for (final ingredientId in baseIngredientIds) {
+      linksToInsert.add({
+        'product_id': productId,
+        'ingredient_id': ingredientId,
+        'is_base_ingredient': true,
+      });
+    }
+
+    for (final ingredientId in supplementIngredientIds) {
+      linksToInsert.add({
+        'product_id': productId,
+        'ingredient_id': ingredientId,
+        'is_base_ingredient': false,
+      });
+    }
+
+    if (linksToInsert.isNotEmpty) {
+      await _supabase.from('product_ingredient_links').insert(linksToInsert);
     }
   }
 
@@ -145,7 +163,7 @@ class AdminService {
       print('✅ [AdminService] CompanyInfo sauvegardé avec succès.');
     } catch (e) {
       print('❌ [AdminService] Erreur lors de la sauvegarde de CompanyInfo: $e');
-      rethrow; // Important pour que l'UI puisse aussi voir l'erreur
+      rethrow;
     }
   }
 

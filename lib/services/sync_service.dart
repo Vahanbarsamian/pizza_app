@@ -183,10 +183,11 @@ class SyncService {
 
   Future<void> _syncProductIngredientLinks() async {
     try {
-      final response = await _supabase.from('product_ingredient_links').select();
+      final response = await _supabase.from('product_ingredient_links').select('*, is_base_ingredient');
       final linksToSync = response.map((item) => ProductIngredientLinksCompanion(
         productId: Value(item['product_id'] as int),
         ingredientId: Value(item['ingredient_id'] as int),
+        isBaseIngredient: Value(item['is_base_ingredient'] as bool? ?? true),
       )).toList();
 
       await db.transaction(() async {

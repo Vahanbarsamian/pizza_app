@@ -9,6 +9,10 @@ import '../services/auth_service.dart';
 import '../services/sync_service.dart';
 import 'add_review_screen.dart';
 
+String formatPrice(double price) {
+  return '${price.toStringAsFixed(2)} € TTC';
+}
+
 class OrderDetailScreen extends StatefulWidget {
   final Order order;
   final String status;
@@ -46,23 +50,21 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     if (companyInfo == null || orderItems.isEmpty) return;
 
     final companyName = companyInfo.name ?? 'Votre Pizzeria';
-    final logoUrl = companyInfo.logoUrl;
     final tvaRate = companyInfo.tvaRate ?? 0.0;
 
     final buffer = StringBuffer();
     buffer.writeln('--- FACTURE ---');
     buffer.writeln(companyName);
     if (companyInfo.address != null) buffer.writeln(companyInfo.address);
-    if (logoUrl != null && logoUrl.isNotEmpty) buffer.writeln('Logo: $logoUrl');
     buffer.writeln('--------------------');
     buffer.writeln('Commande pour: ${widget.order.referenceName}');
     buffer.writeln('Date: ${DateFormat('dd/MM/yyyy HH:mm', 'fr_FR').format(widget.order.createdAt)}');
     buffer.writeln('--------------------');
 
     for (final item in orderItems) {
-      buffer.writeln('${item.quantity}x ${item.productName} - ${(item.unitPrice * item.quantity).toStringAsFixed(2)} €');
+      buffer.writeln('${item.quantity}x ${item.productName} - ${formatPrice(item.unitPrice * item.quantity)}');
       if(item.optionsDescription != null && item.optionsDescription!.isNotEmpty) {
-        buffer.writeln('  (+ ${item.optionsDescription})');
+        buffer.writeln('  ${item.optionsDescription}');
       }
     }
 
@@ -72,7 +74,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         tvaAmount = widget.order.total / (1 + tvaRate) * tvaRate;
     }
     buffer.writeln('dont TVA (${(tvaRate * 100).toStringAsFixed(0)}%): ${tvaAmount.toStringAsFixed(2)} €');
-    buffer.writeln('TOTAL: ${widget.order.total.toStringAsFixed(2)} € TTC');
+    buffer.writeln('TOTAL: ${formatPrice(widget.order.total)}');
     buffer.writeln('--------------------');
     buffer.writeln('Merci de votre visite !');
 
@@ -88,17 +90,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       future: Future.wait([db.getOrderItems(widget.order.id), db.getCompanyInfo()]),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Scaffold(
-            appBar: AppBar(title: const Text('Bon de Commande')),
-            body: const Center(child: CircularProgressIndicator()),
-          );
+          return Scaffold(appBar: AppBar(title: const Text('Bon de Commande')), body: const Center(child: CircularProgressIndicator()));
         }
-
         if (snapshot.hasError || !snapshot.hasData) {
-           return Scaffold(
-            appBar: AppBar(title: const Text('Erreur')),
-            body: Center(child: Text('Erreur de chargement des données: ${snapshot.error}')),
-          );
+           return Scaffold(appBar: AppBar(title: const Text('Erreur')), body: Center(child: Text('Erreur de chargement des données: ${snapshot.error}')));
         }
 
         final orderItems = snapshot.data![0] as List<OrderItem>;
@@ -106,9 +101,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         final totalItems = orderItems.fold<int>(0, (sum, item) => sum + item.quantity);
 
         return Scaffold(
-          appBar: AppBar(
-            title: const Text('Bon de Commande'),
-          ),
+          appBar: AppBar(title: const Text('Bon de Commande')),
           body: ListView(
                   padding: const EdgeInsets.all(16.0),
                   children: [
@@ -196,11 +189,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (isAdmin)
-              _buildSummaryRow('Statut:', widget.status, isStatus: true)
-            else
-              _buildSummaryRow('Statut:', 'Payé le ${DateFormat('dd/MM/yyyy').format(widget.order.createdAt)}', color: Colors.green),
-            
+            if (isAdmin) _buildSummaryRow('Statut:', widget.status, isStatus: true) else _buildSummaryRow('Statut:', 'Payé le ${DateFormat('dd/MM/yyyy').format(widget.order.createdAt)}', color: Colors.green),
             _buildSummaryRow('Référence:', widget.order.referenceName ?? 'Non spécifié'),
             _buildSummaryRow('Heure de retrait:', widget.order.pickupTime ?? 'Non spécifiée'),
             _buildSummaryRow('Date:', DateFormat('dd/MM/yyyy HH:mm', 'fr_FR').format(widget.order.createdAt)),
@@ -212,27 +201,14 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 padding: const EdgeInsets.only(bottom: 8.0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Text(
-                      'dont TVA (${tvaRateForDisplay.toStringAsFixed(0)}%): ${tvaAmount.toStringAsFixed(2)} €',
-                      style: TextStyle(color: Colors.grey.shade600, fontStyle: FontStyle.italic),
-                    ),
-                  ],
+                  children: [Text('dont TVA (${tvaRateForDisplay.toStringAsFixed(0)}%): ${tvaAmount.toStringAsFixed(2)} €', style: TextStyle(color: Colors.grey.shade600, fontStyle: FontStyle.italic))],
                 ),
               ),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text('TOTAL', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                Text.rich(
-                  TextSpan(
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold, color: Colors.black),
-                    children: [
-                      TextSpan(text: widget.order.total.toStringAsFixed(2)),
-                      const TextSpan(text: ' € TTC', style: TextStyle(fontSize: 14, fontWeight: FontWeight.normal)),
-                    ],
-                  ),
-                )
+                Text(formatPrice(widget.order.total), style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold, color: Colors.black))
               ],
             )
           ],
@@ -282,27 +258,14 @@ class OrderItemCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Expanded(
-                  child: Text(
-                    '${item.quantity}x ${item.productName}',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                ),
-                Text.rich(
-                  TextSpan(
-                    style: const TextStyle(fontSize: 16),
-                    children: [
-                      TextSpan(text: (item.unitPrice * item.quantity).toStringAsFixed(2), style: const TextStyle(fontWeight: FontWeight.bold)),
-                      const TextSpan(text: ' € TTC', style: TextStyle(fontSize: 10, color: Colors.grey)),
-                    ],
-                  ),
-                ),
+                Expanded(child: Text('${item.quantity}x ${item.productName}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16))),
+                Text(formatPrice(item.unitPrice * item.quantity), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               ],
             ),
             if (item.optionsDescription != null && item.optionsDescription!.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 8.0),
-                child: Text('+ Suppléments: ${item.optionsDescription}', style: TextStyle(color: Colors.grey.shade600, fontStyle: FontStyle.italic)),
+                child: Text(item.optionsDescription!, style: TextStyle(color: Colors.grey.shade600, fontStyle: FontStyle.italic)),
               ),
           ],
         ),

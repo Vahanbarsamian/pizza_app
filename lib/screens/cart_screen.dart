@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../models/cart_item.dart';
 import '../services/cart_service.dart';
 import '../services/order_service.dart';
 import '../services/auth_service.dart';
 import '../services/sync_service.dart';
 import 'login_screen.dart';
+
+String formatPrice(double price) {
+  return '${price.toStringAsFixed(2)} € TTC';
+}
 
 class CartScreen extends StatelessWidget {
   const CartScreen({super.key});
@@ -129,16 +134,25 @@ class CartScreen extends StatelessWidget {
                 final itemId = cartService.items.keys.elementAt(index);
                 final item = cartService.items[itemId]!;
 
+                // ✅ MODIFIÉ: Logique pour construire le sous-titre des options
+                final options = <String>[];
+                if (item.selectedIngredients.isNotEmpty) {
+                  options.add(item.selectedIngredients.map((i) => '+ ${i.name}').join(', '));
+                }
+                if (item.removedIngredients.isNotEmpty) {
+                  options.add(item.removedIngredients.map((i) => '(sans ${i.name})').join(', '));
+                }
+
                 return ListTile(
                   leading: const Icon(Icons.local_pizza_outlined, color: Colors.orange),
                   title: Text(item.product.name),
-                  subtitle: item.selectedIngredients.isNotEmpty
-                      ? Text(item.selectedIngredients.map((i) => i.name).join(', '))
+                  subtitle: options.isNotEmpty
+                      ? Text(options.join(', '))
                       : null,
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text('${(item.finalPrice * item.quantity).toStringAsFixed(2)} €'),
+                      Text(formatPrice(item.finalPrice * item.quantity)),
                       IconButton(
                         icon: const Icon(Icons.remove_circle_outline),
                         onPressed: () => cartService.updateQuantity(itemId, item.quantity - 1),
@@ -172,7 +186,7 @@ class CartScreen extends StatelessWidget {
                   Expanded(
                     flex: 1,
                     child: Text(
-                      'Total: ${cartService.totalPrice.toStringAsFixed(2)} €',
+                      'Total: ${formatPrice(cartService.totalPrice)}',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                       overflow: TextOverflow.ellipsis,
                     ),

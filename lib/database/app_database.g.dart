@@ -4053,8 +4053,19 @@ class $ProductIngredientLinksTable extends ProductIngredientLinks
       requiredDuringInsert: true,
       defaultConstraints:
           GeneratedColumn.constraintIsAlways('REFERENCES ingredients (id)'));
+  static const VerificationMeta _isBaseIngredientMeta =
+      const VerificationMeta('isBaseIngredient');
   @override
-  List<GeneratedColumn> get $columns => [productId, ingredientId];
+  late final GeneratedColumn<bool> isBaseIngredient = GeneratedColumn<bool>(
+      'is_base_ingredient', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("is_base_ingredient" IN (0, 1))'),
+      defaultValue: const Constant(true));
+  @override
+  List<GeneratedColumn> get $columns =>
+      [productId, ingredientId, isBaseIngredient];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -4080,6 +4091,12 @@ class $ProductIngredientLinksTable extends ProductIngredientLinks
     } else if (isInserting) {
       context.missing(_ingredientIdMeta);
     }
+    if (data.containsKey('is_base_ingredient')) {
+      context.handle(
+          _isBaseIngredientMeta,
+          isBaseIngredient.isAcceptableOrUnknown(
+              data['is_base_ingredient']!, _isBaseIngredientMeta));
+    }
     return context;
   }
 
@@ -4093,6 +4110,8 @@ class $ProductIngredientLinksTable extends ProductIngredientLinks
           .read(DriftSqlType.int, data['${effectivePrefix}product_id'])!,
       ingredientId: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}ingredient_id'])!,
+      isBaseIngredient: attachedDatabase.typeMapping.read(
+          DriftSqlType.bool, data['${effectivePrefix}is_base_ingredient'])!,
     );
   }
 
@@ -4106,13 +4125,17 @@ class ProductIngredientLink extends DataClass
     implements Insertable<ProductIngredientLink> {
   final int productId;
   final int ingredientId;
+  final bool isBaseIngredient;
   const ProductIngredientLink(
-      {required this.productId, required this.ingredientId});
+      {required this.productId,
+      required this.ingredientId,
+      required this.isBaseIngredient});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['product_id'] = Variable<int>(productId);
     map['ingredient_id'] = Variable<int>(ingredientId);
+    map['is_base_ingredient'] = Variable<bool>(isBaseIngredient);
     return map;
   }
 
@@ -4120,6 +4143,7 @@ class ProductIngredientLink extends DataClass
     return ProductIngredientLinksCompanion(
       productId: Value(productId),
       ingredientId: Value(ingredientId),
+      isBaseIngredient: Value(isBaseIngredient),
     );
   }
 
@@ -4129,6 +4153,7 @@ class ProductIngredientLink extends DataClass
     return ProductIngredientLink(
       productId: serializer.fromJson<int>(json['productId']),
       ingredientId: serializer.fromJson<int>(json['ingredientId']),
+      isBaseIngredient: serializer.fromJson<bool>(json['isBaseIngredient']),
     );
   }
   @override
@@ -4137,13 +4162,16 @@ class ProductIngredientLink extends DataClass
     return <String, dynamic>{
       'productId': serializer.toJson<int>(productId),
       'ingredientId': serializer.toJson<int>(ingredientId),
+      'isBaseIngredient': serializer.toJson<bool>(isBaseIngredient),
     };
   }
 
-  ProductIngredientLink copyWith({int? productId, int? ingredientId}) =>
+  ProductIngredientLink copyWith(
+          {int? productId, int? ingredientId, bool? isBaseIngredient}) =>
       ProductIngredientLink(
         productId: productId ?? this.productId,
         ingredientId: ingredientId ?? this.ingredientId,
+        isBaseIngredient: isBaseIngredient ?? this.isBaseIngredient,
       );
   ProductIngredientLink copyWithCompanion(
       ProductIngredientLinksCompanion data) {
@@ -4152,6 +4180,9 @@ class ProductIngredientLink extends DataClass
       ingredientId: data.ingredientId.present
           ? data.ingredientId.value
           : this.ingredientId,
+      isBaseIngredient: data.isBaseIngredient.present
+          ? data.isBaseIngredient.value
+          : this.isBaseIngredient,
     );
   }
 
@@ -4159,54 +4190,65 @@ class ProductIngredientLink extends DataClass
   String toString() {
     return (StringBuffer('ProductIngredientLink(')
           ..write('productId: $productId, ')
-          ..write('ingredientId: $ingredientId')
+          ..write('ingredientId: $ingredientId, ')
+          ..write('isBaseIngredient: $isBaseIngredient')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(productId, ingredientId);
+  int get hashCode => Object.hash(productId, ingredientId, isBaseIngredient);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is ProductIngredientLink &&
           other.productId == this.productId &&
-          other.ingredientId == this.ingredientId);
+          other.ingredientId == this.ingredientId &&
+          other.isBaseIngredient == this.isBaseIngredient);
 }
 
 class ProductIngredientLinksCompanion
     extends UpdateCompanion<ProductIngredientLink> {
   final Value<int> productId;
   final Value<int> ingredientId;
+  final Value<bool> isBaseIngredient;
   final Value<int> rowid;
   const ProductIngredientLinksCompanion({
     this.productId = const Value.absent(),
     this.ingredientId = const Value.absent(),
+    this.isBaseIngredient = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ProductIngredientLinksCompanion.insert({
     required int productId,
     required int ingredientId,
+    this.isBaseIngredient = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : productId = Value(productId),
         ingredientId = Value(ingredientId);
   static Insertable<ProductIngredientLink> custom({
     Expression<int>? productId,
     Expression<int>? ingredientId,
+    Expression<bool>? isBaseIngredient,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (productId != null) 'product_id': productId,
       if (ingredientId != null) 'ingredient_id': ingredientId,
+      if (isBaseIngredient != null) 'is_base_ingredient': isBaseIngredient,
       if (rowid != null) 'rowid': rowid,
     });
   }
 
   ProductIngredientLinksCompanion copyWith(
-      {Value<int>? productId, Value<int>? ingredientId, Value<int>? rowid}) {
+      {Value<int>? productId,
+      Value<int>? ingredientId,
+      Value<bool>? isBaseIngredient,
+      Value<int>? rowid}) {
     return ProductIngredientLinksCompanion(
       productId: productId ?? this.productId,
       ingredientId: ingredientId ?? this.ingredientId,
+      isBaseIngredient: isBaseIngredient ?? this.isBaseIngredient,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -4220,6 +4262,9 @@ class ProductIngredientLinksCompanion
     if (ingredientId.present) {
       map['ingredient_id'] = Variable<int>(ingredientId.value);
     }
+    if (isBaseIngredient.present) {
+      map['is_base_ingredient'] = Variable<bool>(isBaseIngredient.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -4231,6 +4276,7 @@ class ProductIngredientLinksCompanion
     return (StringBuffer('ProductIngredientLinksCompanion(')
           ..write('productId: $productId, ')
           ..write('ingredientId: $ingredientId, ')
+          ..write('isBaseIngredient: $isBaseIngredient, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -4267,9 +4313,17 @@ class $SavedCartItemsTable extends SavedCartItems
   late final GeneratedColumn<String> selectedIngredients =
       GeneratedColumn<String>('selected_ingredients', aliasedName, false,
           type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _removedIngredientsMeta =
+      const VerificationMeta('removedIngredients');
+  @override
+  late final GeneratedColumn<String> removedIngredients =
+      GeneratedColumn<String>('removed_ingredients', aliasedName, false,
+          type: DriftSqlType.string,
+          requiredDuringInsert: false,
+          defaultValue: const Constant(''));
   @override
   List<GeneratedColumn> get $columns =>
-      [uniqueId, productId, quantity, selectedIngredients];
+      [uniqueId, productId, quantity, selectedIngredients, removedIngredients];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -4306,6 +4360,12 @@ class $SavedCartItemsTable extends SavedCartItems
     } else if (isInserting) {
       context.missing(_selectedIngredientsMeta);
     }
+    if (data.containsKey('removed_ingredients')) {
+      context.handle(
+          _removedIngredientsMeta,
+          removedIngredients.isAcceptableOrUnknown(
+              data['removed_ingredients']!, _removedIngredientsMeta));
+    }
     return context;
   }
 
@@ -4323,6 +4383,8 @@ class $SavedCartItemsTable extends SavedCartItems
           .read(DriftSqlType.int, data['${effectivePrefix}quantity'])!,
       selectedIngredients: attachedDatabase.typeMapping.read(
           DriftSqlType.string, data['${effectivePrefix}selected_ingredients'])!,
+      removedIngredients: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}removed_ingredients'])!,
     );
   }
 
@@ -4337,11 +4399,13 @@ class SavedCartItem extends DataClass implements Insertable<SavedCartItem> {
   final int productId;
   final int quantity;
   final String selectedIngredients;
+  final String removedIngredients;
   const SavedCartItem(
       {required this.uniqueId,
       required this.productId,
       required this.quantity,
-      required this.selectedIngredients});
+      required this.selectedIngredients,
+      required this.removedIngredients});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -4349,6 +4413,7 @@ class SavedCartItem extends DataClass implements Insertable<SavedCartItem> {
     map['product_id'] = Variable<int>(productId);
     map['quantity'] = Variable<int>(quantity);
     map['selected_ingredients'] = Variable<String>(selectedIngredients);
+    map['removed_ingredients'] = Variable<String>(removedIngredients);
     return map;
   }
 
@@ -4358,6 +4423,7 @@ class SavedCartItem extends DataClass implements Insertable<SavedCartItem> {
       productId: Value(productId),
       quantity: Value(quantity),
       selectedIngredients: Value(selectedIngredients),
+      removedIngredients: Value(removedIngredients),
     );
   }
 
@@ -4370,6 +4436,8 @@ class SavedCartItem extends DataClass implements Insertable<SavedCartItem> {
       quantity: serializer.fromJson<int>(json['quantity']),
       selectedIngredients:
           serializer.fromJson<String>(json['selectedIngredients']),
+      removedIngredients:
+          serializer.fromJson<String>(json['removedIngredients']),
     );
   }
   @override
@@ -4380,6 +4448,7 @@ class SavedCartItem extends DataClass implements Insertable<SavedCartItem> {
       'productId': serializer.toJson<int>(productId),
       'quantity': serializer.toJson<int>(quantity),
       'selectedIngredients': serializer.toJson<String>(selectedIngredients),
+      'removedIngredients': serializer.toJson<String>(removedIngredients),
     };
   }
 
@@ -4387,12 +4456,14 @@ class SavedCartItem extends DataClass implements Insertable<SavedCartItem> {
           {String? uniqueId,
           int? productId,
           int? quantity,
-          String? selectedIngredients}) =>
+          String? selectedIngredients,
+          String? removedIngredients}) =>
       SavedCartItem(
         uniqueId: uniqueId ?? this.uniqueId,
         productId: productId ?? this.productId,
         quantity: quantity ?? this.quantity,
         selectedIngredients: selectedIngredients ?? this.selectedIngredients,
+        removedIngredients: removedIngredients ?? this.removedIngredients,
       );
   SavedCartItem copyWithCompanion(SavedCartItemsCompanion data) {
     return SavedCartItem(
@@ -4402,6 +4473,9 @@ class SavedCartItem extends DataClass implements Insertable<SavedCartItem> {
       selectedIngredients: data.selectedIngredients.present
           ? data.selectedIngredients.value
           : this.selectedIngredients,
+      removedIngredients: data.removedIngredients.present
+          ? data.removedIngredients.value
+          : this.removedIngredients,
     );
   }
 
@@ -4411,14 +4485,15 @@ class SavedCartItem extends DataClass implements Insertable<SavedCartItem> {
           ..write('uniqueId: $uniqueId, ')
           ..write('productId: $productId, ')
           ..write('quantity: $quantity, ')
-          ..write('selectedIngredients: $selectedIngredients')
+          ..write('selectedIngredients: $selectedIngredients, ')
+          ..write('removedIngredients: $removedIngredients')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(uniqueId, productId, quantity, selectedIngredients);
+  int get hashCode => Object.hash(
+      uniqueId, productId, quantity, selectedIngredients, removedIngredients);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -4426,7 +4501,8 @@ class SavedCartItem extends DataClass implements Insertable<SavedCartItem> {
           other.uniqueId == this.uniqueId &&
           other.productId == this.productId &&
           other.quantity == this.quantity &&
-          other.selectedIngredients == this.selectedIngredients);
+          other.selectedIngredients == this.selectedIngredients &&
+          other.removedIngredients == this.removedIngredients);
 }
 
 class SavedCartItemsCompanion extends UpdateCompanion<SavedCartItem> {
@@ -4434,12 +4510,14 @@ class SavedCartItemsCompanion extends UpdateCompanion<SavedCartItem> {
   final Value<int> productId;
   final Value<int> quantity;
   final Value<String> selectedIngredients;
+  final Value<String> removedIngredients;
   final Value<int> rowid;
   const SavedCartItemsCompanion({
     this.uniqueId = const Value.absent(),
     this.productId = const Value.absent(),
     this.quantity = const Value.absent(),
     this.selectedIngredients = const Value.absent(),
+    this.removedIngredients = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   SavedCartItemsCompanion.insert({
@@ -4447,6 +4525,7 @@ class SavedCartItemsCompanion extends UpdateCompanion<SavedCartItem> {
     required int productId,
     required int quantity,
     required String selectedIngredients,
+    this.removedIngredients = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : uniqueId = Value(uniqueId),
         productId = Value(productId),
@@ -4457,6 +4536,7 @@ class SavedCartItemsCompanion extends UpdateCompanion<SavedCartItem> {
     Expression<int>? productId,
     Expression<int>? quantity,
     Expression<String>? selectedIngredients,
+    Expression<String>? removedIngredients,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -4465,6 +4545,7 @@ class SavedCartItemsCompanion extends UpdateCompanion<SavedCartItem> {
       if (quantity != null) 'quantity': quantity,
       if (selectedIngredients != null)
         'selected_ingredients': selectedIngredients,
+      if (removedIngredients != null) 'removed_ingredients': removedIngredients,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -4474,12 +4555,14 @@ class SavedCartItemsCompanion extends UpdateCompanion<SavedCartItem> {
       Value<int>? productId,
       Value<int>? quantity,
       Value<String>? selectedIngredients,
+      Value<String>? removedIngredients,
       Value<int>? rowid}) {
     return SavedCartItemsCompanion(
       uniqueId: uniqueId ?? this.uniqueId,
       productId: productId ?? this.productId,
       quantity: quantity ?? this.quantity,
       selectedIngredients: selectedIngredients ?? this.selectedIngredients,
+      removedIngredients: removedIngredients ?? this.removedIngredients,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -4499,6 +4582,9 @@ class SavedCartItemsCompanion extends UpdateCompanion<SavedCartItem> {
     if (selectedIngredients.present) {
       map['selected_ingredients'] = Variable<String>(selectedIngredients.value);
     }
+    if (removedIngredients.present) {
+      map['removed_ingredients'] = Variable<String>(removedIngredients.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -4512,6 +4598,7 @@ class SavedCartItemsCompanion extends UpdateCompanion<SavedCartItem> {
           ..write('productId: $productId, ')
           ..write('quantity: $quantity, ')
           ..write('selectedIngredients: $selectedIngredients, ')
+          ..write('removedIngredients: $removedIngredients, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -8057,12 +8144,14 @@ typedef $$ProductIngredientLinksTableCreateCompanionBuilder
     = ProductIngredientLinksCompanion Function({
   required int productId,
   required int ingredientId,
+  Value<bool> isBaseIngredient,
   Value<int> rowid,
 });
 typedef $$ProductIngredientLinksTableUpdateCompanionBuilder
     = ProductIngredientLinksCompanion Function({
   Value<int> productId,
   Value<int> ingredientId,
+  Value<bool> isBaseIngredient,
   Value<int> rowid,
 });
 
@@ -8111,6 +8200,10 @@ class $$ProductIngredientLinksTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  ColumnFilters<bool> get isBaseIngredient => $composableBuilder(
+      column: $table.isBaseIngredient,
+      builder: (column) => ColumnFilters(column));
+
   $$ProductsTableFilterComposer get productId {
     final $$ProductsTableFilterComposer composer = $composerBuilder(
         composer: this,
@@ -8161,6 +8254,10 @@ class $$ProductIngredientLinksTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  ColumnOrderings<bool> get isBaseIngredient => $composableBuilder(
+      column: $table.isBaseIngredient,
+      builder: (column) => ColumnOrderings(column));
+
   $$ProductsTableOrderingComposer get productId {
     final $$ProductsTableOrderingComposer composer = $composerBuilder(
         composer: this,
@@ -8211,6 +8308,9 @@ class $$ProductIngredientLinksTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  GeneratedColumn<bool> get isBaseIngredient => $composableBuilder(
+      column: $table.isBaseIngredient, builder: (column) => column);
+
   $$ProductsTableAnnotationComposer get productId {
     final $$ProductsTableAnnotationComposer composer = $composerBuilder(
         composer: this,
@@ -8281,21 +8381,25 @@ class $$ProductIngredientLinksTableTableManager extends RootTableManager<
           updateCompanionCallback: ({
             Value<int> productId = const Value.absent(),
             Value<int> ingredientId = const Value.absent(),
+            Value<bool> isBaseIngredient = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               ProductIngredientLinksCompanion(
             productId: productId,
             ingredientId: ingredientId,
+            isBaseIngredient: isBaseIngredient,
             rowid: rowid,
           ),
           createCompanionCallback: ({
             required int productId,
             required int ingredientId,
+            Value<bool> isBaseIngredient = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               ProductIngredientLinksCompanion.insert(
             productId: productId,
             ingredientId: ingredientId,
+            isBaseIngredient: isBaseIngredient,
             rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0
@@ -8373,6 +8477,7 @@ typedef $$SavedCartItemsTableCreateCompanionBuilder = SavedCartItemsCompanion
   required int productId,
   required int quantity,
   required String selectedIngredients,
+  Value<String> removedIngredients,
   Value<int> rowid,
 });
 typedef $$SavedCartItemsTableUpdateCompanionBuilder = SavedCartItemsCompanion
@@ -8381,6 +8486,7 @@ typedef $$SavedCartItemsTableUpdateCompanionBuilder = SavedCartItemsCompanion
   Value<int> productId,
   Value<int> quantity,
   Value<String> selectedIngredients,
+  Value<String> removedIngredients,
   Value<int> rowid,
 });
 
@@ -8405,6 +8511,10 @@ class $$SavedCartItemsTableFilterComposer
   ColumnFilters<String> get selectedIngredients => $composableBuilder(
       column: $table.selectedIngredients,
       builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get removedIngredients => $composableBuilder(
+      column: $table.removedIngredients,
+      builder: (column) => ColumnFilters(column));
 }
 
 class $$SavedCartItemsTableOrderingComposer
@@ -8428,6 +8538,10 @@ class $$SavedCartItemsTableOrderingComposer
   ColumnOrderings<String> get selectedIngredients => $composableBuilder(
       column: $table.selectedIngredients,
       builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get removedIngredients => $composableBuilder(
+      column: $table.removedIngredients,
+      builder: (column) => ColumnOrderings(column));
 }
 
 class $$SavedCartItemsTableAnnotationComposer
@@ -8450,6 +8564,9 @@ class $$SavedCartItemsTableAnnotationComposer
 
   GeneratedColumn<String> get selectedIngredients => $composableBuilder(
       column: $table.selectedIngredients, builder: (column) => column);
+
+  GeneratedColumn<String> get removedIngredients => $composableBuilder(
+      column: $table.removedIngredients, builder: (column) => column);
 }
 
 class $$SavedCartItemsTableTableManager extends RootTableManager<
@@ -8483,6 +8600,7 @@ class $$SavedCartItemsTableTableManager extends RootTableManager<
             Value<int> productId = const Value.absent(),
             Value<int> quantity = const Value.absent(),
             Value<String> selectedIngredients = const Value.absent(),
+            Value<String> removedIngredients = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               SavedCartItemsCompanion(
@@ -8490,6 +8608,7 @@ class $$SavedCartItemsTableTableManager extends RootTableManager<
             productId: productId,
             quantity: quantity,
             selectedIngredients: selectedIngredients,
+            removedIngredients: removedIngredients,
             rowid: rowid,
           ),
           createCompanionCallback: ({
@@ -8497,6 +8616,7 @@ class $$SavedCartItemsTableTableManager extends RootTableManager<
             required int productId,
             required int quantity,
             required String selectedIngredients,
+            Value<String> removedIngredients = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               SavedCartItemsCompanion.insert(
@@ -8504,6 +8624,7 @@ class $$SavedCartItemsTableTableManager extends RootTableManager<
             productId: productId,
             quantity: quantity,
             selectedIngredients: selectedIngredients,
+            removedIngredients: removedIngredients,
             rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0
