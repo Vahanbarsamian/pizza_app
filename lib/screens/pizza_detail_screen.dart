@@ -54,7 +54,37 @@ class _PizzaDetailScreenState extends State<PizzaDetailScreen> {
             const SizedBox(height: 16),
             Text(widget.product.name, style: Theme.of(context).textTheme.headlineMedium),
             const SizedBox(height: 12),
-            // ... Price display ...
+            // ✅ CORRIGÉ: Logique d'affichage du prix restaurée et correcte
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                if (hasDiscount)
+                  Text(
+                    '${widget.product.basePrice.toStringAsFixed(2)} €',
+                    style: const TextStyle(
+                      fontSize: 20,
+                      color: Colors.grey,
+                      decoration: TextDecoration.lineThrough,
+                    ),
+                  ),
+                const SizedBox(width: 8),
+                Text.rich(
+                  TextSpan(
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: hasDiscount ? Colors.red : Colors.black,
+                    ),
+                    children: [
+                      TextSpan(text: (hasDiscount ? reducedPrice : widget.product.basePrice).toStringAsFixed(2)),
+                      const TextSpan(text: ' € TTC', style: TextStyle(fontSize: 14, fontWeight: FontWeight.normal)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 12),
             if (widget.product.description != null && widget.product.description!.isNotEmpty)
               Padding(
@@ -64,7 +94,42 @@ class _PizzaDetailScreenState extends State<PizzaDetailScreen> {
             const SizedBox(height: 24),
             Text('Suppléments (max $maxSupplements)', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 8),
-            // ... Supplements list ...
+            StreamBuilder<List<Ingredient>>(
+              stream: db.watchIngredientsForProduct(widget.product.id),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+                final ingredients = snapshot.data!;
+                return Wrap(
+                  spacing: 8.0,
+                  runSpacing: 4.0,
+                  children: ingredients.map((ingredient) {
+                    final isSelected = _selectedSupplements.contains(ingredient);
+                    return ChoiceChip(
+                      label: Text.rich(
+                        TextSpan(
+                          children: [
+                            TextSpan(text: '${ingredient.name} (+'),
+                            TextSpan(text: ingredient.price.toStringAsFixed(2), style: const TextStyle(fontWeight: FontWeight.bold)),
+                            const TextSpan(text: ' € TTC)'),
+                          ],
+                        ),
+                      ),
+                      selected: isSelected,
+                      selectedColor: Colors.orange.shade200,
+                      onSelected: (selected) {
+                        setState(() {
+                          if (selected && canAddMore) {
+                            _selectedSupplements.add(ingredient);
+                          } else if (!selected) {
+                            _selectedSupplements.remove(ingredient);
+                          }
+                        });
+                      },
+                    );
+                  }).toList(),
+                );
+              },
+            ),
           ],
         ),
       ),
@@ -74,12 +139,23 @@ class _PizzaDetailScreenState extends State<PizzaDetailScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // ... Total price display ...
+              Flexible(
+                flex: 2,
+                child: Text.rich(
+                  TextSpan(
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontSize: 22),
+                    children: [
+                      TextSpan(text: totalPrice.toStringAsFixed(2), style: const TextStyle(fontWeight: FontWeight.bold)),
+                      const TextSpan(text: ' € TTC', style: TextStyle(fontSize: 14, fontWeight: FontWeight.normal)),
+                    ],
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
               Flexible(
                 flex: 3,
                 child: ElevatedButton.icon(
                   icon: const Icon(Icons.shopping_cart_checkout),
-                  // ✅ CORRIGÉ: Logique de désactivation du bouton
                   label: Text(widget.ordersEnabled ? 'Ajouter au Panier' : 'Commandes fermées'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: widget.ordersEnabled ? Colors.green : Colors.grey,
@@ -96,7 +172,7 @@ class _PizzaDetailScreenState extends State<PizzaDetailScreen> {
                             const SnackBar(content: Text('Pizza ajoutée au panier !'), duration: Duration(seconds: 2)),
                           );
                         }
-                      : null, // Le bouton est désactivé si onPressed est null
+                      : null,
                 ),
               ),
             ],

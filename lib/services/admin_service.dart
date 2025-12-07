@@ -62,7 +62,6 @@ class AdminService {
     String? customMessage,
   }) async {
     final dateFormat = DateFormat('yyyy-MM-dd');
-
     final Map<String, dynamic> dataToSave = {
       'orders_enabled': ordersEnabled,
       'closure_message_type': messageType?.name,
@@ -70,7 +69,6 @@ class AdminService {
       'closure_end_date': endDate != null ? dateFormat.format(endDate) : null,
       'closure_custom_message': customMessage,
     };
-
     await _supabase.from('company_info').update(dataToSave).eq('id', 1);
   }
 
@@ -123,7 +121,9 @@ class AdminService {
   }
 
   Future<void> saveCompanyInfo(CompanyInfoCompanion info) async {
-    final data = <String, dynamic>{};
+    final data = <String, dynamic>{
+      'id': info.id.value,
+    };
     if (info.name.present) data['name'] = info.name.value;
     if (info.presentation.present) data['presentation'] = info.presentation.value;
     if (info.address.present) data['address'] = info.address.value;
@@ -138,7 +138,15 @@ class AdminService {
     if (info.logoUrl.present) data['logo_url'] = info.logoUrl.value;
     if (info.tvaRate.present) data['tva_rate'] = info.tvaRate.value;
 
-    await _supabase.from('company_info').upsert(data);
+    print('ℹ️ [AdminService] Début de la sauvegarde CompanyInfo.');
+    print('ℹ️ [AdminService] Données envoyées: $data');
+    try {
+      await _supabase.from('company_info').upsert(data);
+      print('✅ [AdminService] CompanyInfo sauvegardé avec succès.');
+    } catch (e) {
+      print('❌ [AdminService] Erreur lors de la sauvegarde de CompanyInfo: $e');
+      rethrow; // Important pour que l'UI puisse aussi voir l'erreur
+    }
   }
 
   Future<void> saveAnnouncement({

@@ -12,9 +12,10 @@ class CartItem {
   });
 
   double get finalPrice {
+    // ✅ CORRIGÉ: La formule de calcul de la remise est maintenant correcte.
     double baseProductPrice = product.basePrice;
-    if (product.discountPercentage != null && product.discountPercentage! > 0) {
-      baseProductPrice = product.basePrice * (1 - product.discountPercentage! / 100);
+    if (product.discountPercentage > 0) {
+      baseProductPrice = product.basePrice * (1 - product.discountPercentage);
     }
 
     final ingredientsPrice = selectedIngredients.fold<double>(0, (sum, ingredient) => sum + ingredient.price);

@@ -67,7 +67,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
     final companyName = _companyInfo!.name ?? 'Votre Pizzeria';
     final logoUrl = _companyInfo!.logoUrl;
-    final tvaRate = _companyInfo!.tvaRate ?? 0.0;
+    final tvaRate = _companyInfo!.tvaRate ?? 0.0; // Ceci est un décimal, ex: 0.1
 
     final buffer = StringBuffer();
     buffer.writeln('--- FACTURE ---');
@@ -87,7 +87,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     }
 
     buffer.writeln('--------------------');
-    final tvaAmount = widget.order.total / (1 + tvaRate) * tvaRate;
+    double tvaAmount = 0;
+    if (tvaRate > 0) {
+        tvaAmount = widget.order.total / (1 + tvaRate) * tvaRate;
+    }
+    // ✅ CORRIGÉ: Affichage du taux en pourcentage
     buffer.writeln('dont TVA (${(tvaRate * 100).toStringAsFixed(0)}%): ${tvaAmount.toStringAsFixed(2)} €');
     buffer.writeln('TOTAL: ${widget.order.total.toStringAsFixed(2)} € TTC');
     buffer.writeln('--------------------');
@@ -177,11 +181,12 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
   Widget _buildOrderSummary(BuildContext context, int totalItems, bool isAdmin) {
     double tvaAmount = 0;
-    if (_companyInfo?.tvaRate != null) {
+    double tvaRateForDisplay = 0;
+
+    if (_companyInfo?.tvaRate != null && _companyInfo!.tvaRate! > 0) {
       final tvaRate = _companyInfo!.tvaRate!;
-      if (tvaRate > 0) {
-        tvaAmount = widget.order.total / (1 + tvaRate) * tvaRate;
-      }
+      tvaRateForDisplay = tvaRate * 100;
+      tvaAmount = widget.order.total / (1 + tvaRate) * tvaRate;
     }
 
     return Card(
@@ -201,14 +206,16 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             _buildSummaryRow('Mode de paiement:', widget.order.paymentMethod ?? 'Non spécifié'),
             _buildSummaryRow('Nombre d\'articles:', '$totalItems articles'),
             const Divider(height: 24, thickness: 1),
+            // ✅ CORRIGÉ: Affichage du taux en pourcentage
             if (tvaAmount > 0)
               Padding(
                 padding: const EdgeInsets.only(bottom: 8.0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    Text('dont TVA (${(_companyInfo!.tvaRate! * 100).toStringAsFixed(0)}%): ${tvaAmount.toStringAsFixed(2)} €', 
-                      style: TextStyle(color: Colors.grey.shade600, fontStyle: FontStyle.italic)
+                    Text(
+                      'dont TVA (${tvaRateForDisplay.toStringAsFixed(0)}%): ${tvaAmount.toStringAsFixed(2)} €',
+                      style: TextStyle(color: Colors.grey.shade600, fontStyle: FontStyle.italic),
                     ),
                   ],
                 ),

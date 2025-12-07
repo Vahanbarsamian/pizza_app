@@ -28,10 +28,8 @@ class _AdminInfoTabState extends State<AdminInfoTab> {
   final _whatsappController = TextEditingController();
   final _latitudeController = TextEditingController();
   final _longitudeController = TextEditingController();
-  // ✅ AJOUTÉ
   final _logoUrlController = TextEditingController();
   final _tvaRateController = TextEditingController();
-
 
   @override
   void dispose() {
@@ -46,8 +44,8 @@ class _AdminInfoTabState extends State<AdminInfoTab> {
     _whatsappController.dispose();
     _latitudeController.dispose();
     _longitudeController.dispose();
-    _logoUrlController.dispose(); // ✅ AJOUTÉ
-    _tvaRateController.dispose(); // ✅ AJOUTÉ
+    _logoUrlController.dispose();
+    _tvaRateController.dispose();
     super.dispose();
   }
 
@@ -64,14 +62,19 @@ class _AdminInfoTabState extends State<AdminInfoTab> {
     _whatsappController.text = data.whatsappPhone ?? '';
     _latitudeController.text = data.latitude?.toString() ?? '';
     _longitudeController.text = data.longitude?.toString() ?? '';
-    _logoUrlController.text = data.logoUrl ?? ''; // ✅ AJOUTÉ
-    _tvaRateController.text = data.tvaRate?.toString() ?? ''; // ✅ AJOUTÉ
+    _logoUrlController.text = data.logoUrl ?? '';
+    // ✅ CORRIGÉ: Affichage du taux en pourcentage
+    _tvaRateController.text = data.tvaRate != null ? (data.tvaRate! * 100).toString() : '';
   }
 
   Future<void> _saveChanges() async {
     if (_formKey.currentState!.validate()) {
       final adminService = context.read<AdminService>();
       final syncService = context.read<SyncService>();
+
+      // ✅ CORRIGÉ: Conversion du pourcentage en décimal avant sauvegarde
+      final tvaRateFromInput = double.tryParse(_tvaRateController.text) ?? 0.0;
+      final tvaRateForDb = tvaRateFromInput / 100.0;
 
       final updatedInfo = CompanyInfoCompanion(
         id: const Value(1),
@@ -86,8 +89,8 @@ class _AdminInfoTabState extends State<AdminInfoTab> {
         whatsappPhone: Value(_whatsappController.text),
         latitude: Value(double.tryParse(_latitudeController.text)),
         longitude: Value(double.tryParse(_longitudeController.text)),
-        logoUrl: Value(_logoUrlController.text), // ✅ AJOUTÉ
-        tvaRate: Value(double.tryParse(_tvaRateController.text)), // ✅ AJOUTÉ
+        logoUrl: Value(_logoUrlController.text),
+        tvaRate: Value(tvaRateForDb),
       );
 
       try {
@@ -140,7 +143,6 @@ class _AdminInfoTabState extends State<AdminInfoTab> {
               const SizedBox(height: 16),
               TextFormField(controller: _nameController, decoration: const InputDecoration(labelText: "Nom de l'établissement")),
               const SizedBox(height: 12),
-              // ✅ AJOUTÉ: Champ pour l'URL du logo
               TextFormField(controller: _logoUrlController, decoration: const InputDecoration(labelText: "URL du logo")),
               const SizedBox(height: 12),
               TextFormField(controller: _presentationController, decoration: const InputDecoration(labelText: "Texte de présentation"), maxLines: 3),
@@ -167,8 +169,7 @@ class _AdminInfoTabState extends State<AdminInfoTab> {
               const SizedBox(height: 12),
               TextFormField(controller: _longitudeController, decoration: const InputDecoration(labelText: 'Longitude'), keyboardType: TextInputType.numberWithOptions(decimal: true)),
               const SizedBox(height: 12),
-              // ✅ AJOUTÉ: Champ pour le taux de TVA
-              TextFormField(controller: _tvaRateController, decoration: const InputDecoration(labelText: 'Taux de TVA (ex: 0.1 pour 10%)', hintText: '0.1'), keyboardType: TextInputType.numberWithOptions(decimal: true)),
+              TextFormField(controller: _tvaRateController, decoration: const InputDecoration(labelText: 'Taux de TVA en %', hintText: '10'), keyboardType: TextInputType.numberWithOptions(decimal: true)),
               const SizedBox(height: 32),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(padding: const EdgeInsets.all(16)),
