@@ -3,6 +3,7 @@ import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
+import 'package:rxdart/rxdart.dart';
 
 import 'product.dart';
 import 'user.dart';
@@ -19,14 +20,12 @@ import 'user_loyalty.dart';
 
 part 'app_database.g.dart';
 
-// ✅ CORRIGÉ: Classe restaurée
 class ReviewWithOrder {
   final Review review;
   final Order order;
   ReviewWithOrder({required this.review, required this.order});
 }
 
-// ✅ CORRIGÉ: Classe restaurée
 class OrderWithStatus {
   final Order order;
   final String status;
@@ -55,7 +54,6 @@ class AppDatabase extends _$AppDatabase {
         },
       );
       
-  // ✅ CORRIGÉ: Méthode restaurée
   Stream<List<OrderWithStatus>> _watchOrdersWithStatus(String? userId) {
     final baseSql = '''
       SELECT o.*, COALESCE(latest.status, \'À faire\') as status
@@ -138,6 +136,11 @@ class AppDatabase extends _$AppDatabase {
   
   Future<List<OrderItem>> getOrderItems(int orderId) => (select(orderItems)..where((item) => item.orderId.equals(orderId))).get();
   Stream<CompanyInfoData?> watchCompanyInfo() => select(companyInfo).watchSingleOrNull();
+  Future<CompanyInfoData?> getCompanyInfo() => select(companyInfo).getSingleOrNull();
+  Stream<List<dynamic>> watchProductsAndCompanyInfo() {
+    return Rx.combineLatest2(watchCompanyInfo(), watchAllProducts(), (a, b) => [a, b]);
+  }
+
   Future<bool> isAdmin(String userId) async {
     final admin = await (select(admins)..where((a) => a.id.equals(userId))).getSingleOrNull();
     return admin != null;

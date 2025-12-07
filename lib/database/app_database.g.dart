@@ -3190,6 +3190,40 @@ class $CompanyInfoTable extends CompanyInfo
   late final GeneratedColumn<double> longitude = GeneratedColumn<double>(
       'longitude', aliasedName, true,
       type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _ordersEnabledMeta =
+      const VerificationMeta('ordersEnabled');
+  @override
+  late final GeneratedColumn<bool> ordersEnabled = GeneratedColumn<bool>(
+      'orders_enabled', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("orders_enabled" IN (0, 1))'),
+      defaultValue: const Constant(true));
+  static const VerificationMeta _closureMessageTypeMeta =
+      const VerificationMeta('closureMessageType');
+  @override
+  late final GeneratedColumn<String> closureMessageType =
+      GeneratedColumn<String>('closure_message_type', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _closureStartDateMeta =
+      const VerificationMeta('closureStartDate');
+  @override
+  late final GeneratedColumn<DateTime> closureStartDate =
+      GeneratedColumn<DateTime>('closure_start_date', aliasedName, true,
+          type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _closureEndDateMeta =
+      const VerificationMeta('closureEndDate');
+  @override
+  late final GeneratedColumn<DateTime> closureEndDate =
+      GeneratedColumn<DateTime>('closure_end_date', aliasedName, true,
+          type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _closureCustomMessageMeta =
+      const VerificationMeta('closureCustomMessage');
+  @override
+  late final GeneratedColumn<String> closureCustomMessage =
+      GeneratedColumn<String>('closure_custom_message', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -3203,7 +3237,12 @@ class $CompanyInfoTable extends CompanyInfo
         xUrl,
         whatsappPhone,
         latitude,
-        longitude
+        longitude,
+        ordersEnabled,
+        closureMessageType,
+        closureStartDate,
+        closureEndDate,
+        closureCustomMessage
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -3270,6 +3309,36 @@ class $CompanyInfoTable extends CompanyInfo
       context.handle(_longitudeMeta,
           longitude.isAcceptableOrUnknown(data['longitude']!, _longitudeMeta));
     }
+    if (data.containsKey('orders_enabled')) {
+      context.handle(
+          _ordersEnabledMeta,
+          ordersEnabled.isAcceptableOrUnknown(
+              data['orders_enabled']!, _ordersEnabledMeta));
+    }
+    if (data.containsKey('closure_message_type')) {
+      context.handle(
+          _closureMessageTypeMeta,
+          closureMessageType.isAcceptableOrUnknown(
+              data['closure_message_type']!, _closureMessageTypeMeta));
+    }
+    if (data.containsKey('closure_start_date')) {
+      context.handle(
+          _closureStartDateMeta,
+          closureStartDate.isAcceptableOrUnknown(
+              data['closure_start_date']!, _closureStartDateMeta));
+    }
+    if (data.containsKey('closure_end_date')) {
+      context.handle(
+          _closureEndDateMeta,
+          closureEndDate.isAcceptableOrUnknown(
+              data['closure_end_date']!, _closureEndDateMeta));
+    }
+    if (data.containsKey('closure_custom_message')) {
+      context.handle(
+          _closureCustomMessageMeta,
+          closureCustomMessage.isAcceptableOrUnknown(
+              data['closure_custom_message']!, _closureCustomMessageMeta));
+    }
     return context;
   }
 
@@ -3303,6 +3372,17 @@ class $CompanyInfoTable extends CompanyInfo
           .read(DriftSqlType.double, data['${effectivePrefix}latitude']),
       longitude: attachedDatabase.typeMapping
           .read(DriftSqlType.double, data['${effectivePrefix}longitude']),
+      ordersEnabled: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}orders_enabled'])!,
+      closureMessageType: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}closure_message_type']),
+      closureStartDate: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}closure_start_date']),
+      closureEndDate: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}closure_end_date']),
+      closureCustomMessage: attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}closure_custom_message']),
     );
   }
 
@@ -3325,6 +3405,11 @@ class CompanyInfoData extends DataClass implements Insertable<CompanyInfoData> {
   final String? whatsappPhone;
   final double? latitude;
   final double? longitude;
+  final bool ordersEnabled;
+  final String? closureMessageType;
+  final DateTime? closureStartDate;
+  final DateTime? closureEndDate;
+  final String? closureCustomMessage;
   const CompanyInfoData(
       {required this.id,
       this.name,
@@ -3337,7 +3422,12 @@ class CompanyInfoData extends DataClass implements Insertable<CompanyInfoData> {
       this.xUrl,
       this.whatsappPhone,
       this.latitude,
-      this.longitude});
+      this.longitude,
+      required this.ordersEnabled,
+      this.closureMessageType,
+      this.closureStartDate,
+      this.closureEndDate,
+      this.closureCustomMessage});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -3375,6 +3465,19 @@ class CompanyInfoData extends DataClass implements Insertable<CompanyInfoData> {
     if (!nullToAbsent || longitude != null) {
       map['longitude'] = Variable<double>(longitude);
     }
+    map['orders_enabled'] = Variable<bool>(ordersEnabled);
+    if (!nullToAbsent || closureMessageType != null) {
+      map['closure_message_type'] = Variable<String>(closureMessageType);
+    }
+    if (!nullToAbsent || closureStartDate != null) {
+      map['closure_start_date'] = Variable<DateTime>(closureStartDate);
+    }
+    if (!nullToAbsent || closureEndDate != null) {
+      map['closure_end_date'] = Variable<DateTime>(closureEndDate);
+    }
+    if (!nullToAbsent || closureCustomMessage != null) {
+      map['closure_custom_message'] = Variable<String>(closureCustomMessage);
+    }
     return map;
   }
 
@@ -3408,6 +3511,19 @@ class CompanyInfoData extends DataClass implements Insertable<CompanyInfoData> {
       longitude: longitude == null && nullToAbsent
           ? const Value.absent()
           : Value(longitude),
+      ordersEnabled: Value(ordersEnabled),
+      closureMessageType: closureMessageType == null && nullToAbsent
+          ? const Value.absent()
+          : Value(closureMessageType),
+      closureStartDate: closureStartDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(closureStartDate),
+      closureEndDate: closureEndDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(closureEndDate),
+      closureCustomMessage: closureCustomMessage == null && nullToAbsent
+          ? const Value.absent()
+          : Value(closureCustomMessage),
     );
   }
 
@@ -3427,6 +3543,14 @@ class CompanyInfoData extends DataClass implements Insertable<CompanyInfoData> {
       whatsappPhone: serializer.fromJson<String?>(json['whatsappPhone']),
       latitude: serializer.fromJson<double?>(json['latitude']),
       longitude: serializer.fromJson<double?>(json['longitude']),
+      ordersEnabled: serializer.fromJson<bool>(json['ordersEnabled']),
+      closureMessageType:
+          serializer.fromJson<String?>(json['closureMessageType']),
+      closureStartDate:
+          serializer.fromJson<DateTime?>(json['closureStartDate']),
+      closureEndDate: serializer.fromJson<DateTime?>(json['closureEndDate']),
+      closureCustomMessage:
+          serializer.fromJson<String?>(json['closureCustomMessage']),
     );
   }
   @override
@@ -3445,6 +3569,11 @@ class CompanyInfoData extends DataClass implements Insertable<CompanyInfoData> {
       'whatsappPhone': serializer.toJson<String?>(whatsappPhone),
       'latitude': serializer.toJson<double?>(latitude),
       'longitude': serializer.toJson<double?>(longitude),
+      'ordersEnabled': serializer.toJson<bool>(ordersEnabled),
+      'closureMessageType': serializer.toJson<String?>(closureMessageType),
+      'closureStartDate': serializer.toJson<DateTime?>(closureStartDate),
+      'closureEndDate': serializer.toJson<DateTime?>(closureEndDate),
+      'closureCustomMessage': serializer.toJson<String?>(closureCustomMessage),
     };
   }
 
@@ -3460,7 +3589,12 @@ class CompanyInfoData extends DataClass implements Insertable<CompanyInfoData> {
           Value<String?> xUrl = const Value.absent(),
           Value<String?> whatsappPhone = const Value.absent(),
           Value<double?> latitude = const Value.absent(),
-          Value<double?> longitude = const Value.absent()}) =>
+          Value<double?> longitude = const Value.absent(),
+          bool? ordersEnabled,
+          Value<String?> closureMessageType = const Value.absent(),
+          Value<DateTime?> closureStartDate = const Value.absent(),
+          Value<DateTime?> closureEndDate = const Value.absent(),
+          Value<String?> closureCustomMessage = const Value.absent()}) =>
       CompanyInfoData(
         id: id ?? this.id,
         name: name.present ? name.value : this.name,
@@ -3477,6 +3611,18 @@ class CompanyInfoData extends DataClass implements Insertable<CompanyInfoData> {
             whatsappPhone.present ? whatsappPhone.value : this.whatsappPhone,
         latitude: latitude.present ? latitude.value : this.latitude,
         longitude: longitude.present ? longitude.value : this.longitude,
+        ordersEnabled: ordersEnabled ?? this.ordersEnabled,
+        closureMessageType: closureMessageType.present
+            ? closureMessageType.value
+            : this.closureMessageType,
+        closureStartDate: closureStartDate.present
+            ? closureStartDate.value
+            : this.closureStartDate,
+        closureEndDate:
+            closureEndDate.present ? closureEndDate.value : this.closureEndDate,
+        closureCustomMessage: closureCustomMessage.present
+            ? closureCustomMessage.value
+            : this.closureCustomMessage,
       );
   CompanyInfoData copyWithCompanion(CompanyInfoCompanion data) {
     return CompanyInfoData(
@@ -3499,6 +3645,21 @@ class CompanyInfoData extends DataClass implements Insertable<CompanyInfoData> {
           : this.whatsappPhone,
       latitude: data.latitude.present ? data.latitude.value : this.latitude,
       longitude: data.longitude.present ? data.longitude.value : this.longitude,
+      ordersEnabled: data.ordersEnabled.present
+          ? data.ordersEnabled.value
+          : this.ordersEnabled,
+      closureMessageType: data.closureMessageType.present
+          ? data.closureMessageType.value
+          : this.closureMessageType,
+      closureStartDate: data.closureStartDate.present
+          ? data.closureStartDate.value
+          : this.closureStartDate,
+      closureEndDate: data.closureEndDate.present
+          ? data.closureEndDate.value
+          : this.closureEndDate,
+      closureCustomMessage: data.closureCustomMessage.present
+          ? data.closureCustomMessage.value
+          : this.closureCustomMessage,
     );
   }
 
@@ -3516,14 +3677,35 @@ class CompanyInfoData extends DataClass implements Insertable<CompanyInfoData> {
           ..write('xUrl: $xUrl, ')
           ..write('whatsappPhone: $whatsappPhone, ')
           ..write('latitude: $latitude, ')
-          ..write('longitude: $longitude')
+          ..write('longitude: $longitude, ')
+          ..write('ordersEnabled: $ordersEnabled, ')
+          ..write('closureMessageType: $closureMessageType, ')
+          ..write('closureStartDate: $closureStartDate, ')
+          ..write('closureEndDate: $closureEndDate, ')
+          ..write('closureCustomMessage: $closureCustomMessage')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, name, presentation, address, phone, email,
-      facebookUrl, instagramUrl, xUrl, whatsappPhone, latitude, longitude);
+  int get hashCode => Object.hash(
+      id,
+      name,
+      presentation,
+      address,
+      phone,
+      email,
+      facebookUrl,
+      instagramUrl,
+      xUrl,
+      whatsappPhone,
+      latitude,
+      longitude,
+      ordersEnabled,
+      closureMessageType,
+      closureStartDate,
+      closureEndDate,
+      closureCustomMessage);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -3539,7 +3721,12 @@ class CompanyInfoData extends DataClass implements Insertable<CompanyInfoData> {
           other.xUrl == this.xUrl &&
           other.whatsappPhone == this.whatsappPhone &&
           other.latitude == this.latitude &&
-          other.longitude == this.longitude);
+          other.longitude == this.longitude &&
+          other.ordersEnabled == this.ordersEnabled &&
+          other.closureMessageType == this.closureMessageType &&
+          other.closureStartDate == this.closureStartDate &&
+          other.closureEndDate == this.closureEndDate &&
+          other.closureCustomMessage == this.closureCustomMessage);
 }
 
 class CompanyInfoCompanion extends UpdateCompanion<CompanyInfoData> {
@@ -3555,6 +3742,11 @@ class CompanyInfoCompanion extends UpdateCompanion<CompanyInfoData> {
   final Value<String?> whatsappPhone;
   final Value<double?> latitude;
   final Value<double?> longitude;
+  final Value<bool> ordersEnabled;
+  final Value<String?> closureMessageType;
+  final Value<DateTime?> closureStartDate;
+  final Value<DateTime?> closureEndDate;
+  final Value<String?> closureCustomMessage;
   const CompanyInfoCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
@@ -3568,6 +3760,11 @@ class CompanyInfoCompanion extends UpdateCompanion<CompanyInfoData> {
     this.whatsappPhone = const Value.absent(),
     this.latitude = const Value.absent(),
     this.longitude = const Value.absent(),
+    this.ordersEnabled = const Value.absent(),
+    this.closureMessageType = const Value.absent(),
+    this.closureStartDate = const Value.absent(),
+    this.closureEndDate = const Value.absent(),
+    this.closureCustomMessage = const Value.absent(),
   });
   CompanyInfoCompanion.insert({
     this.id = const Value.absent(),
@@ -3582,6 +3779,11 @@ class CompanyInfoCompanion extends UpdateCompanion<CompanyInfoData> {
     this.whatsappPhone = const Value.absent(),
     this.latitude = const Value.absent(),
     this.longitude = const Value.absent(),
+    this.ordersEnabled = const Value.absent(),
+    this.closureMessageType = const Value.absent(),
+    this.closureStartDate = const Value.absent(),
+    this.closureEndDate = const Value.absent(),
+    this.closureCustomMessage = const Value.absent(),
   });
   static Insertable<CompanyInfoData> custom({
     Expression<int>? id,
@@ -3596,6 +3798,11 @@ class CompanyInfoCompanion extends UpdateCompanion<CompanyInfoData> {
     Expression<String>? whatsappPhone,
     Expression<double>? latitude,
     Expression<double>? longitude,
+    Expression<bool>? ordersEnabled,
+    Expression<String>? closureMessageType,
+    Expression<DateTime>? closureStartDate,
+    Expression<DateTime>? closureEndDate,
+    Expression<String>? closureCustomMessage,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -3610,6 +3817,13 @@ class CompanyInfoCompanion extends UpdateCompanion<CompanyInfoData> {
       if (whatsappPhone != null) 'whatsapp_phone': whatsappPhone,
       if (latitude != null) 'latitude': latitude,
       if (longitude != null) 'longitude': longitude,
+      if (ordersEnabled != null) 'orders_enabled': ordersEnabled,
+      if (closureMessageType != null)
+        'closure_message_type': closureMessageType,
+      if (closureStartDate != null) 'closure_start_date': closureStartDate,
+      if (closureEndDate != null) 'closure_end_date': closureEndDate,
+      if (closureCustomMessage != null)
+        'closure_custom_message': closureCustomMessage,
     });
   }
 
@@ -3625,7 +3839,12 @@ class CompanyInfoCompanion extends UpdateCompanion<CompanyInfoData> {
       Value<String?>? xUrl,
       Value<String?>? whatsappPhone,
       Value<double?>? latitude,
-      Value<double?>? longitude}) {
+      Value<double?>? longitude,
+      Value<bool>? ordersEnabled,
+      Value<String?>? closureMessageType,
+      Value<DateTime?>? closureStartDate,
+      Value<DateTime?>? closureEndDate,
+      Value<String?>? closureCustomMessage}) {
     return CompanyInfoCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
@@ -3639,6 +3858,11 @@ class CompanyInfoCompanion extends UpdateCompanion<CompanyInfoData> {
       whatsappPhone: whatsappPhone ?? this.whatsappPhone,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
+      ordersEnabled: ordersEnabled ?? this.ordersEnabled,
+      closureMessageType: closureMessageType ?? this.closureMessageType,
+      closureStartDate: closureStartDate ?? this.closureStartDate,
+      closureEndDate: closureEndDate ?? this.closureEndDate,
+      closureCustomMessage: closureCustomMessage ?? this.closureCustomMessage,
     );
   }
 
@@ -3681,6 +3905,22 @@ class CompanyInfoCompanion extends UpdateCompanion<CompanyInfoData> {
     if (longitude.present) {
       map['longitude'] = Variable<double>(longitude.value);
     }
+    if (ordersEnabled.present) {
+      map['orders_enabled'] = Variable<bool>(ordersEnabled.value);
+    }
+    if (closureMessageType.present) {
+      map['closure_message_type'] = Variable<String>(closureMessageType.value);
+    }
+    if (closureStartDate.present) {
+      map['closure_start_date'] = Variable<DateTime>(closureStartDate.value);
+    }
+    if (closureEndDate.present) {
+      map['closure_end_date'] = Variable<DateTime>(closureEndDate.value);
+    }
+    if (closureCustomMessage.present) {
+      map['closure_custom_message'] =
+          Variable<String>(closureCustomMessage.value);
+    }
     return map;
   }
 
@@ -3698,7 +3938,12 @@ class CompanyInfoCompanion extends UpdateCompanion<CompanyInfoData> {
           ..write('xUrl: $xUrl, ')
           ..write('whatsappPhone: $whatsappPhone, ')
           ..write('latitude: $latitude, ')
-          ..write('longitude: $longitude')
+          ..write('longitude: $longitude, ')
+          ..write('ordersEnabled: $ordersEnabled, ')
+          ..write('closureMessageType: $closureMessageType, ')
+          ..write('closureStartDate: $closureStartDate, ')
+          ..write('closureEndDate: $closureEndDate, ')
+          ..write('closureCustomMessage: $closureCustomMessage')
           ..write(')'))
         .toString();
   }
@@ -7353,6 +7598,11 @@ typedef $$CompanyInfoTableCreateCompanionBuilder = CompanyInfoCompanion
   Value<String?> whatsappPhone,
   Value<double?> latitude,
   Value<double?> longitude,
+  Value<bool> ordersEnabled,
+  Value<String?> closureMessageType,
+  Value<DateTime?> closureStartDate,
+  Value<DateTime?> closureEndDate,
+  Value<String?> closureCustomMessage,
 });
 typedef $$CompanyInfoTableUpdateCompanionBuilder = CompanyInfoCompanion
     Function({
@@ -7368,6 +7618,11 @@ typedef $$CompanyInfoTableUpdateCompanionBuilder = CompanyInfoCompanion
   Value<String?> whatsappPhone,
   Value<double?> latitude,
   Value<double?> longitude,
+  Value<bool> ordersEnabled,
+  Value<String?> closureMessageType,
+  Value<DateTime?> closureStartDate,
+  Value<DateTime?> closureEndDate,
+  Value<String?> closureCustomMessage,
 });
 
 class $$CompanyInfoTableFilterComposer
@@ -7414,6 +7669,25 @@ class $$CompanyInfoTableFilterComposer
 
   ColumnFilters<double> get longitude => $composableBuilder(
       column: $table.longitude, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get ordersEnabled => $composableBuilder(
+      column: $table.ordersEnabled, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get closureMessageType => $composableBuilder(
+      column: $table.closureMessageType,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get closureStartDate => $composableBuilder(
+      column: $table.closureStartDate,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get closureEndDate => $composableBuilder(
+      column: $table.closureEndDate,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get closureCustomMessage => $composableBuilder(
+      column: $table.closureCustomMessage,
+      builder: (column) => ColumnFilters(column));
 }
 
 class $$CompanyInfoTableOrderingComposer
@@ -7463,6 +7737,26 @@ class $$CompanyInfoTableOrderingComposer
 
   ColumnOrderings<double> get longitude => $composableBuilder(
       column: $table.longitude, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get ordersEnabled => $composableBuilder(
+      column: $table.ordersEnabled,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get closureMessageType => $composableBuilder(
+      column: $table.closureMessageType,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get closureStartDate => $composableBuilder(
+      column: $table.closureStartDate,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get closureEndDate => $composableBuilder(
+      column: $table.closureEndDate,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get closureCustomMessage => $composableBuilder(
+      column: $table.closureCustomMessage,
+      builder: (column) => ColumnOrderings(column));
 }
 
 class $$CompanyInfoTableAnnotationComposer
@@ -7509,6 +7803,21 @@ class $$CompanyInfoTableAnnotationComposer
 
   GeneratedColumn<double> get longitude =>
       $composableBuilder(column: $table.longitude, builder: (column) => column);
+
+  GeneratedColumn<bool> get ordersEnabled => $composableBuilder(
+      column: $table.ordersEnabled, builder: (column) => column);
+
+  GeneratedColumn<String> get closureMessageType => $composableBuilder(
+      column: $table.closureMessageType, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get closureStartDate => $composableBuilder(
+      column: $table.closureStartDate, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get closureEndDate => $composableBuilder(
+      column: $table.closureEndDate, builder: (column) => column);
+
+  GeneratedColumn<String> get closureCustomMessage => $composableBuilder(
+      column: $table.closureCustomMessage, builder: (column) => column);
 }
 
 class $$CompanyInfoTableTableManager extends RootTableManager<
@@ -7549,6 +7858,11 @@ class $$CompanyInfoTableTableManager extends RootTableManager<
             Value<String?> whatsappPhone = const Value.absent(),
             Value<double?> latitude = const Value.absent(),
             Value<double?> longitude = const Value.absent(),
+            Value<bool> ordersEnabled = const Value.absent(),
+            Value<String?> closureMessageType = const Value.absent(),
+            Value<DateTime?> closureStartDate = const Value.absent(),
+            Value<DateTime?> closureEndDate = const Value.absent(),
+            Value<String?> closureCustomMessage = const Value.absent(),
           }) =>
               CompanyInfoCompanion(
             id: id,
@@ -7563,6 +7877,11 @@ class $$CompanyInfoTableTableManager extends RootTableManager<
             whatsappPhone: whatsappPhone,
             latitude: latitude,
             longitude: longitude,
+            ordersEnabled: ordersEnabled,
+            closureMessageType: closureMessageType,
+            closureStartDate: closureStartDate,
+            closureEndDate: closureEndDate,
+            closureCustomMessage: closureCustomMessage,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -7577,6 +7896,11 @@ class $$CompanyInfoTableTableManager extends RootTableManager<
             Value<String?> whatsappPhone = const Value.absent(),
             Value<double?> latitude = const Value.absent(),
             Value<double?> longitude = const Value.absent(),
+            Value<bool> ordersEnabled = const Value.absent(),
+            Value<String?> closureMessageType = const Value.absent(),
+            Value<DateTime?> closureStartDate = const Value.absent(),
+            Value<DateTime?> closureEndDate = const Value.absent(),
+            Value<String?> closureCustomMessage = const Value.absent(),
           }) =>
               CompanyInfoCompanion.insert(
             id: id,
@@ -7591,6 +7915,11 @@ class $$CompanyInfoTableTableManager extends RootTableManager<
             whatsappPhone: whatsappPhone,
             latitude: latitude,
             longitude: longitude,
+            ordersEnabled: ordersEnabled,
+            closureMessageType: closureMessageType,
+            closureStartDate: closureStartDate,
+            closureEndDate: closureEndDate,
+            closureCustomMessage: closureCustomMessage,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

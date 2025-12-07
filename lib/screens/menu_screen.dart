@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:intl/intl.dart';
 
 import '../database/app_database.dart';
 import '../services/auth_service.dart';
@@ -8,6 +9,7 @@ import '../services/sync_service.dart';
 import 'pizza_detail_screen.dart';
 import 'admin_screen.dart';
 import 'admin_edit_product_screen.dart';
+import 'admin_orders_tab.dart'; // For ClosureMessageType enum
 
 class MenuScreen extends StatefulWidget {
   const MenuScreen({super.key});
@@ -17,9 +19,68 @@ class MenuScreen extends StatefulWidget {
 }
 
 class _MenuScreenState extends State<MenuScreen> {
+  bool _isClosureDialogShown = false;
+
+  Future<void> _showClosureDialog(CompanyInfoData info) async {
+    if (_isClosureDialogShown) return;
+    setState(() {
+      _isClosureDialogShown = true;
+    });
+
+    String title = 'Commandes fermées';
+    String message = 'Nous ne prenons plus de commandes pour le moment.';
+    final dateFormat = DateFormat('dd/MM/yyyy', 'fr_FR');
+
+    if (info.closureMessageType != null) {
+      try {
+        final type = ClosureMessageType.values.byName(info.closureMessageType!);
+        switch (type) {
+          case ClosureMessageType.vacation:
+            title = 'En Congés';
+            message = 'Nous sommes actuellement en congés.';
+            if (info.closureStartDate != null && info.closureEndDate != null) {
+              message += '\nRetour le ${dateFormat.format(info.closureEndDate!.add(const Duration(days: 1)))}';
+            }
+            break;
+          case ClosureMessageType.temporary:
+            title = 'Fermeture Temporaire';
+            message = 'Le service de commande est temporairement indisponible.';
+            if (info.closureStartDate != null && info.closureEndDate != null) {
+              message += '\nDu ${dateFormat.format(info.closureStartDate!)} au ${dateFormat.format(info.closureEndDate!)}.';
+            }
+            break;
+          case ClosureMessageType.full:
+            title = 'Complet';
+            message = 'Nous sommes complets pour ce soir, nous ne pouvons plus prendre de commandes.';
+            break;
+          case ClosureMessageType.custom: // ✅ CAS MANQUANT AJOUTÉ
+            title = 'Information';
+            message = info.closureCustomMessage ?? 'Une maintenance est en cours.';
+            break;
+        }
+      } catch (e) { /* Enum value might not exist, use default message */ }
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: true,
+          builder: (ctx) => AlertDialog(
+            title: Text(title),
+            content: Text(message),
+            actions: [
+              TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('OK')),
+            ],
+          ),
+        );
+      }
+    });
+  }
+
   Future<void> _refreshData() async {
     try {
-      await Provider.of<SyncService>(context, listen: false).syncAll();
+      await context.read<SyncService>().syncAll();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur de synchronisation: $e')));
@@ -34,30 +95,36 @@ class _MenuScreenState extends State<MenuScreen> {
 
     return RefreshIndicator(
       onRefresh: _refreshData,
-      child: StreamBuilder<List<Product>>(
-        stream: db.watchAllProducts(),
+      child: StreamBuilder<List<dynamic>>(
+        stream: db.watchProductsAndCompanyInfo(),
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+          if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
             return Center(child: Text('Erreur: ${snapshot.error}'));
           }
-          final pizzas = snapshot.data ?? [];
+
+          final data = snapshot.data ?? [];
+          final info = data.isNotEmpty ? data[0] as CompanyInfoData? : null;
+          final pizzas = data.isNotEmpty ? data[1] as List<Product> : [];
+          final ordersEnabled = info?.ordersEnabled ?? true;
+
+          if (info != null && !ordersEnabled) {
+            _showClosureDialog(info);
+          }
+
           if (pizzas.isEmpty) {
             return const Center(child: Text('Aucune pizza au menu pour le moment.'));
           }
 
           return GridView.builder(
             padding: const EdgeInsets.all(16.0),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              childAspectRatio: 0.70,
-            ),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, childAspectRatio: 0.70),
             itemCount: pizzas.length,
             itemBuilder: (context, index) {
               final pizza = pizzas[index];
-              return PizzaCard(pizza: pizza, isAdmin: authService.isAdmin);
+              return PizzaCard(pizza: pizza, isAdmin: authService.isAdmin, ordersEnabled: ordersEnabled);
             },
           );
         },
@@ -69,8 +136,9 @@ class _MenuScreenState extends State<MenuScreen> {
 class PizzaCard extends StatelessWidget {
   final Product pizza;
   final bool isAdmin;
+  final bool ordersEnabled;
 
-  const PizzaCard({super.key, required this.pizza, required this.isAdmin});
+  const PizzaCard({super.key, required this.pizza, required this.isAdmin, required this.ordersEnabled});
 
   @override
   Widget build(BuildContext context) {
@@ -87,7 +155,7 @@ class PizzaCard extends StatelessWidget {
         onTap: () {
           Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (_) => PizzaDetailScreen(product: pizza),
+              builder: (_) => PizzaDetailScreen(product: pizza, ordersEnabled: ordersEnabled),
             ),
           );
         },
@@ -141,7 +209,6 @@ class PizzaCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
-                  // ✅ CORRIGÉ: Logique d'affichage du prix
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -189,25 +256,14 @@ class PizzaCard extends StatelessWidget {
 
   Widget _buildBanner(String text, Color backgroundColor, Color textColor, Alignment alignment) {
     final isTopLeft = alignment == Alignment.topLeft;
-    return Positioned(
-      top: 0,
-      left: isTopLeft ? 0 : null,
-      right: isTopLeft ? null : 0,
-      child: Container(
-        width: 80,
-        height: 80,
-        child: ClipRect(
-          child: Banner(
-            message: text,
-            location: isTopLeft ? BannerLocation.topStart : BannerLocation.topEnd,
-            color: backgroundColor,
-            textStyle: TextStyle(
-              color: textColor,
-              fontWeight: FontWeight.bold,
-              fontSize: 12,
-            ),
-          ),
-        ),
+    return Banner(
+      message: text,
+      location: isTopLeft ? BannerLocation.topStart : BannerLocation.topEnd,
+      color: backgroundColor,
+      textStyle: TextStyle(
+        color: textColor,
+        fontWeight: FontWeight.bold,
+        fontSize: 12,
       ),
     );
   }

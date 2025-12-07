@@ -17,23 +17,49 @@ class AdminOrdersTab extends StatefulWidget {
   State<AdminOrdersTab> createState() => _AdminOrdersTabState();
 }
 
+enum ClosureMessageType { vacation, temporary, full, custom }
+
 class _AdminOrdersTabState extends State<AdminOrdersTab> with SingleTickerProviderStateMixin {
   final AudioPlayer _audioPlayer = AudioPlayer();
   RealtimeChannel? _ordersChannel;
   late TabController _tabController;
+  late TextEditingController _customClosureMessageController;
 
+  // State variables
   DateTime? _filterStartDate, _filterEndDate, _archiveStartDate, _archiveEndDate;
   bool _areOrdersOpen = true;
   DateTime? _vacationStartDate, _vacationEndDate, _tempClosureStartDate, _tempClosureEndDate;
+  ClosureMessageType? _selectedClosureMessage;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(() => setState(() {}));
+    _customClosureMessageController = TextEditingController();
+    _loadInitialData();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _listenToNewOrders();
     });
+  }
+
+  Future<void> _loadInitialData() async {
+    final db = context.read<AppDatabase>();
+    final info = await db.getCompanyInfo();
+    if (info != null && mounted) {
+      setState(() {
+        _areOrdersOpen = info.ordersEnabled;
+        _vacationStartDate = info.closureStartDate;
+        _vacationEndDate = info.closureEndDate;
+        // TODO: Also load temp closure dates
+        if (info.closureMessageType != null) {
+          try {
+            _selectedClosureMessage = ClosureMessageType.values.byName(info.closureMessageType!);
+          } catch (e) { _selectedClosureMessage = null; }
+        }
+        _customClosureMessageController.text = info.closureCustomMessage ?? '';
+      });
+    }
   }
 
   void _listenToNewOrders() {
@@ -87,9 +113,42 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> with SingleTickerProvid
   @override
   void dispose() {
     _tabController.dispose();
+    _customClosureMessageController.dispose();
     if (_ordersChannel != null) Supabase.instance.client.removeChannel(_ordersChannel!);
     _audioPlayer.dispose();
     super.dispose();
+  }
+  
+  Future<void> _saveSettings() async {
+    final adminService = context.read<AdminService>();
+    final syncService = context.read<SyncService>();
+
+    DateTime? startDate, endDate;
+    if (_selectedClosureMessage == ClosureMessageType.vacation) {
+      startDate = _vacationStartDate;
+      endDate = _vacationEndDate;
+    } else if (_selectedClosureMessage == ClosureMessageType.temporary) {
+      startDate = _tempClosureStartDate;
+      endDate = _tempClosureEndDate;
+    }
+
+    try {
+      await adminService.saveStoreStatus(
+        ordersEnabled: _areOrdersOpen,
+        messageType: _selectedClosureMessage,
+        startDate: startDate,
+        endDate: endDate,
+        customMessage: _customClosureMessageController.text,
+      );
+      await syncService.syncAll();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Réglages sauvegardés'), backgroundColor: Colors.green));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red));
+      }
+    }
   }
 
   @override
@@ -115,10 +174,7 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> with SingleTickerProvid
           ArchivesTab(
             archiveStartDate: _archiveStartDate,
             archiveEndDate: _archiveEndDate,
-            onArchiveDateChanged: (start, end) => setState(() {
-              _archiveStartDate = start;
-              _archiveEndDate = end;
-            }),
+            onArchiveDateChanged: (start, end) => setState(() => { _archiveStartDate = start, _archiveEndDate = end }),
             onArchivePressed: _archiveWork,
           ),
           SettingsTab(
@@ -129,19 +185,14 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> with SingleTickerProvid
             vacationEndDate: _vacationEndDate,
             tempClosureStartDate: _tempClosureStartDate,
             tempClosureEndDate: _tempClosureEndDate,
-            onFilterDateChanged: (start, end) => setState(() {
-              _filterStartDate = start;
-              _filterEndDate = end;
-            }),
-            onOrdersOpenChanged: (value) => setState(() => _areOrdersOpen = value),
-            onVacationDateChanged: (start, end) => setState(() {
-              _vacationStartDate = start;
-              _vacationEndDate = end;
-            }),
-            onTempClosureDateChanged: (start, end) => setState(() {
-              _tempClosureStartDate = start;
-              _tempClosureEndDate = end;
-            }),
+            selectedClosureMessage: _selectedClosureMessage,
+            customClosureMessageController: _customClosureMessageController,
+            onFilterDateChanged: (start, end) => setState(() => { _filterStartDate = start, _filterEndDate = end }),
+            onOrdersOpenChanged: (value) => setState(() => { _areOrdersOpen = value, if (value) _selectedClosureMessage = null }),
+            onVacationDateChanged: (start, end) => setState(() => { _vacationStartDate = start, _vacationEndDate = end }),
+            onTempClosureDateChanged: (start, end) => setState(() => { _tempClosureStartDate = start, _tempClosureEndDate = end }),
+            onClosureMessageChanged: (type) => setState(() => _selectedClosureMessage = type),
+            onSave: _saveSettings,
           ),
         ],
       ),
@@ -149,7 +200,6 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> with SingleTickerProvid
   }
 }
 
-// ✅ CORRIGÉ: Contenu de la classe restauré
 class OrdersList extends StatelessWidget {
   final DateTime? startDate;
   final DateTime? endDate;
@@ -208,17 +258,21 @@ class OrdersList extends StatelessWidget {
   }
 }
 
-// ✅ CORRIGÉ: Contenu de la classe restauré
 class SettingsTab extends StatelessWidget {
   final DateTime? initialFilterStartDate, initialFilterEndDate, vacationStartDate, vacationEndDate, tempClosureStartDate, tempClosureEndDate;
   final bool areOrdersOpen;
+  final ClosureMessageType? selectedClosureMessage;
+  final TextEditingController customClosureMessageController;
   final Function(DateTime?, DateTime?) onFilterDateChanged, onVacationDateChanged, onTempClosureDateChanged;
   final Function(bool) onOrdersOpenChanged;
+  final Function(ClosureMessageType?) onClosureMessageChanged;
+  final VoidCallback onSave;
 
   const SettingsTab({
     super.key,
     required this.onFilterDateChanged, required this.onOrdersOpenChanged, required this.onVacationDateChanged, required this.onTempClosureDateChanged,
     this.initialFilterStartDate, this.initialFilterEndDate, required this.areOrdersOpen, this.vacationStartDate, this.vacationEndDate, this.tempClosureStartDate, this.tempClosureEndDate,
+    required this.selectedClosureMessage, required this.onClosureMessageChanged, required this.onSave, required this.customClosureMessageController,
   });
 
   Future<void> _selectDate(BuildContext context, {required DateTime? initialDate, required Function(DateTime) onDateSelected}) async {
@@ -240,18 +294,78 @@ class SettingsTab extends StatelessWidget {
         const Divider(height: 32),
         _buildSectionTitle(context, 'Gestion des Commandes'),
         SwitchListTile(title: const Text('Prise de commandes'), subtitle: Text(areOrdersOpen ? 'Ouverte' : 'Fermée'), value: areOrdersOpen, onChanged: onOrdersOpenChanged),
-        const Divider(height: 32),
-        _buildSectionTitle(context, 'Messages rapides'),
-        _buildDateRangeCard(context, title: 'En congés', startDate: vacationStartDate, endDate: vacationEndDate, onStartDateSelected: (date) => onVacationDateChanged(date, vacationEndDate), onEndDateSelected: (date) => onVacationDateChanged(vacationStartDate, date)),
-        _buildDateRangeCard(context, title: 'Fermeture temporaire', startDate: tempClosureStartDate, endDate: tempClosureEndDate, onStartDateSelected: (date) => onTempClosureDateChanged(date, tempClosureEndDate), onEndDateSelected: (date) => onTempClosureDateChanged(tempClosureStartDate, date)),
-        const Card(child: ListTile(title: Text('Reservation complete'), trailing: Icon(Icons.copy_all_outlined))),
+        
+        if (!areOrdersOpen)
+          Padding(
+            padding: const EdgeInsets.only(top: 16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildSectionTitle(context, 'Message de fermeture'),
+                RadioListTile<ClosureMessageType>(
+                  title: const Text('En congés'),
+                  value: ClosureMessageType.vacation,
+                  groupValue: selectedClosureMessage,
+                  onChanged: (value) => onClosureMessageChanged(value),
+                ),
+                if (selectedClosureMessage == ClosureMessageType.vacation)
+                  _buildDateRangeInputs(context, startDate: vacationStartDate, endDate: vacationEndDate, onStartDateSelected: (date) => onVacationDateChanged(date, vacationEndDate), onEndDateSelected: (date) => onVacationDateChanged(vacationStartDate, date)),
+                
+                RadioListTile<ClosureMessageType>(
+                  title: const Text('Fermeture temporaire'),
+                  value: ClosureMessageType.temporary,
+                  groupValue: selectedClosureMessage,
+                  onChanged: (value) => onClosureMessageChanged(value),
+                ),
+                if (selectedClosureMessage == ClosureMessageType.temporary)
+                  _buildDateRangeInputs(context, startDate: tempClosureStartDate, endDate: tempClosureEndDate, onStartDateSelected: (date) => onTempClosureDateChanged(date, tempClosureEndDate), onEndDateSelected: (date) => onTempClosureDateChanged(tempClosureStartDate, date)),
+
+                RadioListTile<ClosureMessageType>(
+                  title: const Text('Complet'),
+                  value: ClosureMessageType.full,
+                  groupValue: selectedClosureMessage,
+                  onChanged: (value) => onClosureMessageChanged(value),
+                ),
+
+                RadioListTile<ClosureMessageType>(
+                  title: const Text('Message personnalisé'),
+                  value: ClosureMessageType.custom,
+                  groupValue: selectedClosureMessage,
+                  onChanged: (value) => onClosureMessageChanged(value),
+                ),
+                if (selectedClosureMessage == ClosureMessageType.custom)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                    child: TextFormField(
+                      controller: customClosureMessageController,
+                      decoration: const InputDecoration(labelText: 'Votre message', border: OutlineInputBorder()),
+                      maxLines: 3,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+
+        const SizedBox(height: 32),
+        ElevatedButton.icon(
+          icon: const Icon(Icons.save),
+          label: const Text('Enregistrer les modifications'),
+          style: ElevatedButton.styleFrom(padding: const EdgeInsets.all(16)),
+          onPressed: onSave,
+        ),
       ],
     );
   }
 
-  Widget _buildDateRangeCard(BuildContext context, {required String title, DateTime? startDate, DateTime? endDate, required Function(DateTime) onStartDateSelected, required Function(DateTime) onEndDateSelected}) {
+  Widget _buildDateRangeInputs(BuildContext context, {DateTime? startDate, DateTime? endDate, required Function(DateTime) onStartDateSelected, required Function(DateTime) onEndDateSelected}) {
     final dateFormat = DateFormat('dd/MM/yyyy');
-    return Card(child: Padding(padding: const EdgeInsets.all(8.0), child: Column(children: [ListTile(title: Text(title), trailing: const Icon(Icons.copy_all_outlined)), Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [TextButton(child: Text(startDate == null ? 'Début' : dateFormat.format(startDate)), onPressed: () => _selectDate(context, initialDate: startDate, onDateSelected: onStartDateSelected)), TextButton(child: Text(endDate == null ? 'Fin' : dateFormat.format(endDate)), onPressed: () => _selectDate(context, initialDate: endDate, onDateSelected: onEndDateSelected))])])));
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+      child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
+        TextButton(child: Text(startDate == null ? 'Début' : dateFormat.format(startDate)), onPressed: () => _selectDate(context, initialDate: startDate, onDateSelected: onStartDateSelected)), 
+        TextButton(child: Text(endDate == null ? 'Fin' : dateFormat.format(endDate)), onPressed: () => _selectDate(context, initialDate: endDate, onDateSelected: onEndDateSelected))
+      ]),
+    );
   }
 
   Widget _buildSectionTitle(BuildContext context, String title) {
@@ -278,14 +392,8 @@ class _ArchivesTabState extends State<ArchivesTab> {
   Future<void> _fetchArchives() async {
     setState(() => _isLoading = true);
     final db = context.read<AppDatabase>();
-
-    print('🔍 [ArchivesTab] Recherche lancée avec les dates:');
-    print('🔍 Start: ${widget.archiveStartDate}, End: ${widget.archiveEndDate}');
-
     try {
       final results = await db.getArchivedOrders(widget.archiveStartDate, widget.archiveEndDate);
-      print('🔍 [ArchivesTab] ${results.length} résultats trouvés dans la base de données.');
-      
       setState(() {
         _archivedOrders = results;
         _isLoading = false;
@@ -293,7 +401,6 @@ class _ArchivesTabState extends State<ArchivesTab> {
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red));
-      print('❌ [ArchivesTab] Erreur lors de la recherche: $e');
     }
   }
 

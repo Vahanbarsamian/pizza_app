@@ -82,9 +82,6 @@ class SyncService {
     try {
       final response = await _supabase.from('orders').select();
       final ordersToSync = response.map((item) {
-        // ✅ AJOUTÉ: Log pour déboguer le statut d'archivage
-        print('🔄 Syncing Order ID: ${item['id']}, is_archived: ${item['is_archived']}');
-        
         return OrdersCompanion(
           id: Value(item['id'] as int),
           userId: Value(item['user_id'] as String),
@@ -92,7 +89,7 @@ class SyncService {
           referenceName: Value(item['reference_name'] as String?),
           pickupTime: Value(item['pickup_time'] as String?),
           paymentMethod: Value(item['payment_method'] as String?),
-          isArchived: Value(item['is_archived'] as bool?),
+          isArchived: Value(item['is_archived'] as bool? ?? false),
           createdAt: Value(DateTime.parse(item['created_at'] as String? ?? '2023-01-01T00:00:00Z')),
           updatedAt: item['updated_at'] != null ? Value(DateTime.parse(item['updated_at'])) : const Value.absent(),
         );
@@ -237,9 +234,13 @@ class SyncService {
   }
 
   Future<void> _syncCompanyInfo() async {
+    print('ℹ️ [SyncService] Début de la synchronisation de CompanyInfo.');
     try {
       final response = await _supabase.from('company_info').select().limit(1);
+      print('ℹ️ [SyncService] Réponse de Supabase pour company_info: ${response.length} ligne(s).');
+
       if (response.isNotEmpty) {
+        print('ℹ️ [SyncService] Données reçues: ${response.first}');
         final info = response.first;
         final infoToSync = CompanyInfoCompanion(
           id: Value(info['id'] as int),
@@ -254,14 +255,22 @@ class SyncService {
           whatsappPhone: Value(info['whatsapp_phone'] as String?),
           latitude: Value(info['latitude'] as double?),
           longitude: Value(info['longitude'] as double?),
+          ordersEnabled: Value((info['orders_enabled'] as bool?) ?? true),
+          closureMessageType: Value(info['closure_message_type'] as String?),
+          closureStartDate: info['closure_start_date'] != null ? Value(DateTime.parse(info['closure_start_date'])) : const Value.absent(),
+          closureEndDate: info['closure_end_date'] != null ? Value(DateTime.parse(info['closure_end_date'])) : const Value.absent(),
         );
+        print('ℹ️ [SyncService] Insertion des données dans la DB locale...');
         await db.transaction(() async {
           await db.delete(db.companyInfo).go();
           await db.into(db.companyInfo).insert(infoToSync);
         });
+        print('✅ [SyncService] CompanyInfo synchronisé avec succès.');
+      } else {
+        print('⚠️ [SyncService] Aucune donnée CompanyInfo reçue de Supabase.');
       }
     } catch (e) {
-      print('❌ Erreur de synchronisation (CompanyInfo): $e');
+      print('❌ [SyncService] Erreur de synchronisation (CompanyInfo): $e');
     }
   }
 }

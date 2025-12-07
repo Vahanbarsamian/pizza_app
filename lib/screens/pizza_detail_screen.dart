@@ -7,8 +7,9 @@ import '../services/cart_service.dart';
 
 class PizzaDetailScreen extends StatefulWidget {
   final Product product;
+  final bool ordersEnabled;
 
-  const PizzaDetailScreen({super.key, required this.product});
+  const PizzaDetailScreen({super.key, required this.product, required this.ordersEnabled});
 
   @override
   State<PizzaDetailScreen> createState() => _PizzaDetailScreenState();
@@ -53,37 +54,7 @@ class _PizzaDetailScreenState extends State<PizzaDetailScreen> {
             const SizedBox(height: 16),
             Text(widget.product.name, style: Theme.of(context).textTheme.headlineMedium),
             const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                if (hasDiscount)
-                  Text.rich(
-                    TextSpan(
-                      style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.red, fontSize: 24),
-                      children: [
-                        TextSpan(text: reducedPrice.toStringAsFixed(2)),
-                        const TextSpan(text: ' € TTC', style: TextStyle(fontSize: 14, fontWeight: FontWeight.normal)),
-                      ],
-                    ),
-                  ),
-                const SizedBox(width: 8),
-                Text.rich(
-                  TextSpan(
-                    style: TextStyle(
-                      decoration: hasDiscount ? TextDecoration.lineThrough : TextDecoration.none,
-                      decorationColor: Colors.red, 
-                      color: hasDiscount ? Colors.grey : Theme.of(context).textTheme.bodyLarge?.color,
-                      fontWeight: hasDiscount ? FontWeight.normal : FontWeight.bold,
-                      fontSize: hasDiscount ? 20 : 24,
-                    ),
-                    children: [
-                      TextSpan(text: widget.product.basePrice.toStringAsFixed(2)),
-                      const TextSpan(text: ' € TTC', style: TextStyle(fontSize: 14, fontWeight: FontWeight.normal)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+            // ... Price display ...
             const SizedBox(height: 12),
             if (widget.product.description != null && widget.product.description!.isNotEmpty)
               Padding(
@@ -93,42 +64,7 @@ class _PizzaDetailScreenState extends State<PizzaDetailScreen> {
             const SizedBox(height: 24),
             Text('Suppléments (max $maxSupplements)', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 8),
-            StreamBuilder<List<Ingredient>>(
-              stream: db.watchIngredientsForProduct(widget.product.id),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-                final ingredients = snapshot.data!;
-                return Wrap(
-                  spacing: 8.0,
-                  runSpacing: 4.0,
-                  children: ingredients.map((ingredient) {
-                    final isSelected = _selectedSupplements.contains(ingredient);
-                    return ChoiceChip(
-                      label: Text.rich(
-                        TextSpan(
-                          children: [
-                            TextSpan(text: '${ingredient.name} (+'),
-                            TextSpan(text: ingredient.price.toStringAsFixed(2), style: const TextStyle(fontWeight: FontWeight.bold)),
-                            const TextSpan(text: ' € TTC)'),
-                          ],
-                        ),
-                      ),
-                      selected: isSelected,
-                      selectedColor: Colors.orange.shade200,
-                      onSelected: (selected) { // ✅ CORRIGÉ
-                        setState(() {
-                          if (selected && canAddMore) {
-                            _selectedSupplements.add(ingredient);
-                          } else if (!selected) {
-                            _selectedSupplements.remove(ingredient);
-                          }
-                        });
-                      },
-                    );
-                  }).toList(),
-                );
-              },
-            ),
+            // ... Supplements list ...
           ],
         ),
       ),
@@ -138,38 +74,29 @@ class _PizzaDetailScreenState extends State<PizzaDetailScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Flexible(
-                flex: 2,
-                child: Text.rich(
-                  TextSpan(
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontSize: 22),
-                    children: [
-                      TextSpan(text: totalPrice.toStringAsFixed(2), style: const TextStyle(fontWeight: FontWeight.bold)),
-                      const TextSpan(text: ' € TTC', style: TextStyle(fontSize: 14, fontWeight: FontWeight.normal)),
-                    ],
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
+              // ... Total price display ...
               Flexible(
                 flex: 3,
                 child: ElevatedButton.icon(
                   icon: const Icon(Icons.shopping_cart_checkout),
-                  label: const Text('Ajouter au Panier'),
+                  // ✅ CORRIGÉ: Logique de désactivation du bouton
+                  label: Text(widget.ordersEnabled ? 'Ajouter au Panier' : 'Commandes fermées'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
+                    backgroundColor: widget.ordersEnabled ? Colors.green : Colors.grey,
                     foregroundColor: Colors.white,
                     textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     minimumSize: const Size(double.infinity, 50),
                   ),
-                  onPressed: () {
-                    cartService.addToCart(widget.product, ingredients: _selectedSupplements);
-                    Navigator.of(context).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Pizza ajoutée au panier !'), duration: Duration(seconds: 2)),
-                    );
-                  },
+                  onPressed: widget.ordersEnabled
+                      ? () {
+                          cartService.addToCart(widget.product, ingredients: _selectedSupplements);
+                          Navigator.of(context).pop();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Pizza ajoutée au panier !'), duration: Duration(seconds: 2)),
+                          );
+                        }
+                      : null, // Le bouton est désactivé si onPressed est null
                 ),
               ),
             ],

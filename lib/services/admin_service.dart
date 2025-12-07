@@ -1,7 +1,9 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:drift/drift.dart';
+import 'package:intl/intl.dart';
 
 import '../database/app_database.dart';
+import '../screens/admin_orders_tab.dart';
 
 class AdminService {
   final SupabaseClient _supabase = Supabase.instance.client;
@@ -36,8 +38,6 @@ class AdminService {
     final startOfDay = DateTime(now.year, now.month, now.day).toIso8601String();
     final endOfDay = DateTime(now.year, now.month, now.day, 23, 59, 59).toIso8601String();
 
-    print('🔍 [AdminService] Recherche des commandes à archiver entre: $startOfDay et $endOfDay');
-
     final finishedOrdersResponse = await _supabase
         .from('order_status_histories')
         .select('order_id')
@@ -47,15 +47,31 @@ class AdminService {
 
     final orderIds = finishedOrdersResponse.map((row) => row['order_id'] as int).toSet().toList();
 
-    print('🔍 [AdminService] ${orderIds.length} commandes trouvées à archiver.');
-
     if (orderIds.isEmpty) {
       return;
     }
 
-    print('🚀 [AdminService] Archivage des IDs: $orderIds');
     await _supabase.from('orders').update({'is_archived': true}).filter('id', 'in', orderIds);
-    print('✅ [AdminService] Ordre d\'archivage envoyé à Supabase.');
+  }
+
+  Future<void> saveStoreStatus({
+    required bool ordersEnabled,
+    ClosureMessageType? messageType,
+    DateTime? startDate,
+    DateTime? endDate,
+    String? customMessage,
+  }) async {
+    final dateFormat = DateFormat('yyyy-MM-dd');
+
+    final Map<String, dynamic> dataToSave = {
+      'orders_enabled': ordersEnabled,
+      'closure_message_type': messageType?.name,
+      'closure_start_date': startDate != null ? dateFormat.format(startDate) : null,
+      'closure_end_date': endDate != null ? dateFormat.format(endDate) : null,
+      'closure_custom_message': customMessage,
+    };
+
+    await _supabase.from('company_info').update(dataToSave).eq('id', 1);
   }
 
   Future<Map<String, dynamic>> saveProduct({
