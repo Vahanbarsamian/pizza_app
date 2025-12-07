@@ -15,7 +15,7 @@ import 'services/public_review_service.dart';
 import 'services/preferences_service.dart';
 import 'services/loyalty_service.dart'; 
 
-import 'screens/splash_screen.dart';
+import 'screens/pizza_splash_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -92,7 +92,7 @@ class MyApp extends StatelessWidget {
           scaffoldBackgroundColor: const Color(0xFFF8F9FA),
           visualDensity: VisualDensity.adaptivePlatformDensity,
         ),
-        home: const SplashScreen(),
+        home: PizzaSplashScreen(), // ✅ CORRIGÉ: const retiré
       ),
     );
   }

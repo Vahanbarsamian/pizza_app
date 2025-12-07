@@ -29,6 +29,7 @@ dependencies:
   shared_preferences: ^2.2.3
   fl_chart: ^0.68.0 # Déjà présent
   share_plus: ^12.0.1
+  lottie: ^3.3.2
 
 dev_dependencies:
   flutter_test:
@@ -43,3 +44,4 @@ flutter:
     - .env
     - assets/images/
     - assets/sounds/
+    - assets/animations/pizza_pro_splash.json
