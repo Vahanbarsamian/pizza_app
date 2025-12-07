@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../database/app_database.dart';
 import '../services/auth_service.dart';
 import '../services/sync_service.dart';
 import '../services/cart_service.dart';
@@ -71,12 +72,19 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     final authService = context.watch<AuthService>();
     final cartService = context.watch<CartService>();
+    final db = context.watch<AppDatabase>();
 
     return Scaffold(
       appBar: AppBar(
-        leading: const Padding(
-          padding: EdgeInsets.only(left: 16.0),
-          child: Center(child: Text('Pizza Mania', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
+        leading: StreamBuilder<CompanyInfoData?>(
+          stream: db.watchCompanyInfo(),
+          builder: (context, snapshot) {
+            final companyName = snapshot.data?.name ?? 'Pizza App';
+            return Padding(
+              padding: const EdgeInsets.only(left: 16.0),
+              child: Center(child: Text(companyName, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
+            );
+          },
         ),
         leadingWidth: 150,
         title: Text(_appBarTitles[_selectedIndex]),
@@ -90,7 +98,7 @@ class _MainScreenState extends State<MainScreen> {
             isLabelVisible: cartService.itemCount > 0,
             backgroundColor: Colors.green,
             alignment: AlignmentDirectional.bottomEnd,
-            offset: const Offset(-8, -16), // ✅ Remonté
+            offset: const Offset(-8, -16),
             padding: const EdgeInsets.symmetric(horizontal: 6),
             largeSize: 18,
             child: IconButton(

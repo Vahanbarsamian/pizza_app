@@ -17,7 +17,6 @@ class AdminInfoTab extends StatefulWidget {
 class _AdminInfoTabState extends State<AdminInfoTab> {
   final _formKey = GlobalKey<FormState>();
   
-  // Controllers for all fields
   final _nameController = TextEditingController();
   final _presentationController = TextEditingController();
   final _addressController = TextEditingController();
@@ -29,8 +28,10 @@ class _AdminInfoTabState extends State<AdminInfoTab> {
   final _whatsappController = TextEditingController();
   final _latitudeController = TextEditingController();
   final _longitudeController = TextEditingController();
+  // ✅ AJOUTÉ
+  final _logoUrlController = TextEditingController();
+  final _tvaRateController = TextEditingController();
 
-  late CompanyInfoData _initialData;
 
   @override
   void dispose() {
@@ -45,12 +46,13 @@ class _AdminInfoTabState extends State<AdminInfoTab> {
     _whatsappController.dispose();
     _latitudeController.dispose();
     _longitudeController.dispose();
+    _logoUrlController.dispose(); // ✅ AJOUTÉ
+    _tvaRateController.dispose(); // ✅ AJOUTÉ
     super.dispose();
   }
 
   void _updateControllers(CompanyInfoData? data) {
     if (data == null) return;
-    _initialData = data; // Keep initial data for saving
     _nameController.text = data.name ?? '';
     _presentationController.text = data.presentation ?? '';
     _addressController.text = data.address ?? '';
@@ -62,6 +64,8 @@ class _AdminInfoTabState extends State<AdminInfoTab> {
     _whatsappController.text = data.whatsappPhone ?? '';
     _latitudeController.text = data.latitude?.toString() ?? '';
     _longitudeController.text = data.longitude?.toString() ?? '';
+    _logoUrlController.text = data.logoUrl ?? ''; // ✅ AJOUTÉ
+    _tvaRateController.text = data.tvaRate?.toString() ?? ''; // ✅ AJOUTÉ
   }
 
   Future<void> _saveChanges() async {
@@ -82,6 +86,8 @@ class _AdminInfoTabState extends State<AdminInfoTab> {
         whatsappPhone: Value(_whatsappController.text),
         latitude: Value(double.tryParse(_latitudeController.text)),
         longitude: Value(double.tryParse(_longitudeController.text)),
+        logoUrl: Value(_logoUrlController.text), // ✅ AJOUTÉ
+        tvaRate: Value(double.tryParse(_tvaRateController.text)), // ✅ AJOUTÉ
       );
 
       try {
@@ -112,7 +118,6 @@ class _AdminInfoTabState extends State<AdminInfoTab> {
           return const Center(child: Text('Aucune information sur l\'entreprise trouvée. Ajoutez-en une via Supabase.'));
         }
 
-        // Update controllers only when new data arrives
         _updateControllers(snapshot.data);
 
         return _buildForm();
@@ -135,6 +140,9 @@ class _AdminInfoTabState extends State<AdminInfoTab> {
               const SizedBox(height: 16),
               TextFormField(controller: _nameController, decoration: const InputDecoration(labelText: "Nom de l'établissement")),
               const SizedBox(height: 12),
+              // ✅ AJOUTÉ: Champ pour l'URL du logo
+              TextFormField(controller: _logoUrlController, decoration: const InputDecoration(labelText: "URL du logo")),
+              const SizedBox(height: 12),
               TextFormField(controller: _presentationController, decoration: const InputDecoration(labelText: "Texte de présentation"), maxLines: 3),
               const SizedBox(height: 12),
               TextFormField(controller: _addressController, decoration: const InputDecoration(labelText: 'Adresse')),
@@ -153,11 +161,14 @@ class _AdminInfoTabState extends State<AdminInfoTab> {
               const SizedBox(height: 12),
               TextFormField(controller: _whatsappController, decoration: const InputDecoration(labelText: 'Numéro WhatsApp')),
               const Divider(height: 32),
-              Text('Coordonnées GPS', style: Theme.of(context).textTheme.titleLarge),
+              Text('Coordonnées & Fiscalité', style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 16),
               TextFormField(controller: _latitudeController, decoration: const InputDecoration(labelText: 'Latitude'), keyboardType: TextInputType.numberWithOptions(decimal: true)),
               const SizedBox(height: 12),
               TextFormField(controller: _longitudeController, decoration: const InputDecoration(labelText: 'Longitude'), keyboardType: TextInputType.numberWithOptions(decimal: true)),
+              const SizedBox(height: 12),
+              // ✅ AJOUTÉ: Champ pour le taux de TVA
+              TextFormField(controller: _tvaRateController, decoration: const InputDecoration(labelText: 'Taux de TVA (ex: 0.1 pour 10%)', hintText: '0.1'), keyboardType: TextInputType.numberWithOptions(decimal: true)),
               const SizedBox(height: 32),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(padding: const EdgeInsets.all(16)),

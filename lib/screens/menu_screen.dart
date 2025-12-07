@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart';
+import 'dart:ui';
 
 import '../database/app_database.dart';
 import '../services/auth_service.dart';
@@ -9,7 +10,7 @@ import '../services/sync_service.dart';
 import 'pizza_detail_screen.dart';
 import 'admin_screen.dart';
 import 'admin_edit_product_screen.dart';
-import 'admin_orders_tab.dart'; // For ClosureMessageType enum
+import 'admin_orders_tab.dart';
 
 class MenuScreen extends StatefulWidget {
   const MenuScreen({super.key});
@@ -21,59 +22,66 @@ class MenuScreen extends StatefulWidget {
 class _MenuScreenState extends State<MenuScreen> {
   bool _isClosureDialogShown = false;
 
-  Future<void> _showClosureDialog(CompanyInfoData info) async {
+  void _showClosureDialog(BuildContext context, CompanyInfoData info) {
     if (_isClosureDialogShown) return;
-    setState(() {
-      _isClosureDialogShown = true;
-    });
+    _isClosureDialogShown = true;
 
-    String title = 'Commandes fermées';
-    String message = 'Nous ne prenons plus de commandes pour le moment.';
+    final companyName = info.name ?? 'L\'établissement';
     final dateFormat = DateFormat('dd/MM/yyyy', 'fr_FR');
+    String message;
 
-    if (info.closureMessageType != null) {
-      try {
-        final type = ClosureMessageType.values.byName(info.closureMessageType!);
-        switch (type) {
-          case ClosureMessageType.vacation:
-            title = 'En Congés';
-            message = 'Nous sommes actuellement en congés.';
-            if (info.closureStartDate != null && info.closureEndDate != null) {
-              message += '\nRetour le ${dateFormat.format(info.closureEndDate!.add(const Duration(days: 1)))}';
-            }
-            break;
-          case ClosureMessageType.temporary:
-            title = 'Fermeture Temporaire';
-            message = 'Le service de commande est temporairement indisponible.';
-            if (info.closureStartDate != null && info.closureEndDate != null) {
-              message += '\nDu ${dateFormat.format(info.closureStartDate!)} au ${dateFormat.format(info.closureEndDate!)}.';
-            }
-            break;
-          case ClosureMessageType.full:
-            title = 'Complet';
-            message = 'Nous sommes complets pour ce soir, nous ne pouvons plus prendre de commandes.';
-            break;
-          case ClosureMessageType.custom: // ✅ CAS MANQUANT AJOUTÉ
-            title = 'Information';
-            message = info.closureCustomMessage ?? 'Une maintenance est en cours.';
-            break;
-        }
-      } catch (e) { /* Enum value might not exist, use default message */ }
+    final type = info.closureMessageType != null
+        ? ClosureMessageType.values.byName(info.closureMessageType!)
+        : null;
+
+    switch (type) {
+      case ClosureMessageType.vacation:
+      case ClosureMessageType.temporary:
+        final reason = type == ClosureMessageType.vacation ? "en congés" : "temporairement fermé";
+        final startDate = info.closureStartDate != null ? dateFormat.format(info.closureStartDate!) : '[Date de début]';
+        final endDate = info.closureEndDate != null ? dateFormat.format(info.closureEndDate!) : '[Date de fin]';
+        message = '$companyName informe son aimable clientèle qu\'il sera $reason pour la période du $startDate au $endDate.\n\nOn espère vous retrouver très vite !\nL\'équipe $companyName';
+        break;
+      case ClosureMessageType.full:
+        message = '$companyName vous informe qu\'ayant épuisé la totalité de la pâte, nous ne sommes plus en mesure d\'honorer vos commandes.\n\nComptant sur votre compréhension, nous vous souhaitons une agréable journée.\nL\'équipe $companyName';
+        break;
+      case ClosureMessageType.custom:
+        message = info.closureCustomMessage ?? 'Les commandes sont actuellement fermées.';
+        break;
+      default:
+        message = 'Les commandes sont actuellement fermées pour une raison non spécifiée.';
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         showDialog(
           context: context,
-          barrierDismissible: true,
-          builder: (ctx) => AlertDialog(
-            title: Text(title),
-            content: Text(message),
-            actions: [
-              TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('OK')),
-            ],
-          ),
-        );
+          barrierColor: Colors.black.withOpacity(0.7), // Fond plus sombre
+          builder: (ctx) {
+            return BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+              child: AlertDialog(
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      message,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w500),
+                    ),
+                    const SizedBox(height: 30),
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      child: const Text('OK', style: TextStyle(color: Colors.white, fontSize: 18)),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ).then((_) => _isClosureDialogShown = false);
       }
     });
   }
@@ -111,7 +119,7 @@ class _MenuScreenState extends State<MenuScreen> {
           final ordersEnabled = info?.ordersEnabled ?? true;
 
           if (info != null && !ordersEnabled) {
-            _showClosureDialog(info);
+            _showClosureDialog(context, info);
           }
 
           if (pizzas.isEmpty) {

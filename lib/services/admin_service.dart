@@ -123,20 +123,21 @@ class AdminService {
   }
 
   Future<void> saveCompanyInfo(CompanyInfoCompanion info) async {
-    final data = {
-      'id': info.id.value,
-      'name': info.name.value,
-      'presentation': info.presentation.value,
-      'address': info.address.value,
-      'phone': info.phone.value,
-      'email': info.email.value,
-      'facebook_url': info.facebookUrl.value,
-      'instagram_url': info.instagramUrl.value,
-      'x_url': info.xUrl.value,
-      'whatsapp_phone': info.whatsappPhone.value,
-      'latitude': info.latitude.value,
-      'longitude': info.longitude.value,
-    };
+    final data = <String, dynamic>{};
+    if (info.name.present) data['name'] = info.name.value;
+    if (info.presentation.present) data['presentation'] = info.presentation.value;
+    if (info.address.present) data['address'] = info.address.value;
+    if (info.phone.present) data['phone'] = info.phone.value;
+    if (info.email.present) data['email'] = info.email.value;
+    if (info.facebookUrl.present) data['facebook_url'] = info.facebookUrl.value;
+    if (info.instagramUrl.present) data['instagram_url'] = info.instagramUrl.value;
+    if (info.xUrl.present) data['x_url'] = info.xUrl.value;
+    if (info.whatsappPhone.present) data['whatsapp_phone'] = info.whatsappPhone.value;
+    if (info.latitude.present) data['latitude'] = info.latitude.value;
+    if (info.longitude.present) data['longitude'] = info.longitude.value;
+    if (info.logoUrl.present) data['logo_url'] = info.logoUrl.value;
+    if (info.tvaRate.present) data['tva_rate'] = info.tvaRate.value;
+
     await _supabase.from('company_info').upsert(data);
   }
 

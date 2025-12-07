@@ -19,9 +19,11 @@ class CompanyInfo extends Table {
   TextColumn get closureMessageType => text().named('closure_message_type').nullable()();
   DateTimeColumn get closureStartDate => dateTime().named('closure_start_date').nullable()();
   DateTimeColumn get closureEndDate => dateTime().named('closure_end_date').nullable()();
-  
-  // ✅ AJOUTÉ: Champ pour le message personnalisé
   TextColumn get closureCustomMessage => text().named('closure_custom_message').nullable()();
+
+  // ✅ AJOUTÉ: Champs pour le logo et la TVA
+  TextColumn get logoUrl => text().named('logo_url').nullable()();
+  RealColumn get tvaRate => real().named('tva_rate').nullable()();
 
   @override
   Set<Column> get primaryKey => {id};

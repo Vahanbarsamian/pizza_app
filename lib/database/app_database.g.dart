@@ -3224,6 +3224,18 @@ class $CompanyInfoTable extends CompanyInfo
   late final GeneratedColumn<String> closureCustomMessage =
       GeneratedColumn<String>('closure_custom_message', aliasedName, true,
           type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _logoUrlMeta =
+      const VerificationMeta('logoUrl');
+  @override
+  late final GeneratedColumn<String> logoUrl = GeneratedColumn<String>(
+      'logo_url', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _tvaRateMeta =
+      const VerificationMeta('tvaRate');
+  @override
+  late final GeneratedColumn<double> tvaRate = GeneratedColumn<double>(
+      'tva_rate', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -3242,7 +3254,9 @@ class $CompanyInfoTable extends CompanyInfo
         closureMessageType,
         closureStartDate,
         closureEndDate,
-        closureCustomMessage
+        closureCustomMessage,
+        logoUrl,
+        tvaRate
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -3339,6 +3353,14 @@ class $CompanyInfoTable extends CompanyInfo
           closureCustomMessage.isAcceptableOrUnknown(
               data['closure_custom_message']!, _closureCustomMessageMeta));
     }
+    if (data.containsKey('logo_url')) {
+      context.handle(_logoUrlMeta,
+          logoUrl.isAcceptableOrUnknown(data['logo_url']!, _logoUrlMeta));
+    }
+    if (data.containsKey('tva_rate')) {
+      context.handle(_tvaRateMeta,
+          tvaRate.isAcceptableOrUnknown(data['tva_rate']!, _tvaRateMeta));
+    }
     return context;
   }
 
@@ -3383,6 +3405,10 @@ class $CompanyInfoTable extends CompanyInfo
       closureCustomMessage: attachedDatabase.typeMapping.read(
           DriftSqlType.string,
           data['${effectivePrefix}closure_custom_message']),
+      logoUrl: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}logo_url']),
+      tvaRate: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}tva_rate']),
     );
   }
 
@@ -3410,6 +3436,8 @@ class CompanyInfoData extends DataClass implements Insertable<CompanyInfoData> {
   final DateTime? closureStartDate;
   final DateTime? closureEndDate;
   final String? closureCustomMessage;
+  final String? logoUrl;
+  final double? tvaRate;
   const CompanyInfoData(
       {required this.id,
       this.name,
@@ -3427,7 +3455,9 @@ class CompanyInfoData extends DataClass implements Insertable<CompanyInfoData> {
       this.closureMessageType,
       this.closureStartDate,
       this.closureEndDate,
-      this.closureCustomMessage});
+      this.closureCustomMessage,
+      this.logoUrl,
+      this.tvaRate});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -3478,6 +3508,12 @@ class CompanyInfoData extends DataClass implements Insertable<CompanyInfoData> {
     if (!nullToAbsent || closureCustomMessage != null) {
       map['closure_custom_message'] = Variable<String>(closureCustomMessage);
     }
+    if (!nullToAbsent || logoUrl != null) {
+      map['logo_url'] = Variable<String>(logoUrl);
+    }
+    if (!nullToAbsent || tvaRate != null) {
+      map['tva_rate'] = Variable<double>(tvaRate);
+    }
     return map;
   }
 
@@ -3524,6 +3560,12 @@ class CompanyInfoData extends DataClass implements Insertable<CompanyInfoData> {
       closureCustomMessage: closureCustomMessage == null && nullToAbsent
           ? const Value.absent()
           : Value(closureCustomMessage),
+      logoUrl: logoUrl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(logoUrl),
+      tvaRate: tvaRate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(tvaRate),
     );
   }
 
@@ -3551,6 +3593,8 @@ class CompanyInfoData extends DataClass implements Insertable<CompanyInfoData> {
       closureEndDate: serializer.fromJson<DateTime?>(json['closureEndDate']),
       closureCustomMessage:
           serializer.fromJson<String?>(json['closureCustomMessage']),
+      logoUrl: serializer.fromJson<String?>(json['logoUrl']),
+      tvaRate: serializer.fromJson<double?>(json['tvaRate']),
     );
   }
   @override
@@ -3574,6 +3618,8 @@ class CompanyInfoData extends DataClass implements Insertable<CompanyInfoData> {
       'closureStartDate': serializer.toJson<DateTime?>(closureStartDate),
       'closureEndDate': serializer.toJson<DateTime?>(closureEndDate),
       'closureCustomMessage': serializer.toJson<String?>(closureCustomMessage),
+      'logoUrl': serializer.toJson<String?>(logoUrl),
+      'tvaRate': serializer.toJson<double?>(tvaRate),
     };
   }
 
@@ -3594,7 +3640,9 @@ class CompanyInfoData extends DataClass implements Insertable<CompanyInfoData> {
           Value<String?> closureMessageType = const Value.absent(),
           Value<DateTime?> closureStartDate = const Value.absent(),
           Value<DateTime?> closureEndDate = const Value.absent(),
-          Value<String?> closureCustomMessage = const Value.absent()}) =>
+          Value<String?> closureCustomMessage = const Value.absent(),
+          Value<String?> logoUrl = const Value.absent(),
+          Value<double?> tvaRate = const Value.absent()}) =>
       CompanyInfoData(
         id: id ?? this.id,
         name: name.present ? name.value : this.name,
@@ -3623,6 +3671,8 @@ class CompanyInfoData extends DataClass implements Insertable<CompanyInfoData> {
         closureCustomMessage: closureCustomMessage.present
             ? closureCustomMessage.value
             : this.closureCustomMessage,
+        logoUrl: logoUrl.present ? logoUrl.value : this.logoUrl,
+        tvaRate: tvaRate.present ? tvaRate.value : this.tvaRate,
       );
   CompanyInfoData copyWithCompanion(CompanyInfoCompanion data) {
     return CompanyInfoData(
@@ -3660,6 +3710,8 @@ class CompanyInfoData extends DataClass implements Insertable<CompanyInfoData> {
       closureCustomMessage: data.closureCustomMessage.present
           ? data.closureCustomMessage.value
           : this.closureCustomMessage,
+      logoUrl: data.logoUrl.present ? data.logoUrl.value : this.logoUrl,
+      tvaRate: data.tvaRate.present ? data.tvaRate.value : this.tvaRate,
     );
   }
 
@@ -3682,7 +3734,9 @@ class CompanyInfoData extends DataClass implements Insertable<CompanyInfoData> {
           ..write('closureMessageType: $closureMessageType, ')
           ..write('closureStartDate: $closureStartDate, ')
           ..write('closureEndDate: $closureEndDate, ')
-          ..write('closureCustomMessage: $closureCustomMessage')
+          ..write('closureCustomMessage: $closureCustomMessage, ')
+          ..write('logoUrl: $logoUrl, ')
+          ..write('tvaRate: $tvaRate')
           ..write(')'))
         .toString();
   }
@@ -3705,7 +3759,9 @@ class CompanyInfoData extends DataClass implements Insertable<CompanyInfoData> {
       closureMessageType,
       closureStartDate,
       closureEndDate,
-      closureCustomMessage);
+      closureCustomMessage,
+      logoUrl,
+      tvaRate);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -3726,7 +3782,9 @@ class CompanyInfoData extends DataClass implements Insertable<CompanyInfoData> {
           other.closureMessageType == this.closureMessageType &&
           other.closureStartDate == this.closureStartDate &&
           other.closureEndDate == this.closureEndDate &&
-          other.closureCustomMessage == this.closureCustomMessage);
+          other.closureCustomMessage == this.closureCustomMessage &&
+          other.logoUrl == this.logoUrl &&
+          other.tvaRate == this.tvaRate);
 }
 
 class CompanyInfoCompanion extends UpdateCompanion<CompanyInfoData> {
@@ -3747,6 +3805,8 @@ class CompanyInfoCompanion extends UpdateCompanion<CompanyInfoData> {
   final Value<DateTime?> closureStartDate;
   final Value<DateTime?> closureEndDate;
   final Value<String?> closureCustomMessage;
+  final Value<String?> logoUrl;
+  final Value<double?> tvaRate;
   const CompanyInfoCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
@@ -3765,6 +3825,8 @@ class CompanyInfoCompanion extends UpdateCompanion<CompanyInfoData> {
     this.closureStartDate = const Value.absent(),
     this.closureEndDate = const Value.absent(),
     this.closureCustomMessage = const Value.absent(),
+    this.logoUrl = const Value.absent(),
+    this.tvaRate = const Value.absent(),
   });
   CompanyInfoCompanion.insert({
     this.id = const Value.absent(),
@@ -3784,6 +3846,8 @@ class CompanyInfoCompanion extends UpdateCompanion<CompanyInfoData> {
     this.closureStartDate = const Value.absent(),
     this.closureEndDate = const Value.absent(),
     this.closureCustomMessage = const Value.absent(),
+    this.logoUrl = const Value.absent(),
+    this.tvaRate = const Value.absent(),
   });
   static Insertable<CompanyInfoData> custom({
     Expression<int>? id,
@@ -3803,6 +3867,8 @@ class CompanyInfoCompanion extends UpdateCompanion<CompanyInfoData> {
     Expression<DateTime>? closureStartDate,
     Expression<DateTime>? closureEndDate,
     Expression<String>? closureCustomMessage,
+    Expression<String>? logoUrl,
+    Expression<double>? tvaRate,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -3824,6 +3890,8 @@ class CompanyInfoCompanion extends UpdateCompanion<CompanyInfoData> {
       if (closureEndDate != null) 'closure_end_date': closureEndDate,
       if (closureCustomMessage != null)
         'closure_custom_message': closureCustomMessage,
+      if (logoUrl != null) 'logo_url': logoUrl,
+      if (tvaRate != null) 'tva_rate': tvaRate,
     });
   }
 
@@ -3844,7 +3912,9 @@ class CompanyInfoCompanion extends UpdateCompanion<CompanyInfoData> {
       Value<String?>? closureMessageType,
       Value<DateTime?>? closureStartDate,
       Value<DateTime?>? closureEndDate,
-      Value<String?>? closureCustomMessage}) {
+      Value<String?>? closureCustomMessage,
+      Value<String?>? logoUrl,
+      Value<double?>? tvaRate}) {
     return CompanyInfoCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
@@ -3863,6 +3933,8 @@ class CompanyInfoCompanion extends UpdateCompanion<CompanyInfoData> {
       closureStartDate: closureStartDate ?? this.closureStartDate,
       closureEndDate: closureEndDate ?? this.closureEndDate,
       closureCustomMessage: closureCustomMessage ?? this.closureCustomMessage,
+      logoUrl: logoUrl ?? this.logoUrl,
+      tvaRate: tvaRate ?? this.tvaRate,
     );
   }
 
@@ -3921,6 +3993,12 @@ class CompanyInfoCompanion extends UpdateCompanion<CompanyInfoData> {
       map['closure_custom_message'] =
           Variable<String>(closureCustomMessage.value);
     }
+    if (logoUrl.present) {
+      map['logo_url'] = Variable<String>(logoUrl.value);
+    }
+    if (tvaRate.present) {
+      map['tva_rate'] = Variable<double>(tvaRate.value);
+    }
     return map;
   }
 
@@ -3943,7 +4021,9 @@ class CompanyInfoCompanion extends UpdateCompanion<CompanyInfoData> {
           ..write('closureMessageType: $closureMessageType, ')
           ..write('closureStartDate: $closureStartDate, ')
           ..write('closureEndDate: $closureEndDate, ')
-          ..write('closureCustomMessage: $closureCustomMessage')
+          ..write('closureCustomMessage: $closureCustomMessage, ')
+          ..write('logoUrl: $logoUrl, ')
+          ..write('tvaRate: $tvaRate')
           ..write(')'))
         .toString();
   }
@@ -7603,6 +7683,8 @@ typedef $$CompanyInfoTableCreateCompanionBuilder = CompanyInfoCompanion
   Value<DateTime?> closureStartDate,
   Value<DateTime?> closureEndDate,
   Value<String?> closureCustomMessage,
+  Value<String?> logoUrl,
+  Value<double?> tvaRate,
 });
 typedef $$CompanyInfoTableUpdateCompanionBuilder = CompanyInfoCompanion
     Function({
@@ -7623,6 +7705,8 @@ typedef $$CompanyInfoTableUpdateCompanionBuilder = CompanyInfoCompanion
   Value<DateTime?> closureStartDate,
   Value<DateTime?> closureEndDate,
   Value<String?> closureCustomMessage,
+  Value<String?> logoUrl,
+  Value<double?> tvaRate,
 });
 
 class $$CompanyInfoTableFilterComposer
@@ -7688,6 +7772,12 @@ class $$CompanyInfoTableFilterComposer
   ColumnFilters<String> get closureCustomMessage => $composableBuilder(
       column: $table.closureCustomMessage,
       builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get logoUrl => $composableBuilder(
+      column: $table.logoUrl, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get tvaRate => $composableBuilder(
+      column: $table.tvaRate, builder: (column) => ColumnFilters(column));
 }
 
 class $$CompanyInfoTableOrderingComposer
@@ -7757,6 +7847,12 @@ class $$CompanyInfoTableOrderingComposer
   ColumnOrderings<String> get closureCustomMessage => $composableBuilder(
       column: $table.closureCustomMessage,
       builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get logoUrl => $composableBuilder(
+      column: $table.logoUrl, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get tvaRate => $composableBuilder(
+      column: $table.tvaRate, builder: (column) => ColumnOrderings(column));
 }
 
 class $$CompanyInfoTableAnnotationComposer
@@ -7818,6 +7914,12 @@ class $$CompanyInfoTableAnnotationComposer
 
   GeneratedColumn<String> get closureCustomMessage => $composableBuilder(
       column: $table.closureCustomMessage, builder: (column) => column);
+
+  GeneratedColumn<String> get logoUrl =>
+      $composableBuilder(column: $table.logoUrl, builder: (column) => column);
+
+  GeneratedColumn<double> get tvaRate =>
+      $composableBuilder(column: $table.tvaRate, builder: (column) => column);
 }
 
 class $$CompanyInfoTableTableManager extends RootTableManager<
@@ -7863,6 +7965,8 @@ class $$CompanyInfoTableTableManager extends RootTableManager<
             Value<DateTime?> closureStartDate = const Value.absent(),
             Value<DateTime?> closureEndDate = const Value.absent(),
             Value<String?> closureCustomMessage = const Value.absent(),
+            Value<String?> logoUrl = const Value.absent(),
+            Value<double?> tvaRate = const Value.absent(),
           }) =>
               CompanyInfoCompanion(
             id: id,
@@ -7882,6 +7986,8 @@ class $$CompanyInfoTableTableManager extends RootTableManager<
             closureStartDate: closureStartDate,
             closureEndDate: closureEndDate,
             closureCustomMessage: closureCustomMessage,
+            logoUrl: logoUrl,
+            tvaRate: tvaRate,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -7901,6 +8007,8 @@ class $$CompanyInfoTableTableManager extends RootTableManager<
             Value<DateTime?> closureStartDate = const Value.absent(),
             Value<DateTime?> closureEndDate = const Value.absent(),
             Value<String?> closureCustomMessage = const Value.absent(),
+            Value<String?> logoUrl = const Value.absent(),
+            Value<double?> tvaRate = const Value.absent(),
           }) =>
               CompanyInfoCompanion.insert(
             id: id,
@@ -7920,6 +8028,8 @@ class $$CompanyInfoTableTableManager extends RootTableManager<
             closureStartDate: closureStartDate,
             closureEndDate: closureEndDate,
             closureCustomMessage: closureCustomMessage,
+            logoUrl: logoUrl,
+            tvaRate: tvaRate,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
