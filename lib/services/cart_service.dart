@@ -11,13 +11,12 @@ class CartService extends ChangeNotifier {
   String? temporaryReferenceName;
   String? temporaryPickupTime;
 
-  CartService(this._db) {
-    _loadCartFromDb();
-  }
+  // ✅ CORRIGÉ: Le chargement n'est plus dans le constructeur
+  CartService(this._db);
 
-  Future<void> _loadCartFromDb() async {
+  // ✅ CORRIGÉ: La méthode est maintenant publique pour être appelée par le SplashScreen
+  Future<void> loadCart() async {
     final savedItems = await _db.getAllSavedCartItems();
-    // ✅ CORRIGÉ: Il faut exécuter la requête avec .get()
     final allProducts = await _db.getAllProducts(); 
     final allIngredients = await _db.getAllIngredients();
 
@@ -33,7 +32,6 @@ class CartService extends ChangeNotifier {
           quantity: savedItem.quantity,
         );
       } catch (e) {
-        // Le produit/ingrédient n'existe plus, on le supprime du panier local
         _db.deleteCartItem(savedItem.uniqueId);
       }
     }

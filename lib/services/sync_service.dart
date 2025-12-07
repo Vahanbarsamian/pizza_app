@@ -10,6 +10,7 @@ class SyncService {
   SyncService({required this.db});
 
   Future<void> syncAll() async {
+    print('ℹ️ [SyncService] Début de la synchronisation complète.');
     await _syncProducts();
     await _syncIngredients();
     await _syncProductIngredientLinks();
@@ -21,6 +22,7 @@ class SyncService {
     await _syncReviews();
     await _syncLoyaltySettings();
     await _syncUserLoyalty();
+    print('✅ [SyncService] Synchronisation complète terminée.');
   }
 
   Future<void> _syncLoyaltySettings() async {
@@ -123,8 +125,16 @@ class SyncService {
   }
 
   Future<void> _syncProducts() async {
+    print('ℹ️ [SyncService] Début de la synchronisation des produits.');
     try {
       final response = await _supabase.from('products').select();
+      print('ℹ️ [SyncService] ${response.length} produits reçus de Supabase.');
+
+      if (response.isEmpty) {
+          print('⚠️ [SyncService] Aucune produit à synchroniser.');
+          return;
+      }
+
       final productsToSync = response.map((item) {
         return ProductsCompanion(
           id: Value(item['id'] as int),
@@ -144,8 +154,9 @@ class SyncService {
         await db.delete(db.products).go();
         await db.batch((batch) => batch.insertAll(db.products, productsToSync));
       });
+      print('✅ [SyncService] ${productsToSync.length} produits synchronisés avec succès dans la DB locale.');
     } catch (e) {
-      print('❌ Erreur de synchronisation (Products): $e');
+      print('❌ [SyncService] Erreur de synchronisation (Products): $e');
     }
   }
 
@@ -234,13 +245,10 @@ class SyncService {
   }
 
   Future<void> _syncCompanyInfo() async {
-    print('ℹ️ [SyncService] Début de la synchronisation de CompanyInfo.');
     try {
       final response = await _supabase.from('company_info').select().limit(1);
-      print('ℹ️ [SyncService] Réponse de Supabase pour company_info: ${response.length} ligne(s).');
 
       if (response.isNotEmpty) {
-        print('ℹ️ [SyncService] Données reçues: ${response.first}');
         final info = response.first;
         final infoToSync = CompanyInfoCompanion(
           id: Value(info['id'] as int),
@@ -259,18 +267,17 @@ class SyncService {
           closureMessageType: Value(info['closure_message_type'] as String?),
           closureStartDate: info['closure_start_date'] != null ? Value(DateTime.parse(info['closure_start_date'])) : const Value.absent(),
           closureEndDate: info['closure_end_date'] != null ? Value(DateTime.parse(info['closure_end_date'])) : const Value.absent(),
+          closureCustomMessage: Value(info['closure_custom_message'] as String?),
+          logoUrl: Value(info['logo_url'] as String?),
+          tvaRate: Value((info['tva_rate'] as num?)?.toDouble()),
         );
-        print('ℹ️ [SyncService] Insertion des données dans la DB locale...');
         await db.transaction(() async {
           await db.delete(db.companyInfo).go();
           await db.into(db.companyInfo).insert(infoToSync);
         });
-        print('✅ [SyncService] CompanyInfo synchronisé avec succès.');
-      } else {
-        print('⚠️ [SyncService] Aucune donnée CompanyInfo reçue de Supabase.');
       }
     } catch (e) {
-      print('❌ [SyncService] Erreur de synchronisation (CompanyInfo): $e');
+      print('❌ Erreur de synchronisation (CompanyInfo): $e');
     }
   }
 }

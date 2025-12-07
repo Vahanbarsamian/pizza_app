@@ -20,26 +20,6 @@ class OrderDetailScreen extends StatefulWidget {
 }
 
 class _OrderDetailScreenState extends State<OrderDetailScreen> {
-  CompanyInfoData? _companyInfo;
-  List<OrderItem> _orderItems = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _loadInitialData();
-  }
-
-  Future<void> _loadInitialData() async {
-    final db = context.read<AppDatabase>();
-    final info = await db.getCompanyInfo();
-    final items = await db.getOrderItems(widget.order.id);
-    if (mounted) {
-      setState(() {
-        _companyInfo = info;
-        _orderItems = items;
-      });
-    }
-  }
 
   Future<void> _updateOrderStatus(BuildContext context, String newStatus) async {
     final adminService = context.read<AdminService>();
@@ -62,24 +42,24 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     }
   }
 
-  Future<void> _shareInvoice() async {
-    if (_companyInfo == null || _orderItems.isEmpty) return;
+  Future<void> _shareInvoice(CompanyInfoData? companyInfo, List<OrderItem> orderItems) async {
+    if (companyInfo == null || orderItems.isEmpty) return;
 
-    final companyName = _companyInfo!.name ?? 'Votre Pizzeria';
-    final logoUrl = _companyInfo!.logoUrl;
-    final tvaRate = _companyInfo!.tvaRate ?? 0.0; // Ceci est un décimal, ex: 0.1
+    final companyName = companyInfo.name ?? 'Votre Pizzeria';
+    final logoUrl = companyInfo.logoUrl;
+    final tvaRate = companyInfo.tvaRate ?? 0.0;
 
     final buffer = StringBuffer();
     buffer.writeln('--- FACTURE ---');
     buffer.writeln(companyName);
-    if (_companyInfo!.address != null) buffer.writeln(_companyInfo!.address);
+    if (companyInfo.address != null) buffer.writeln(companyInfo.address);
     if (logoUrl != null && logoUrl.isNotEmpty) buffer.writeln('Logo: $logoUrl');
     buffer.writeln('--------------------');
     buffer.writeln('Commande pour: ${widget.order.referenceName}');
     buffer.writeln('Date: ${DateFormat('dd/MM/yyyy HH:mm', 'fr_FR').format(widget.order.createdAt)}');
     buffer.writeln('--------------------');
 
-    for (final item in _orderItems) {
+    for (final item in orderItems) {
       buffer.writeln('${item.quantity}x ${item.productName} - ${(item.unitPrice * item.quantity).toStringAsFixed(2)} €');
       if(item.optionsDescription != null && item.optionsDescription!.isNotEmpty) {
         buffer.writeln('  (+ ${item.optionsDescription})');
@@ -91,7 +71,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     if (tvaRate > 0) {
         tvaAmount = widget.order.total / (1 + tvaRate) * tvaRate;
     }
-    // ✅ CORRIGÉ: Affichage du taux en pourcentage
     buffer.writeln('dont TVA (${(tvaRate * 100).toStringAsFixed(0)}%): ${tvaAmount.toStringAsFixed(2)} €');
     buffer.writeln('TOTAL: ${widget.order.total.toStringAsFixed(2)} € TTC');
     buffer.writeln('--------------------');
@@ -102,30 +81,52 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final db = Provider.of<AppDatabase>(context, listen: false);
     final authService = context.watch<AuthService>();
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Bon de Commande'),
-      ),
-      body: _orderItems.isEmpty
-          ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              padding: const EdgeInsets.all(16.0),
-              children: [
-                _buildOrderSummary(context, _orderItems.fold(0, (sum, item) => sum + item.quantity), authService.isAdmin),
-                const Divider(height: 32),
-                Text('Détails des articles', style: Theme.of(context).textTheme.titleLarge),
-                const SizedBox(height: 8),
-                ..._orderItems.map((item) => OrderItemCard(item: item)),
-              ],
-            ),
-      bottomNavigationBar: _buildBottomBar(context, authService),
-      floatingActionButton: authService.isAdmin ? null : FloatingActionButton(
-        onPressed: _shareInvoice,
-        tooltip: 'Partager la facture',
-        child: const Icon(Icons.share),
-      ),
+    return FutureBuilder<List<dynamic>>(
+      future: Future.wait([db.getOrderItems(widget.order.id), db.getCompanyInfo()]),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('Bon de Commande')),
+            body: const Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        if (snapshot.hasError || !snapshot.hasData) {
+           return Scaffold(
+            appBar: AppBar(title: const Text('Erreur')),
+            body: Center(child: Text('Erreur de chargement des données: ${snapshot.error}')),
+          );
+        }
+
+        final orderItems = snapshot.data![0] as List<OrderItem>;
+        final companyInfo = snapshot.data![1] as CompanyInfoData?;
+        final totalItems = orderItems.fold<int>(0, (sum, item) => sum + item.quantity);
+
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Bon de Commande'),
+          ),
+          body: ListView(
+                  padding: const EdgeInsets.all(16.0),
+                  children: [
+                    _buildOrderSummary(context, totalItems, authService.isAdmin, companyInfo),
+                    const Divider(height: 32),
+                    Text('Détails des articles', style: Theme.of(context).textTheme.titleLarge),
+                    const SizedBox(height: 8),
+                    ...orderItems.map((item) => OrderItemCard(item: item)),
+                  ],
+                ),
+          bottomNavigationBar: _buildBottomBar(context, authService),
+          floatingActionButton: authService.isAdmin ? null : FloatingActionButton(
+            onPressed: () => _shareInvoice(companyInfo, orderItems),
+            tooltip: 'Partager la facture',
+            child: const Icon(Icons.share),
+          ),
+        );
+      },
     );
   }
 
@@ -179,12 +180,12 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     );
   }
 
-  Widget _buildOrderSummary(BuildContext context, int totalItems, bool isAdmin) {
+  Widget _buildOrderSummary(BuildContext context, int totalItems, bool isAdmin, CompanyInfoData? companyInfo) {
     double tvaAmount = 0;
     double tvaRateForDisplay = 0;
 
-    if (_companyInfo?.tvaRate != null && _companyInfo!.tvaRate! > 0) {
-      final tvaRate = _companyInfo!.tvaRate!;
+    if (companyInfo?.tvaRate != null && companyInfo!.tvaRate! > 0) {
+      final tvaRate = companyInfo.tvaRate!;
       tvaRateForDisplay = tvaRate * 100;
       tvaAmount = widget.order.total / (1 + tvaRate) * tvaRate;
     }
@@ -206,7 +207,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             _buildSummaryRow('Mode de paiement:', widget.order.paymentMethod ?? 'Non spécifié'),
             _buildSummaryRow('Nombre d\'articles:', '$totalItems articles'),
             const Divider(height: 24, thickness: 1),
-            // ✅ CORRIGÉ: Affichage du taux en pourcentage
             if (tvaAmount > 0)
               Padding(
                 padding: const EdgeInsets.only(bottom: 8.0),

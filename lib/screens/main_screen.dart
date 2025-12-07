@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 
 import '../database/app_database.dart';
 import '../services/auth_service.dart';
-import '../services/sync_service.dart';
 import '../services/cart_service.dart';
 import '../widgets/loyalty_status_widget.dart';
 import 'menu_screen.dart';
@@ -24,29 +23,6 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
-  bool _isSyncing = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _performInitialSync();
-  }
-
-  Future<void> _performInitialSync() async {
-    try {
-      await context.read<SyncService>().syncAll();
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur de synchronisation: $e')));
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isSyncing = false;
-        });
-      }
-    }
-  }
 
   static const List<Widget> _widgetOptions = <Widget>[
     MenuScreen(),
@@ -144,11 +120,7 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ],
       ),
-      body: _isSyncing
-          ? const Center(
-              child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [CircularProgressIndicator(), SizedBox(height: 16), Text('Synchronisation des données...')]),
-            )
-          : Center(child: _widgetOptions.elementAt(_selectedIndex)),
+      body: Center(child: _widgetOptions.elementAt(_selectedIndex)),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         items: const <BottomNavigationBarItem>[

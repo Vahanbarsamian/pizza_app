@@ -13,9 +13,9 @@ import 'services/order_service.dart';
 import 'services/review_service.dart';
 import 'services/public_review_service.dart';
 import 'services/preferences_service.dart';
-import 'services/loyalty_service.dart'; // ✅ AJOUTÉ
+import 'services/loyalty_service.dart'; 
 
-import 'screens/main_screen.dart';
+import 'screens/splash_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -58,7 +58,6 @@ class MyApp extends StatelessWidget {
         ProxyProvider<AppDatabase, OrderService>(
           update: (_, db, __) => OrderService(db: db),
         ),
-        // ✅ AJOUTÉ: Le nouveau service de fidélité
         ProxyProvider<AppDatabase, LoyaltyService>(
           update: (_, db, __) => LoyaltyService(db: db),
         ),
@@ -93,7 +92,7 @@ class MyApp extends StatelessWidget {
           scaffoldBackgroundColor: const Color(0xFFF8F9FA),
           visualDensity: VisualDensity.adaptivePlatformDensity,
         ),
-        home: const MainScreen(),
+        home: const SplashScreen(),
       ),
     );
   }

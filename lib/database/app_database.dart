@@ -41,12 +41,14 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 27;
+  int get schemaVersion => 28; // ✅ CORRIGÉ: Version incrémentée
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (m) => m.createAll(),
         onUpgrade: (m, from, to) async {
+          // Votre stratégie actuelle supprime et recrée tout.
+          // C'est destructif mais simple et efficace pour le développement.
           for (final table in allTables) {
             await m.deleteTable(table.actualTableName);
           }
