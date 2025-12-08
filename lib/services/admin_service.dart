@@ -123,14 +123,20 @@ class AdminService {
 
   Future<void> saveIngredient(IngredientsCompanion ingredient) async {
     await _db.into(_db.ingredients).insert(ingredient, mode: InsertMode.replace);
-    await _supabase.from('ingredients').upsert({
-      'id': ingredient.id.value,
+
+    final data = {
       'name': ingredient.name.value,
       'price': ingredient.price.value,
       'category': ingredient.category.value,
       'is_global': ingredient.isGlobal.value,
       'created_at': (ingredient.createdAt.value ?? DateTime.now()).toIso8601String(),
-    });
+    };
+
+    if (ingredient.id.present) {
+      data['id'] = ingredient.id.value;
+    }
+
+    await _supabase.from('ingredients').upsert(data);
   }
 
   Future<void> deleteIngredient(int id) async {
@@ -156,15 +162,7 @@ class AdminService {
     if (info.logoUrl.present) data['logo_url'] = info.logoUrl.value;
     if (info.tvaRate.present) data['tva_rate'] = info.tvaRate.value;
 
-    print('ℹ️ [AdminService] Début de la sauvegarde CompanyInfo.');
-    print('ℹ️ [AdminService] Données envoyées: $data');
-    try {
-      await _supabase.from('company_info').upsert(data);
-      print('✅ [AdminService] CompanyInfo sauvegardé avec succès.');
-    } catch (e) {
-      print('❌ [AdminService] Erreur lors de la sauvegarde de CompanyInfo: $e');
-      rethrow;
-    }
+    await _supabase.from('company_info').upsert(data);
   }
 
   Future<void> saveAnnouncement({
@@ -188,10 +186,10 @@ class AdminService {
     };
 
     if (id != null) {
-      await _supabase.from('announcements').update(data).eq('id', id);
-    } else {
-      await _supabase.from('announcements').insert(data);
+      data['id'] = id;
     }
+
+    await _supabase.from('announcements').upsert(data);
   }
 
   Future<void> deleteAnnouncement(int id) async {

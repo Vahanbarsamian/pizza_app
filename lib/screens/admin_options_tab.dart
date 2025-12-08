@@ -66,9 +66,13 @@ class _AdminOptionsTabState extends State<AdminOptionsTab> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ Ingrédient enregistré !'), backgroundColor: Colors.green,));
       }
-    } catch (e) {
+    } catch (e, stacktrace) { // ✅ MODIFIÉ: Ajout du print pour le débogage
+      debugPrint('--- ERREUR CAPTURÉE ---');
+      debugPrint(e.toString());
+      debugPrint(stacktrace.toString());
+      debugPrint('-----------------------');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: ${e.toString()}')));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);

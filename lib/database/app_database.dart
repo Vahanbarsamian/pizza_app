@@ -122,32 +122,44 @@ class AppDatabase extends _$AppDatabase {
   Stream<List<Product>> watchAllProducts() => (select(products)..orderBy([(p) => OrderingTerm(expression: p.createdAt, mode: OrderingMode.desc)])).watch();
   Stream<List<Ingredient>> watchAllIngredients() => select(ingredients).watch();
   
+  // ✅ MODIFIÉ: Logique des ingrédients globaux ajoutée
   Stream<Map<String, List<Ingredient>>> watchIngredientsForProductSeparated(int productId) {
-    final query = select(productIngredientLinks).join([
+    final linkedIngredientsQuery = select(productIngredientLinks).join([
       innerJoin(ingredients, ingredients.id.equalsExp(productIngredientLinks.ingredientId))
     ])
       ..where(productIngredientLinks.productId.equals(productId));
 
-    return query.watch().map((rows) {
-      final List<Ingredient> baseIngredients = [];
-      final List<Ingredient> supplementIngredients = [];
+    final globalIngredientsQuery = select(ingredients)..where((i) => i.isGlobal.equals(true));
 
+    final linkedStream = linkedIngredientsQuery.watch().map((rows) {
+      final base = <Ingredient>[];
+      final supplements = <Ingredient>[];
       for (final row in rows) {
-        final ingredient = row.readTable(ingredients);
         final link = row.readTable(productIngredientLinks);
-
+        final ingredient = row.readTable(ingredients);
         if (link.isBaseIngredient) {
-          baseIngredients.add(ingredient);
+          base.add(ingredient);
         } else {
-          supplementIngredients.add(ingredient);
+          supplements.add(ingredient);
         }
       }
-      baseIngredients.sort((a,b) => a.name.compareTo(b.name));
-      supplementIngredients.sort((a,b) => a.name.compareTo(b.name));
+      return {'base': base, 'supplements': supplements};
+    });
+
+    final globalStream = globalIngredientsQuery.watch();
+
+    return Rx.combineLatest2(linkedStream, globalStream, (linked, globals) {
+      final baseIngredients = linked['base']!;
+      final specificSupplements = linked['supplements']!;
       
+      final allSupplements = {...specificSupplements, ...globals}.toList();
+
+      baseIngredients.sort((a,b) => a.name.compareTo(b.name));
+      allSupplements.sort((a,b) => a.name.compareTo(b.name));
+
       return {
         'base': baseIngredients,
-        'supplements': supplementIngredients,
+        'supplements': allSupplements,
       };
     });
   }
