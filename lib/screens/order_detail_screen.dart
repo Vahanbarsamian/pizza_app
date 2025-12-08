@@ -64,7 +64,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     for (final item in orderItems) {
       buffer.writeln('${item.quantity}x ${item.productName} - ${formatPrice(item.unitPrice * item.quantity)}');
       if(item.optionsDescription != null && item.optionsDescription!.isNotEmpty) {
-        buffer.writeln('  ${item.optionsDescription}');
+        final optionsText = item.optionsDescription!.replaceAll('(sans', '(SANS');
+        buffer.writeln('  $optionsText');
       }
     }
 
@@ -245,6 +246,34 @@ class OrderItemCard extends StatelessWidget {
 
   const OrderItemCard({super.key, required this.item});
 
+  Widget _buildOptionsText(BuildContext context) {
+    final text = item.optionsDescription!;
+    final defaultStyle = TextStyle(color: Colors.grey.shade600, fontStyle: FontStyle.italic);
+    // ✅ MODIFIÉ: Ajout de fontWeight.bold
+    final redStyle = const TextStyle(color: Colors.red, fontStyle: FontStyle.italic, fontWeight: FontWeight.bold);
+
+    if (!text.contains('(sans')) {
+      return Text(text, style: defaultStyle);
+    }
+
+    final spans = <TextSpan>[];
+    final parts = text.split('(');
+
+    for (int i = 0; i < parts.length; i++) {
+      final part = parts[i];
+      if (part.isEmpty) continue;
+
+      if (part.startsWith('sans')) {
+        spans.add(TextSpan(text: '($part', style: redStyle));
+      } else {
+        final prefix = (i > 0) ? '(' : '';
+        spans.add(TextSpan(text: prefix + part, style: defaultStyle));
+      }
+    }
+
+    return Text.rich(TextSpan(children: spans));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -265,7 +294,7 @@ class OrderItemCard extends StatelessWidget {
             if (item.optionsDescription != null && item.optionsDescription!.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 8.0),
-                child: Text(item.optionsDescription!, style: TextStyle(color: Colors.grey.shade600, fontStyle: FontStyle.italic)),
+                child: _buildOptionsText(context),
               ),
           ],
         ),

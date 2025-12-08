@@ -6,6 +6,7 @@ import '../database/app_database.dart';
 import '../services/admin_service.dart';
 import '../services/sync_service.dart';
 import '../services/preferences_service.dart';
+import '../services/notification_service.dart'; // ✅ AJOUTÉ
 
 class AdminInfoTab extends StatefulWidget {
   const AdminInfoTab({super.key});
@@ -109,7 +110,7 @@ class _AdminInfoTabState extends State<AdminInfoTab> {
   Widget build(BuildContext context) {
     final db = context.read<AppDatabase>();
 
-    return StreamBuilder<CompanyInfoData?>( // Utilise watch au lieu de get pour les mises à jour automatiques
+    return StreamBuilder<CompanyInfoData?>( 
       stream: db.watchCompanyInfo(),
       builder: (context, snapshot) {
         if (!snapshot.hasData && snapshot.connectionState == ConnectionState.waiting) {
@@ -188,6 +189,16 @@ class _AdminInfoTabState extends State<AdminInfoTab> {
                 value: prefs.soundNotification,
                 onChanged: (value) => prefs.setSoundNotification(value),
               ),
+              // ✅ AJOUTÉ: Bouton de test
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: Center(
+                  child: ElevatedButton(
+                    onPressed: NotificationService.playNotification,
+                    child: const Text('🔊 Tester le son'),
+                  ),
+                ),
+              ),
             ]
           ),
           const SizedBox(height: 32),
@@ -201,7 +212,6 @@ class _AdminInfoTabState extends State<AdminInfoTab> {
     );
   }
 
-  // ✅ AJOUTÉ: Widget helper pour construire une section dans une carte
   Widget _buildSectionCard(BuildContext context, {required String title, required IconData icon, required List<Widget> children}) {
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -222,7 +232,6 @@ class _AdminInfoTabState extends State<AdminInfoTab> {
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
-              // Ajoute un SizedBox entre chaque enfant pour l'espacement
               children: children.expand((widget) => [widget, const SizedBox(height: 12)]).toList()..removeLast(),
             ),
           ),

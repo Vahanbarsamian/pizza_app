@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:audioplayers/audioplayers.dart';
 import 'package:intl/intl.dart';
 
 import '../database/app_database.dart';
 import '../services/sync_service.dart';
 import '../services/preferences_service.dart';
 import '../services/admin_service.dart';
+import '../services/notification_service.dart';
 import 'order_detail_screen.dart';
 
 class AdminOrdersTab extends StatefulWidget {
@@ -20,7 +20,6 @@ class AdminOrdersTab extends StatefulWidget {
 enum ClosureMessageType { vacation, temporary, full, custom }
 
 class _AdminOrdersTabState extends State<AdminOrdersTab> with SingleTickerProviderStateMixin {
-  final AudioPlayer _audioPlayer = AudioPlayer();
   RealtimeChannel? _ordersChannel;
   late TabController _tabController;
   late TextEditingController _customClosureMessageController;
@@ -74,7 +73,7 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> with SingleTickerProvid
             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('🔔 Nouvelle commande reçue !'), backgroundColor: Colors.blue));
           }
           if (prefs.soundNotification) {
-            _audioPlayer.play(AssetSource('sounds/notification.mp3'));
+            NotificationService.playNotification();
           }
           syncService.syncAll();
         }
@@ -86,7 +85,7 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> with SingleTickerProvid
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text("Confirmer l'archivage"), // ✅ CORRIGÉ
+        title: const Text("Confirmer l\'archivage"), 
         content: const Text('Voulez-vous vraiment archiver toutes les commandes terminées aujourd\'hui ?'),
         actions: [
           TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Annuler')),
@@ -113,7 +112,6 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> with SingleTickerProvid
     _tabController.dispose();
     _customClosureMessageController.dispose();
     if (_ordersChannel != null) Supabase.instance.client.removeChannel(_ordersChannel!);
-    _audioPlayer.dispose();
     super.dispose();
   }
   
@@ -442,7 +440,7 @@ class _ArchivesTabState extends State<ArchivesTab> {
         Card(margin: const EdgeInsets.fromLTRB(16, 0, 16, 16), elevation: 4, child: Padding(padding: const EdgeInsets.all(8.0), child: Column(children: [Text('Rechercher dans les archives', style: Theme.of(context).textTheme.titleLarge), const SizedBox(height: 8), Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [ElevatedButton.icon(icon: const Icon(Icons.calendar_today_outlined), label: Text(widget.archiveStartDate == null ? 'Début' : dateFormat.format(widget.archiveStartDate!)), onPressed: () => _selectDate(context, initialDate: widget.archiveStartDate, onDateSelected: (date) => widget.onArchiveDateChanged(date, widget.archiveEndDate))), ElevatedButton.icon(icon: const Icon(Icons.calendar_today), label: Text(widget.archiveEndDate == null ? 'Fin' : dateFormat.format(widget.archiveEndDate!)), onPressed: () => _selectDate(context, initialDate: widget.archiveEndDate, onDateSelected: (date) => widget.onArchiveDateChanged(widget.archiveStartDate, date)))]), const SizedBox(height: 8), SizedBox(width: double.infinity, child: ElevatedButton(onPressed: _fetchArchives, child: const Text('Afficher')))]))),
         Expanded(child: _isLoading ? const Center(child: CircularProgressIndicator()) : _archivedOrders.isEmpty ? const Center(child: Text('Aucun résultat pour cette période.')) : ListView.builder(padding: const EdgeInsets.symmetric(horizontal: 16), itemCount: _archivedOrders.length, itemBuilder: (context, index) {
           final order = _archivedOrders[index];
-          return Card(child: ListTile(title: Text('Commande de ${order.referenceName ?? 'N/A'}'), subtitle: Text('Archivée le ${dateFormat.format(order.createdAt)}'), trailing: Text('${order.total.toStringAsFixed(2)} €')));
+          return Card(child: ListTile(title: Text('Commande de ${order.referenceName ?? 'N/A'}'), subtitle: Text('Archivée le ${dateFormat.format(order.createdAt)} '), trailing: Text('${order.total.toStringAsFixed(2)} €')));
         }))
       ],
     );
