@@ -63,7 +63,6 @@ class _AdminInfoTabState extends State<AdminInfoTab> {
     _latitudeController.text = data.latitude?.toString() ?? '';
     _longitudeController.text = data.longitude?.toString() ?? '';
     _logoUrlController.text = data.logoUrl ?? '';
-    // ✅ CORRIGÉ: Affichage du taux en pourcentage
     _tvaRateController.text = data.tvaRate != null ? (data.tvaRate! * 100).toString() : '';
   }
 
@@ -72,7 +71,6 @@ class _AdminInfoTabState extends State<AdminInfoTab> {
       final adminService = context.read<AdminService>();
       final syncService = context.read<SyncService>();
 
-      // ✅ CORRIGÉ: Conversion du pourcentage en décimal avant sauvegarde
       final tvaRateFromInput = double.tryParse(_tvaRateController.text) ?? 0.0;
       final tvaRateForDb = tvaRateFromInput / 100.0;
 
@@ -111,7 +109,7 @@ class _AdminInfoTabState extends State<AdminInfoTab> {
   Widget build(BuildContext context) {
     final db = context.read<AppDatabase>();
 
-    return StreamBuilder<CompanyInfoData?>(
+    return StreamBuilder<CompanyInfoData?>( // Utilise watch au lieu de get pour les mises à jour automatiques
       stream: db.watchCompanyInfo(),
       builder: (context, snapshot) {
         if (!snapshot.hasData && snapshot.connectionState == ConnectionState.waiting) {
@@ -131,69 +129,105 @@ class _AdminInfoTabState extends State<AdminInfoTab> {
   Widget _buildForm() {
     final prefs = context.watch<PreferencesService>();
 
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+    return Form(
+      key: _formKey,
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          _buildSectionCard(
+            context,
+            title: 'Informations Générales',
+            icon: Icons.storefront,
             children: [
-              Text('Informations Générales', style: Theme.of(context).textTheme.titleLarge),
-              const SizedBox(height: 16),
               TextFormField(controller: _nameController, decoration: const InputDecoration(labelText: "Nom de l'établissement")),
-              const SizedBox(height: 12),
               TextFormField(controller: _logoUrlController, decoration: const InputDecoration(labelText: "URL du logo")),
-              const SizedBox(height: 12),
               TextFormField(controller: _presentationController, decoration: const InputDecoration(labelText: "Texte de présentation"), maxLines: 3),
-              const SizedBox(height: 12),
               TextFormField(controller: _addressController, decoration: const InputDecoration(labelText: 'Adresse')),
-              const SizedBox(height: 12),
               TextFormField(controller: _phoneController, decoration: const InputDecoration(labelText: 'Téléphone')),
-              const SizedBox(height: 12),
               TextFormField(controller: _emailController, decoration: const InputDecoration(labelText: 'Email')),
-              const Divider(height: 32),
-              Text('Réseaux Sociaux', style: Theme.of(context).textTheme.titleLarge),
-              const SizedBox(height: 16),
-              TextFormField(controller: _facebookController, decoration: const InputDecoration(labelText: 'Lien Facebook')),
-              const SizedBox(height: 12),
-              TextFormField(controller: _instagramController, decoration: const InputDecoration(labelText: 'Lien Instagram')),
-              const SizedBox(height: 12),
-              TextFormField(controller: _xController, decoration: const InputDecoration(labelText: 'Lien X (Twitter)')),
-              const SizedBox(height: 12),
-              TextFormField(controller: _whatsappController, decoration: const InputDecoration(labelText: 'Numéro WhatsApp')),
-              const Divider(height: 32),
-              Text('Coordonnées & Fiscalité', style: Theme.of(context).textTheme.titleLarge),
-              const SizedBox(height: 16),
-              TextFormField(controller: _latitudeController, decoration: const InputDecoration(labelText: 'Latitude'), keyboardType: TextInputType.numberWithOptions(decimal: true)),
-              const SizedBox(height: 12),
-              TextFormField(controller: _longitudeController, decoration: const InputDecoration(labelText: 'Longitude'), keyboardType: TextInputType.numberWithOptions(decimal: true)),
-              const SizedBox(height: 12),
-              TextFormField(controller: _tvaRateController, decoration: const InputDecoration(labelText: 'Taux de TVA en %', hintText: '10'), keyboardType: TextInputType.numberWithOptions(decimal: true)),
-              const SizedBox(height: 32),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(padding: const EdgeInsets.all(16)),
-                onPressed: _saveChanges,
-                child: const Text('Enregistrer les modifications'),
-              ),
-            ],
+            ]
           ),
-        ),
-        const Divider(height: 32, thickness: 1),
-        Text('Préférences de Notification', style: Theme.of(context).textTheme.titleLarge),
-        SwitchListTile(
-          title: const Text('Notification visuelle'),
-          subtitle: const Text('Affiche une bannière pour chaque nouvelle commande.'),
-          value: prefs.visualNotification,
-          onChanged: (value) => prefs.setVisualNotification(value),
-        ),
-        SwitchListTile(
-          title: const Text('Notification sonore'),
-          subtitle: const Text('Joue un son pour chaque nouvelle commande.'),
-          value: prefs.soundNotification,
-          onChanged: (value) => prefs.setSoundNotification(value),
-        ),
-      ],
+          const SizedBox(height: 16),
+          _buildSectionCard(
+            context,
+            title: 'Réseaux Sociaux',
+            icon: Icons.public,
+            children: [
+              TextFormField(controller: _facebookController, decoration: const InputDecoration(labelText: 'Lien Facebook')),
+              TextFormField(controller: _instagramController, decoration: const InputDecoration(labelText: 'Lien Instagram')),
+              TextFormField(controller: _xController, decoration: const InputDecoration(labelText: 'Lien X (Twitter)')),
+              TextFormField(controller: _whatsappController, decoration: const InputDecoration(labelText: 'Numéro WhatsApp')),
+            ]
+          ),
+          const SizedBox(height: 16),
+          _buildSectionCard(
+            context,
+            title: 'Coordonnées & Fiscalité',
+            icon: Icons.map_outlined,
+            children: [
+              TextFormField(controller: _latitudeController, decoration: const InputDecoration(labelText: 'Latitude'), keyboardType: const TextInputType.numberWithOptions(decimal: true)),
+              TextFormField(controller: _longitudeController, decoration: const InputDecoration(labelText: 'Longitude'), keyboardType: const TextInputType.numberWithOptions(decimal: true)),
+              TextFormField(controller: _tvaRateController, decoration: const InputDecoration(labelText: 'Taux de TVA en %', hintText: '10'), keyboardType: const TextInputType.numberWithOptions(decimal: true)),
+            ]
+          ),
+          const SizedBox(height: 16),
+          _buildSectionCard(
+            context,
+            title: 'Préférences de Notification',
+            icon: Icons.notifications_active,
+            children: [
+              SwitchListTile(
+                title: const Text('Notification visuelle'),
+                subtitle: const Text('Affiche une bannière pour chaque nouvelle commande.'),
+                value: prefs.visualNotification,
+                onChanged: (value) => prefs.setVisualNotification(value),
+              ),
+              SwitchListTile(
+                title: const Text('Notification sonore'),
+                subtitle: const Text('Joue un son pour chaque nouvelle commande.'),
+                value: prefs.soundNotification,
+                onChanged: (value) => prefs.setSoundNotification(value),
+              ),
+            ]
+          ),
+          const SizedBox(height: 32),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(padding: const EdgeInsets.all(16)),
+            onPressed: _saveChanges,
+            child: const Text('Enregistrer les modifications'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ✅ AJOUTÉ: Widget helper pour construire une section dans une carte
+  Widget _buildSectionCard(BuildContext context, {required String title, required IconData icon, required List<Widget> children}) {
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            color: Theme.of(context).primaryColor.withOpacity(0.1),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            child: Row(
+              children: [
+                Icon(icon, color: Theme.of(context).primaryColor, size: 20),
+                const SizedBox(width: 8),
+                Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              // Ajoute un SizedBox entre chaque enfant pour l'espacement
+              children: children.expand((widget) => [widget, const SizedBox(height: 12)]).toList()..removeLast(),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

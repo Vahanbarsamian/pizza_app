@@ -2,12 +2,17 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../database/app_database.dart';
 import 'cart_service.dart';
+import 'loyalty_service.dart'; // ✅ AJOUTÉ
 
 class OrderService {
   final SupabaseClient _supabase = Supabase.instance.client;
   final AppDatabase _db;
+  final LoyaltyService _loyaltyService; // ✅ AJOUTÉ
 
-  OrderService({required AppDatabase db}) : _db = db;
+  // ✅ MODIFIÉ: Le constructeur accepte maintenant LoyaltyService
+  OrderService({required AppDatabase db, required LoyaltyService loyaltyService})
+      : _db = db,
+        _loyaltyService = loyaltyService;
 
   Future<void> createOrderFromCart(CartService cart, String userId, String referenceName, String pickupTime, String paymentMethod) async {
     if (cart.items.isEmpty) {
@@ -35,7 +40,6 @@ class OrderService {
       });
 
       final itemsToInsert = cart.items.values.map((cartItem) {
-        // ✅ MODIFIÉ: Logique pour construire la description complète des options
         final options = <String>[];
         if (cartItem.selectedIngredients.isNotEmpty) {
           options.add(cartItem.selectedIngredients.map((i) => '+ ${i.name}').join(', '));
@@ -50,11 +54,23 @@ class OrderService {
           'quantity': cartItem.quantity,
           'unit_price': cartItem.finalPrice,
           'product_name': cartItem.product.name,
-          'options_description': options.join(', '), // Utilise la description complète
+          'options_description': options.join(', '),
         };
       }).toList();
 
       await _supabase.from('order_items').insert(itemsToInsert);
+
+      // --- ✅ AJOUTÉ: Mise à jour des points de fidélité ---
+      final settings = await _loyaltyService.watchLoyaltySettings().first;
+      if (settings != null && settings.isEnabled) {
+        // On ne compte que les produits de la catégorie 'pizza'
+        final pizzaCount = cart.items.values
+            .where((item) => item.product.category == 'pizza')
+            .fold<int>(0, (sum, item) => sum + item.quantity);
+
+        await _loyaltyService.addPizzasToCount(userId, pizzaCount);
+      }
+      // --- Fin de l'ajout ---
 
     } catch (e) {
       print('Erreur lors de la création de la commande: $e');

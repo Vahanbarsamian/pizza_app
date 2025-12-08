@@ -55,11 +55,16 @@ class MyApp extends StatelessWidget {
         ProxyProvider<AppDatabase, AdminService>(
           update: (_, db, __) => AdminService(db: db),
         ),
-        ProxyProvider<AppDatabase, OrderService>(
-          update: (_, db, __) => OrderService(db: db),
-        ),
+        // ✅ MODIFIÉ: LoyaltyService est maintenant avant OrderService
         ProxyProvider<AppDatabase, LoyaltyService>(
           update: (_, db, __) => LoyaltyService(db: db),
+        ),
+        // ✅ MODIFIÉ: ProxyProvider qui injecte LoyaltyService dans OrderService
+        ProxyProvider<LoyaltyService, OrderService>(
+          update: (context, loyaltyService, previous) => OrderService(
+            db: context.read<AppDatabase>(),
+            loyaltyService: loyaltyService,
+          ),
         ),
         Provider(create: (_) => ReviewService()),
         ChangeNotifierProxyProvider<AppDatabase, PublicReviewService>(
@@ -92,7 +97,7 @@ class MyApp extends StatelessWidget {
           scaffoldBackgroundColor: const Color(0xFFF8F9FA),
           visualDensity: VisualDensity.adaptivePlatformDensity,
         ),
-        home: PizzaSplashScreen(), // ✅ CORRIGÉ: const retiré
+        home: PizzaSplashScreen(),
       ),
     );
   }
