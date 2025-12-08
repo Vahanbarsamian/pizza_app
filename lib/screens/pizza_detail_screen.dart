@@ -44,78 +44,87 @@ class _PizzaDetailScreenState extends State<PizzaDetailScreen> {
       appBar: AppBar(
         title: Text(widget.product.name),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (hasImage)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: CachedNetworkImage(
-                  imageUrl: widget.product.image!,
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  height: 250,
-                ),
-              ),
-            const SizedBox(height: 16),
-            Text(widget.product.name, style: Theme.of(context).textTheme.headlineMedium),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              crossAxisAlignment: CrossAxisAlignment.baseline,
-              textBaseline: TextBaseline.alphabetic,
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (hasDiscount)
-                  Text(
-                    formatPrice(widget.product.basePrice),
-                    style: const TextStyle(
-                      fontSize: 20,
-                      color: Colors.grey,
-                      decoration: TextDecoration.lineThrough,
+                if (hasImage)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 16.0),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: CachedNetworkImage(
+                        imageUrl: widget.product.image!,
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        height: 200,
+                      ),
                     ),
                   ),
-                const SizedBox(width: 8),
-                Text(
-                  formatPrice(hasDiscount ? reducedPrice : widget.product.basePrice),
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: hasDiscount ? Colors.red : Colors.black,
-                  ),
+                const SizedBox(height: 16),
+                Text(widget.product.name, style: Theme.of(context).textTheme.headlineMedium),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    if (hasDiscount)
+                      Text(
+                        formatPrice(widget.product.basePrice),
+                        style: const TextStyle(fontSize: 20, color: Colors.grey, decoration: TextDecoration.lineThrough),
+                      ),
+                    const SizedBox(width: 8),
+                    Text(
+                      formatPrice(hasDiscount ? reducedPrice : widget.product.basePrice),
+                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: hasDiscount ? Colors.red : Colors.black),
+                    ),
+                  ],
                 ),
+                const SizedBox(height: 12),
+                if (widget.product.description != null && widget.product.description!.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8.0, bottom: 16.0),
+                    child: Text(widget.product.description!, style: Theme.of(context).textTheme.bodyMedium),
+                  ),
               ],
             ),
-            const SizedBox(height: 12),
-            if (widget.product.description != null && widget.product.description!.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 8.0),
-                child: Text(widget.product.description!, style: Theme.of(context).textTheme.bodyMedium),
+          ),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: StreamBuilder<Map<String, List<Ingredient>>>(
+                stream: db.watchIngredientsForProductSeparated(widget.product.id),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+
+                  final baseIngredients = snapshot.data!['base'] ?? [];
+                  final supplements = snapshot.data!['supplements'] ?? [];
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (baseIngredients.isNotEmpty)
+                        _buildBaseIngredientsSection(baseIngredients),
+                      
+                      // ✅ AJOUTÉ: Séparateur
+                      if (baseIngredients.isNotEmpty && supplements.isNotEmpty)
+                        const Divider(height: 32, thickness: 1),
+
+                      if (supplements.isNotEmpty)
+                        _buildSupplementsSection(supplements),
+                      
+                      const SizedBox(height: 20),
+                    ],
+                  );
+                },
               ),
-            
-            StreamBuilder<Map<String, List<Ingredient>>>(
-              stream: db.watchIngredientsForProductSeparated(widget.product.id),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-
-                final baseIngredients = snapshot.data!['base'] ?? [];
-                final supplements = snapshot.data!['supplements'] ?? [];
-
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (baseIngredients.isNotEmpty)
-                      _buildBaseIngredientsSection(baseIngredients),
-                    
-                    if (supplements.isNotEmpty)
-                      _buildSupplementsSection(supplements),
-                  ],
-                );
-              },
             ),
-          ],
-        ),
+          ),
+        ],
       ),
       bottomNavigationBar: BottomAppBar(
         child: Padding(
@@ -171,9 +180,7 @@ class _PizzaDetailScreenState extends State<PizzaDetailScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 24),
         Text('Composition', style: Theme.of(context).textTheme.titleLarge),
-        // ✅ AJOUTÉ: Texte d'aide
         Padding(
           padding: const EdgeInsets.only(top: 4, bottom: 8),
           child: Text(
@@ -208,7 +215,6 @@ class _PizzaDetailScreenState extends State<PizzaDetailScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 24),
         Text('Suppléments (max $maxSupplements)', style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: 8),
         Wrap(
