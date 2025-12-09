@@ -83,54 +83,61 @@ class _PizzaSplashScreenState extends State<PizzaSplashScreen> with SingleTicker
           ),
         ),
         child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Animation pizza Pro
-              SizedBox(
-                height: 240,
-                child: Lottie.asset(
-                  'assets/animations/pizza_pro_splash.json',
-                  controller: _controller,
-                  filterQuality: FilterQuality.high,
-                  frameRate: FrameRate(60),
-                  onLoaded: (composition) {
-                    _controller
-                      ..duration = const Duration(seconds: 3)
-                      ..repeat();
-                  },
-                ),
-              ),
-              const SizedBox(height: 16),
-              // Nom de l'app
-              Text(
-                'Pizza Mania le Puy en Velay',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.5,
-                    ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                _loadingMessage,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.white70,
-                    ),
-              ),
-              if (_hasError)
-                Padding(
-                  padding: const EdgeInsets.only(top: 20.0),
-                  child: ElevatedButton.icon(
-                    icon: const Icon(Icons.refresh),
-                    onPressed: _initializeApp, 
-                    label: const Text('Réessayer'),
-                    style: ElevatedButton.styleFrom(
-                      foregroundColor: Colors.red,
-                    ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Animation pizza Pro
+                SizedBox(
+                  height: 240,
+                  child: Lottie.asset(
+                    'assets/animations/pizza_pro_splash.json',
+                    controller: _controller,
+                    filterQuality: FilterQuality.high,
+                    frameRate: FrameRate(60),
+                    onLoaded: (composition) {
+                      _controller
+                        ..duration = const Duration(seconds: 3)
+                        ..repeat();
+                    },
                   ),
-                )
-            ],
+                ),
+                const SizedBox(height: 16),
+                // Nom de l'app
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    'Pizza Mania le Puy en Velay',
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.5,
+                        ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _loadingMessage,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.white70,
+                      ),
+                  textAlign: TextAlign.center, // ✅ AJOUTÉ: Pour centrer le message si il est sur plusieurs lignes
+                ),
+                if (_hasError)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 20.0),
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.refresh),
+                      onPressed: _initializeApp, 
+                      label: const Text('Réessayer'),
+                      style: ElevatedButton.styleFrom(
+                        foregroundColor: Colors.red,
+                      ),
+                    ),
+                  )
+              ],
+            ),
           ),
         ),
       ),
