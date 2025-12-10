@@ -102,7 +102,11 @@ class _PizzaDetailScreenState extends State<PizzaDetailScreen> {
                   if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
 
                   final baseIngredients = snapshot.data!['base'] ?? [];
-                  final supplements = snapshot.data!['supplements'] ?? [];
+                  final allSupplements = snapshot.data!['supplements'] ?? [];
+
+                  // ✅ AJOUTÉ: Filtrer les suppléments pour ne pas inclure les ingrédients déjà dans la base.
+                  final baseIngredientIds = baseIngredients.map((e) => e.id).toSet();
+                  final filteredSupplements = allSupplements.where((s) => !baseIngredientIds.contains(s.id)).toList();
 
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -110,12 +114,12 @@ class _PizzaDetailScreenState extends State<PizzaDetailScreen> {
                       if (baseIngredients.isNotEmpty)
                         _buildBaseIngredientsSection(baseIngredients),
                       
-                      // ✅ AJOUTÉ: Séparateur
-                      if (baseIngredients.isNotEmpty && supplements.isNotEmpty)
+                      if (baseIngredients.isNotEmpty && filteredSupplements.isNotEmpty)
                         const Divider(height: 32, thickness: 1),
 
-                      if (supplements.isNotEmpty)
-                        _buildSupplementsSection(supplements),
+                      // ✅ MODIFIÉ: Utilise la liste filtrée
+                      if (filteredSupplements.isNotEmpty)
+                        _buildSupplementsSection(filteredSupplements),
                       
                       const SizedBox(height: 20),
                     ],
@@ -180,11 +184,11 @@ class _PizzaDetailScreenState extends State<PizzaDetailScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Composition', style: Theme.of(context).textTheme.titleLarge),
+        Text('Composition de base', style: Theme.of(context).textTheme.titleLarge),
         Padding(
           padding: const EdgeInsets.only(top: 4, bottom: 8),
           child: Text(
-            'Décochez pour retirer un ingrédient',
+            'Décochez pour retirer un ingrédient.',
             style: TextStyle(color: Colors.grey.shade700, fontStyle: FontStyle.italic),
           ),
         ),

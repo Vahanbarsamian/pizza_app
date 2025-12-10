@@ -21,6 +21,13 @@ class _AdminOptionsTabState extends State<AdminOptionsTab> {
 
   Ingredient? _selectedIngredient;
   bool _isLoading = false;
+  bool _isFormExpanded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _isFormExpanded = _selectedIngredient != null;
+  }
 
   void _clearForm() {
     setState(() {
@@ -29,6 +36,7 @@ class _AdminOptionsTabState extends State<AdminOptionsTab> {
       _priceController.clear();
       _categoryController.clear();
       _isGlobal = false;
+      _isFormExpanded = false;
     });
   }
 
@@ -39,6 +47,7 @@ class _AdminOptionsTabState extends State<AdminOptionsTab> {
       _priceController.text = ingredient.price.toString();
       _categoryController.text = ingredient.category ?? '';
       _isGlobal = ingredient.isGlobal;
+      _isFormExpanded = true;
     });
   }
 
@@ -66,7 +75,7 @@ class _AdminOptionsTabState extends State<AdminOptionsTab> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ Ingrédient enregistré !'), backgroundColor: Colors.green,));
       }
-    } catch (e, stacktrace) { // ✅ MODIFIÉ: Ajout du print pour le débogage
+    } catch (e, stacktrace) {
       debugPrint('--- ERREUR CAPTURÉE ---');
       debugPrint(e.toString());
       debugPrint(stacktrace.toString());
@@ -86,6 +95,7 @@ class _AdminOptionsTabState extends State<AdminOptionsTab> {
     try {
       await adminService.deleteIngredient(id);
       await syncService.syncAll();
+      _clearForm(); // Clear form after deletion
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('🗑️ Ingrédient supprimé.')));
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("❌ Erreur: $e")));
@@ -101,16 +111,23 @@ class _AdminOptionsTabState extends State<AdminOptionsTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Card(
-            clipBehavior: Clip.antiAlias,
-            child: Column(
-              children: [
-                _CardHeader(
-                  title: _selectedIngredient == null ? 'Nouvel Ingrédient' : 'Modifier l\'Ingrédient',
-                  icon: _selectedIngredient == null ? Icons.add_circle : Icons.edit,
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(20.0),
+          ExpansionPanelList(
+            elevation: 2,
+            expansionCallback: (int index, bool isExpanded) {
+              setState(() {
+                _isFormExpanded = !isExpanded;
+              });
+            },
+            children: [
+              ExpansionPanel(
+                headerBuilder: (BuildContext context, bool isExpanded) {
+                  return _CardHeader(
+                    title: _selectedIngredient == null ? 'Ajouter un Ingrédient' : 'Modifier l\'Ingrédient',
+                    icon: _selectedIngredient == null ? Icons.add_circle : Icons.edit,
+                  );
+                },
+                body: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -120,12 +137,7 @@ class _AdminOptionsTabState extends State<AdminOptionsTab> {
                       const SizedBox(height: 12),
                       TextField(controller: _categoryController, decoration: const InputDecoration(labelText: 'Catégorie (ex: Base, Fromage, Viande)', border: OutlineInputBorder())),
                       const SizedBox(height: 12),
-                      SwitchListTile(
-                        title: const Text('Supplément Global'),
-                        subtitle: const Text('Appliquer à toutes les pizzas par défaut'),
-                        value: _isGlobal,
-                        onChanged: (value) => setState(() => _isGlobal = value),
-                      ),
+                      SwitchListTile(title: const Text('Supplément Global'), subtitle: const Text('Appliquer à toutes les pizzas par défaut'), value: _isGlobal, onChanged: (value) => setState(() => _isGlobal = value)),
                       const SizedBox(height: 20),
                       ElevatedButton.icon(
                         onPressed: _isLoading ? null : _saveIngredient,
@@ -133,16 +145,14 @@ class _AdminOptionsTabState extends State<AdminOptionsTab> {
                         label: Text(_isLoading ? 'Enregistrement...' : 'Enregistrer'),
                       ),
                       if (_selectedIngredient != null)
-                        TextButton.icon(
-                          onPressed: _clearForm,
-                          icon: const Icon(Icons.add, color: Colors.green),
-                          label: const Text('Créer un nouvel ingrédient', style: TextStyle(color: Colors.green)),
-                        ),
+                        TextButton.icon(onPressed: _clearForm, icon: const Icon(Icons.add, color: Colors.green), label: const Text('Passer en mode création', style: TextStyle(color: Colors.green))),
                     ],
                   ),
                 ),
-              ], 
-            ),
+                isExpanded: _isFormExpanded,
+                canTapOnHeader: true,
+              ),
+            ],
           ),
           const Divider(height: 32),
           _ListHeader(title: 'Bibliothèque d\'Ingrédients', icon: Icons.storage),
@@ -169,6 +179,10 @@ class _AdminOptionsTabState extends State<AdminOptionsTab> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text('${ingredient.price.toStringAsFixed(2)} €'),
+                            IconButton(
+                              icon: const Icon(Icons.edit, color: Colors.blue),
+                              onPressed: () => _selectIngredient(ingredient),
+                            ),
                             IconButton(
                               icon: const Icon(Icons.delete, color: Colors.red),
                               onPressed: () => _deleteIngredient(ingredient.id),

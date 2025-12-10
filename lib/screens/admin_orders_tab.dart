@@ -85,7 +85,7 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> with SingleTickerProvid
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text("Confirmer l\'archivage"), 
+        title: const Text("Confirmer l\'archivage"),
         content: const Text('Voulez-vous vraiment archiver toutes les commandes terminées aujourd\'hui ?'),
         actions: [
           TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Annuler')),
@@ -114,7 +114,7 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> with SingleTickerProvid
     if (_ordersChannel != null) Supabase.instance.client.removeChannel(_ordersChannel!);
     super.dispose();
   }
-  
+
   Future<void> _saveSettings() async {
     final adminService = context.read<AdminService>();
     final syncService = context.read<SyncService>();
@@ -167,22 +167,12 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> with SingleTickerProvid
         controller: _tabController,
         children: [
           OrdersList(startDate: _filterStartDate, endDate: _filterEndDate),
-          ArchivesTab(
-            archiveStartDate: _archiveStartDate,
-            archiveEndDate: _archiveEndDate,
-            onArchiveDateChanged: (start, end) => setState(() => { _archiveStartDate = start, _archiveEndDate = end }),
-            onArchivePressed: _archiveWork,
-          ),
+          ArchivesTab(archiveStartDate: _archiveStartDate, archiveEndDate: _archiveEndDate, onArchiveDateChanged: (start, end) => setState(() => { _archiveStartDate = start, _archiveEndDate = end }), onArchivePressed: _archiveWork),
           SettingsTab(
-            initialFilterStartDate: _filterStartDate,
-            initialFilterEndDate: _filterEndDate,
-            areOrdersOpen: _areOrdersOpen,
-            vacationStartDate: _vacationStartDate,
-            vacationEndDate: _vacationEndDate,
-            tempClosureStartDate: _tempClosureStartDate,
-            tempClosureEndDate: _tempClosureEndDate,
-            selectedClosureMessage: _selectedClosureMessage,
-            customClosureMessageController: _customClosureMessageController,
+            initialFilterStartDate: _filterStartDate, initialFilterEndDate: _filterEndDate,
+            areOrdersOpen: _areOrdersOpen, vacationStartDate: _vacationStartDate, vacationEndDate: _vacationEndDate,
+            tempClosureStartDate: _tempClosureStartDate, tempClosureEndDate: _tempClosureEndDate,
+            selectedClosureMessage: _selectedClosureMessage, customClosureMessageController: _customClosureMessageController,
             onFilterDateChanged: (start, end) => setState(() => { _filterStartDate = start, _filterEndDate = end }),
             onOrdersOpenChanged: (value) => setState(() => { _areOrdersOpen = value, if (value) _selectedClosureMessage = null }),
             onVacationDateChanged: (start, end) => setState(() => { _vacationStartDate = start, _vacationEndDate = end }),
@@ -213,9 +203,27 @@ class OrdersList extends StatelessWidget {
     }
   }
 
+  Future<bool> _confirmDelete(BuildContext context, Order order) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Confirmer la suppression'),
+        content: Text('Êtes-vous sûr de vouloir supprimer définitivement la commande de ${order.referenceName} ?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Annuler')),
+          TextButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('SUPPRIMER', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold))),
+        ],
+      ),
+    );
+    return confirmed ?? false;
+  }
+
   @override
   Widget build(BuildContext context) {
     final db = Provider.of<AppDatabase>(context);
+    final adminService = Provider.of<AdminService>(context, listen: false);
+    final syncService = Provider.of<SyncService>(context, listen: false);
+
     return StreamBuilder<List<OrderWithStatus>>(
       stream: db.watchAllOrdersWithStatus(),
       builder: (context, snapshot) {
@@ -253,16 +261,16 @@ class OrdersList extends StatelessWidget {
         return ListView(
           padding: const EdgeInsets.only(top: 8),
           children: [
-            _buildSection(context, 'À PRÉPARER', toDoOrders),
+            _buildSection(context, 'À PRÉPARER', toDoOrders, adminService, syncService),
             const Divider(height: 32, thickness: 1.5, indent: 16, endIndent: 16),
-            _buildSection(context, 'PRÊTES', readyOrders),
+            _buildSection(context, 'PRÊTES', readyOrders, adminService, syncService),
           ],
         );
       },
     );
   }
 
-   Widget _buildSection(BuildContext context, String title, List<OrderWithStatus> orders) {
+  Widget _buildSection(BuildContext context, String title, List<OrderWithStatus> orders, AdminService adminService, SyncService syncService) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -270,11 +278,36 @@ class OrdersList extends StatelessWidget {
         if (orders.isEmpty)
           const Padding(padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0), child: Text('Aucune commande dans cette section.'))
         else
-          ListView.builder(shrinkWrap: true, physics: const NeverScrollableScrollPhysics(), itemCount: orders.length, itemBuilder: (context, index) {
-            final orderWithStatus = orders[index];
-            final order = orderWithStatus.order;
-            return Card(margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4), child: ListTile(title: Text('Commande de ${order.referenceName ?? 'N/A'}'), subtitle: Text('Pour ${order.pickupTime ?? 'N/A'}'), trailing: Text.rich(TextSpan(style: const TextStyle(fontSize: 16), children: [TextSpan(text: order.total.toStringAsFixed(2), style: const TextStyle(fontWeight: FontWeight.bold)), const TextSpan(text: ' € TTC', style: TextStyle(fontSize: 10, color: Colors.grey))])), onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (context) => OrderDetailScreen(order: order, status: orderWithStatus.status)))));
-          }),
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: orders.length,
+            itemBuilder: (context, index) {
+              final orderWithStatus = orders[index];
+              final order = orderWithStatus.order;
+              return Dismissible(
+                key: ValueKey(order.id),
+                direction: DismissDirection.endToStart,
+                confirmDismiss: (direction) => _confirmDelete(context, order),
+                onDismissed: (direction) async {
+                  try {
+                    await adminService.deleteOrder(order.id);
+                    await syncService.syncAll();
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Commande supprimée.'), backgroundColor: Colors.orange));
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur lors de la suppression: $e'), backgroundColor: Colors.red));
+                  }
+                },
+                background: Container(
+                  color: Colors.red,
+                  alignment: Alignment.centerRight,
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: const Row(mainAxisSize: MainAxisSize.min, children: [Text('Supprimer', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)), SizedBox(width: 8), Icon(Icons.delete_sweep, color: Colors.white)]),
+                ),
+                child: Card(margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4), child: ListTile(title: Text('Commande de ${order.referenceName ?? 'N/A'}'), subtitle: Text('Pour ${order.pickupTime ?? 'N/A'}'), trailing: Text.rich(TextSpan(style: const TextStyle(fontSize: 16), children: [TextSpan(text: order.total.toStringAsFixed(2), style: const TextStyle(fontWeight: FontWeight.bold)), const TextSpan(text: ' € TTC', style: TextStyle(fontSize: 10, color: Colors.grey))])), onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (context) => OrderDetailScreen(order: order, status: orderWithStatus.status))))),
+              );
+            },
+          ),
       ],
     );
   }

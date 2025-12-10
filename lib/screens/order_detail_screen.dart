@@ -246,29 +246,26 @@ class OrderItemCard extends StatelessWidget {
 
   const OrderItemCard({super.key, required this.item});
 
+  // ✅ Logique de coloration améliorée
   Widget _buildOptionsText(BuildContext context) {
     final text = item.optionsDescription!;
     final defaultStyle = TextStyle(color: Colors.grey.shade600, fontStyle: FontStyle.italic);
-    // ✅ MODIFIÉ: Ajout de fontWeight.bold
     final redStyle = const TextStyle(color: Colors.red, fontStyle: FontStyle.italic, fontWeight: FontWeight.bold);
 
-    if (!text.contains('(sans')) {
-      return Text(text, style: defaultStyle);
+    final spans = <TextSpan>[];
+    final RegExp regExp = RegExp(r'\(sans.*?\)', caseSensitive: false);
+    int currentPos = 0;
+
+    for (final Match match in regExp.allMatches(text)) {
+      if (match.start > currentPos) {
+        spans.add(TextSpan(text: text.substring(currentPos, match.start), style: defaultStyle));
+      }
+      spans.add(TextSpan(text: match.group(0), style: redStyle));
+      currentPos = match.end;
     }
 
-    final spans = <TextSpan>[];
-    final parts = text.split('(');
-
-    for (int i = 0; i < parts.length; i++) {
-      final part = parts[i];
-      if (part.isEmpty) continue;
-
-      if (part.startsWith('sans')) {
-        spans.add(TextSpan(text: '($part', style: redStyle));
-      } else {
-        final prefix = (i > 0) ? '(' : '';
-        spans.add(TextSpan(text: prefix + part, style: defaultStyle));
-      }
+    if (currentPos < text.length) {
+      spans.add(TextSpan(text: text.substring(currentPos), style: defaultStyle));
     }
 
     return Text.rich(TextSpan(children: spans));

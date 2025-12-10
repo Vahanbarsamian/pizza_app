@@ -11,6 +11,11 @@ class AdminService {
 
   AdminService({required AppDatabase db}) : _db = db;
 
+  // ✅ AJOUTÉ: Méthode pour supprimer une commande via une fonction RPC
+  Future<void> deleteOrder(int orderId) async {
+    await _supabase.rpc('delete_order_and_dependencies', params: { 'order_id_to_delete': orderId });
+  }
+
   Future<LoyaltySetting?> getLoyaltySettings() async {
     final data = await _supabase.from('loyalty_settings').select().eq('id', 1).maybeSingle();
     if (data == null) return null;
