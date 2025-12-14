@@ -15,6 +15,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   late final TextEditingController _nameController;
   late final TextEditingController _timeController;
   String _paymentMethod = 'Carte Bleue';
+  bool _isLoading = false; // ✅ AJOUTÉ: État de chargement
 
   @override
   void initState() {
@@ -33,6 +34,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   void _submit() {
     if (_formKey.currentState!.validate()) {
+      setState(() => _isLoading = true);
+
       final cart = context.read<CartService>();
       cart.temporaryReferenceName = _nameController.text;
       cart.temporaryPickupTime = _timeController.text;
@@ -93,13 +96,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       ),
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.all(16.0),
+        // ✅ MODIFIÉ: Bouton stylisé avec indicateur de chargement
         child: ElevatedButton.icon(
-          icon: const Icon(Icons.check_circle_outline),
-          label: const Text('Valider les informations'),
+          icon: _isLoading ? const SizedBox.shrink() : const Icon(Icons.check_circle_outline),
+          label: _isLoading 
+              ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3)) 
+              : const Text('Valider les informations'),
           style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.green,
+            foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(vertical: 16),
           ),
-          onPressed: _submit,
+          onPressed: _isLoading ? null : _submit,
         ),
       ),
     );
