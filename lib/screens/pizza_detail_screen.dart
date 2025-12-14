@@ -85,10 +85,11 @@ class _PizzaDetailScreenState extends State<PizzaDetailScreen> {
                   ],
                 ),
                 const SizedBox(height: 12),
+                // ✅ MODIFIÉ: Augmentation de la taille de la police pour la description principale
                 if (widget.product.description != null && widget.product.description!.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: 8.0, bottom: 16.0),
-                    child: Text(widget.product.description!, style: Theme.of(context).textTheme.bodyMedium),
+                    child: Text(widget.product.description!, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 16.0)),
                   ),
               ],
             ),
@@ -104,7 +105,6 @@ class _PizzaDetailScreenState extends State<PizzaDetailScreen> {
                   final baseIngredients = snapshot.data!['base'] ?? [];
                   final allSupplements = snapshot.data!['supplements'] ?? [];
 
-                  // ✅ AJOUTÉ: Filtrer les suppléments pour ne pas inclure les ingrédients déjà dans la base.
                   final baseIngredientIds = baseIngredients.map((e) => e.id).toSet();
                   final filteredSupplements = allSupplements.where((s) => !baseIngredientIds.contains(s.id)).toList();
 
@@ -117,7 +117,6 @@ class _PizzaDetailScreenState extends State<PizzaDetailScreen> {
                       if (baseIngredients.isNotEmpty && filteredSupplements.isNotEmpty)
                         const Divider(height: 32, thickness: 1),
 
-                      // ✅ MODIFIÉ: Utilise la liste filtrée
                       if (filteredSupplements.isNotEmpty)
                         _buildSupplementsSection(filteredSupplements),
                       
@@ -184,7 +183,7 @@ class _PizzaDetailScreenState extends State<PizzaDetailScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Composition de base', style: Theme.of(context).textTheme.titleLarge),
+        Text('Composition de base modifiable', style: Theme.of(context).textTheme.titleLarge), // Titre modifié
         Padding(
           padding: const EdgeInsets.only(top: 4, bottom: 8),
           child: Text(

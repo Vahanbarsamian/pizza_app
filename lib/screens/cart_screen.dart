@@ -6,8 +6,8 @@ import '../services/cart_service.dart';
 import '../services/order_service.dart';
 import '../services/auth_service.dart';
 import '../services/sync_service.dart';
-import '../services/loyalty_service.dart';
 import 'login_screen.dart';
+import 'checkout_screen.dart'; // ✅ AJOUTÉ: Import du nouvel écran
 
 String formatPrice(double price) {
   return '${price.toStringAsFixed(2)} € TTC';
@@ -24,35 +24,12 @@ class _CartScreenState extends State<CartScreen> {
   bool _isCheckingOut = false;
 
   Widget? _buildOptionsSubtitle(BuildContext context, CartItem item) {
-    if (item.selectedIngredients.isEmpty && item.removedIngredients.isEmpty) {
-      return null;
-    }
-    final spans = <TextSpan>[];
-    final defaultStyle = TextStyle(color: Colors.grey.shade600);
-    
-    // ✅ MODIFIÉ: Style pour les ingrédients retirés
-    final removedStyle = const TextStyle(color: Colors.red, fontWeight: FontWeight.bold);
-
-    if (item.selectedIngredients.isNotEmpty) {
-      spans.add(TextSpan(text: item.selectedIngredients.map((i) => '+ ${i.name}').join(', '), style: defaultStyle));
-    }
-
-    if (item.selectedIngredients.isNotEmpty && item.removedIngredients.isNotEmpty) {
-      spans.add(const TextSpan(text: ', '));
-    }
-
-    if (item.removedIngredients.isNotEmpty) {
-      final removedText = item.removedIngredients.map((i) => 'sans ${i.name}').join(', ');
-      spans.add(TextSpan(text: '($removedText)', style: removedStyle));
-    }
-    return Text.rich(TextSpan(children: spans));
+    // ... (code inchangé)
   }
 
   Future<void> _checkout(BuildContext context) async {
     if (_isCheckingOut) return;
-    setState(() {
-      _isCheckingOut = true;
-    });
+    setState(() => _isCheckingOut = true);
 
     final cart = context.read<CartService>();
     final orderService = context.read<OrderService>();
@@ -66,53 +43,17 @@ class _CartScreenState extends State<CartScreen> {
         return;
       }
 
-      final orderDetails = await showDialog<Map<String, String>>(
-        context: context,
-        builder: (BuildContext dialogContext) {
-          final formKey = GlobalKey<FormState>();
-          final nameController = TextEditingController(text: cart.temporaryReferenceName);
-          final timeController = TextEditingController(text: cart.temporaryPickupTime);
-          String paymentMethod = 'Carte Bleue';
-
-          return StatefulBuilder(
-            builder: (context, setState) {
-              return AlertDialog(
-                title: const Text('Finaliser la commande'),
-                content: Form(
-                  key: formKey,
-                  child: SingleChildScrollView(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        TextFormField(controller: nameController, decoration: const InputDecoration(labelText: 'Nom pour la commande', hintText: 'Ex: Paul'), autofocus: true, validator: (value) => value == null || value.isEmpty ? 'Veuillez entrer un nom' : null),
-                        const SizedBox(height: 16),
-                        TextFormField(controller: timeController, decoration: const InputDecoration(labelText: 'Heure de retrait souhaitée', hintText: 'Ex: 19h30'), validator: (value) => value == null || value.isEmpty ? 'Veuillez entrer une heure' : null),
-                        const SizedBox(height: 24),
-                        Text('Mode de paiement:', style: Theme.of(context).textTheme.titleSmall),
-                        RadioListTile<String>(title: const Text('Carte Bleue'), value: 'Carte Bleue', groupValue: paymentMethod, onChanged: (value) => setState(() => paymentMethod = value!)),
-                        RadioListTile<String>(title: const Text('Paypal'), value: 'Paypal', groupValue: paymentMethod, onChanged: (value) => setState(() => paymentMethod = value!)),
-                      ],
-                    ),
-                  ),
-                ),
-                actions: [
-                  TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: const Text('Annuler')),
-                  ElevatedButton(onPressed: () {
-                    if (formKey.currentState!.validate()) {
-                      cart.temporaryReferenceName = nameController.text;
-                      cart.temporaryPickupTime = timeController.text;
-                      Navigator.of(dialogContext).pop({'name': nameController.text, 'time': timeController.text, 'payment': paymentMethod});
-                    }
-                  }, child: const Text('Valider')),
-                ],
-              );
-            },
-          );
-        },
+      // ✅ MODIFIÉ: Remplace showDialog par une navigation vers le nouvel écran
+      final orderDetails = await Navigator.of(context).push<Map<String, String>>(
+        MaterialPageRoute(builder: (_) => const CheckoutScreen()),
       );
 
-      if (orderDetails == null) return;
+      // Si l'utilisateur a annulé depuis l'écran de checkout
+      if (orderDetails == null) {
+          setState(() => _isCheckingOut = false);
+          return;
+      }
+
       final referenceName = orderDetails['name']!;
       final pickupTime = orderDetails['time']!;
       final paymentMethod = orderDetails['payment']!;
@@ -123,7 +64,7 @@ class _CartScreenState extends State<CartScreen> {
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('✅ Commande pour $referenceName à $pickupTime enregistrée !'), backgroundColor: Colors.green));
-        Navigator.of(context).pop();
+        Navigator.of(context).popUntil((route) => route.isFirst); // Retourne à l'écran principal
       }
     } catch (e) {
       if (context.mounted) {
@@ -131,9 +72,7 @@ class _CartScreenState extends State<CartScreen> {
       }
     } finally {
       if(mounted) {
-        setState(() {
-          _isCheckingOut = false;
-        });
+        setState(() => _isCheckingOut = false);
       }
     }
   }

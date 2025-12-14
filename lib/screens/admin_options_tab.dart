@@ -113,17 +113,24 @@ class _AdminOptionsTabState extends State<AdminOptionsTab> {
         children: [
           ExpansionPanelList(
             elevation: 2,
+            // ✅ MODIFIÉ: Le callback est maintenant géré par le GestureDetector ci-dessous
             expansionCallback: (int index, bool isExpanded) {
-              setState(() {
-                _isFormExpanded = !isExpanded;
-              });
+              // La logique est maintenant dans le GestureDetector
             },
             children: [
               ExpansionPanel(
+                // ✅ MODIFIÉ: Le header est maintenant explicitement cliquable
                 headerBuilder: (BuildContext context, bool isExpanded) {
-                  return _CardHeader(
-                    title: _selectedIngredient == null ? 'Ajouter un Ingrédient' : 'Modifier l\'Ingrédient',
-                    icon: _selectedIngredient == null ? Icons.add_circle : Icons.edit,
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _isFormExpanded = !_isFormExpanded;
+                      });
+                    },
+                    child: _CardHeader(
+                      title: _selectedIngredient == null ? 'Ajouter un Ingrédient' : 'Modifier l\'Ingrédient',
+                      icon: _selectedIngredient == null ? Icons.add_circle : Icons.edit,
+                    ),
                   );
                 },
                 body: Padding(
@@ -144,13 +151,20 @@ class _AdminOptionsTabState extends State<AdminOptionsTab> {
                         icon: _isLoading ? const SizedBox(width:16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.save),
                         label: Text(_isLoading ? 'Enregistrement...' : 'Enregistrer'),
                       ),
+                      const SizedBox(height: 8),
+                      // ✅ MODIFIÉ: Bouton 'Annuler' plus clair
                       if (_selectedIngredient != null)
-                        TextButton.icon(onPressed: _clearForm, icon: const Icon(Icons.add, color: Colors.green), label: const Text('Passer en mode création', style: TextStyle(color: Colors.green))),
+                        OutlinedButton.icon(
+                          onPressed: _clearForm, 
+                          icon: const Icon(Icons.close),
+                          label: const Text('Annuler la modification'),
+                          style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
+                        ),
                     ],
                   ),
                 ),
                 isExpanded: _isFormExpanded,
-                canTapOnHeader: true,
+                canTapOnHeader: false, // On désactive le clic par défaut car on le gère nous-mêmes
               ),
             ],
           ),
