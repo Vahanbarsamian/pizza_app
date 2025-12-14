@@ -1,4 +1,4 @@
-import 'package:drift/drift.dart';
+part of 'app_database.dart';
 
 @DataClassName('Order')
 class Orders extends Table {
@@ -10,7 +10,6 @@ class Orders extends Table {
   RealColumn get total => real().named('total')();
   DateTimeColumn get createdAt => dateTime().named('created_at')();
   DateTimeColumn get updatedAt => dateTime().named('updated_at').nullable()();
-  // ✅ CORRIGÉ: Colonne rendue nullable pour la compatibilité
   BoolColumn get isArchived => boolean().named('is_archived').nullable()();
 }
 

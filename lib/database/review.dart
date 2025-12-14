@@ -1,6 +1,4 @@
-import 'package:drift/drift.dart';
-import 'order.dart';
-import 'user.dart';
+part of 'app_database.dart';
 
 // ✅ CORRIGÉ: La table des avis est maintenant liée à la table Orders
 class Reviews extends Table {

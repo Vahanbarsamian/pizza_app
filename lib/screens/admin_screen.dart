@@ -11,9 +11,10 @@ import 'admin_orders_tab.dart';
 import 'admin_loyalty_tab.dart';
 
 class AdminScreen extends StatefulWidget {
-  final Product? productToEdit;
+  // ❌ SUPPRIMÉ: Le paramètre productToEdit n'est plus nécessaire ici.
+  // final Product? productToEdit;
 
-  const AdminScreen({super.key, this.productToEdit});
+  const AdminScreen({super.key});
 
   @override
   State<AdminScreen> createState() => _AdminScreenState();
@@ -31,7 +32,8 @@ class _AdminScreenState extends State<AdminScreen> {
     _adminTabs = [
       const AdminOrdersTab(),
       const AdminLoyaltyTab(),
-      AdminMenuTab(productToEdit: widget.productToEdit),
+      // ✅ CORRIGÉ: Appel simple sans paramètre
+      const AdminMenuTab(), 
       const AdminAnnouncementsTab(),
       const AdminInfoTab(),
     ];
@@ -95,7 +97,6 @@ class _AdminScreenState extends State<AdminScreen> {
             icon: Icon(Icons.loyalty),
             label: 'Fidélité',
           ),
-          // ✅ CORRIGÉ: Ligne dupliquée supprimée
           BottomNavigationBarItem(
             icon: Icon(Icons.restaurant_menu),
             label: 'Menu & Options',

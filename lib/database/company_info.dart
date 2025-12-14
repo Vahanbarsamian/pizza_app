@@ -1,4 +1,4 @@
-import 'package:drift/drift.dart';
+part of 'app_database.dart';
 
 @DataClassName('CompanyInfoData')
 class CompanyInfo extends Table {
@@ -21,7 +21,6 @@ class CompanyInfo extends Table {
   DateTimeColumn get closureEndDate => dateTime().named('closure_end_date').nullable()();
   TextColumn get closureCustomMessage => text().named('closure_custom_message').nullable()();
 
-  // ✅ AJOUTÉ: Champs pour le logo et la TVA
   TextColumn get logoUrl => text().named('logo_url').nullable()();
   RealColumn get tvaRate => real().named('tva_rate').nullable()();
 

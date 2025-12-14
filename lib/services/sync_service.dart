@@ -132,6 +132,7 @@ class SyncService {
 
       if (response.isEmpty) {
           print('⚠️ [SyncService] Aucune produit à synchroniser.');
+          await db.delete(db.products).go(); // Vide la table locale si Supabase est vide
           return;
       }
 
@@ -146,6 +147,8 @@ class SyncService {
           hasGlobalDiscount: Value(item['has_global_discount'] as bool? ?? false),
           discountPercentage: Value((item['discount_percentage'] as num? ?? 0).toDouble()),
           maxSupplements: Value(item['max_supplements'] as int?),
+          // ✅ AJOUTÉ: Synchronisation du statut is_active
+          isActive: Value(item['is_active'] as bool? ?? true),
           createdAt: Value(DateTime.parse(item['created_at'] as String? ?? '2023-01-01T00:00:00Z')),
         );
       }).toList();

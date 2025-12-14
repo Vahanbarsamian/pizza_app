@@ -1,4 +1,4 @@
-import 'package:drift/drift.dart';
+part of 'app_database.dart';
 
 @DataClassName('Product')
 class Products extends Table {
@@ -11,6 +11,7 @@ class Products extends Table {
   BoolColumn get hasGlobalDiscount => boolean().named('has_global_discount').withDefault(const Constant(false))();
   RealColumn get discountPercentage => real().named('discount_percentage').withDefault(const Constant(0.0))();
   IntColumn get maxSupplements => integer().named('max_supplements').nullable()();
+  BoolColumn get isActive => boolean().named('is_active').withDefault(const Constant(true))();
   DateTimeColumn get createdAt => dateTime().named('created_at')();
 
   @override

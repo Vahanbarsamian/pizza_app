@@ -5,18 +5,18 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:rxdart/rxdart.dart';
 
-import 'product.dart';
-import 'user.dart';
-import 'order.dart';
-import 'review.dart';
-import 'ingredient.dart';
-import 'admin.dart';
-import 'announcement.dart';
-import 'company_info.dart';
-import 'product_ingredient_link.dart';
-import 'saved_cart_item.dart';
-import 'loyalty_setting.dart';
-import 'user_loyalty.dart';
+part 'product.dart';
+part 'user.dart';
+part 'order.dart';
+part 'review.dart';
+part 'ingredient.dart';
+part 'admin.dart';
+part 'announcement.dart';
+part 'company_info.dart';
+part 'product_ingredient_link.dart';
+part 'saved_cart_item.dart';
+part 'loyalty_setting.dart';
+part 'daos/product_dao.dart';
 
 part 'app_database.g.dart';
 
@@ -36,12 +36,14 @@ class OrderWithStatus {
   Products, Users, Orders, OrderItems, Reviews, Ingredients, Admins,
   Announcements, CompanyInfo, ProductIngredientLinks, SavedCartItems, 
   OrderStatusHistories, LoyaltySettings, UserLoyalties,
+], daos: [
+  ProductDao
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 30;
+  int get schemaVersion => 31;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -59,19 +61,18 @@ class AppDatabase extends _$AppDatabase {
       SELECT o.*, COALESCE(latest.status, \'À faire\') as status
       FROM orders o
       LEFT JOIN (
-        SELECT order_id, status, MAX(created_at) as max_date
+        SELECT order_id, status, ROW_NUMBER() OVER(PARTITION BY order_id ORDER BY created_at DESC) as rn
         FROM order_status_histories
-        GROUP BY order_id
-      ) latest ON o.id = latest.order_id
+      ) latest ON o.id = latest.order_id AND latest.rn = 1
     ''';
 
     String sql;
     List<Variable> variables = [];
     if (userId != null) {
-      sql = '$baseSql WHERE o.user_id = ? ORDER BY o.updated_at DESC, o.created_at DESC';
+      sql = '$baseSql WHERE o.user_id = ? ORDER BY o.created_at DESC';
       variables.add(Variable.withString(userId));
     } else {
-      sql = '$baseSql ORDER BY o.updated_at DESC, o.created_at DESC';
+      sql = '$baseSql ORDER BY o.created_at DESC';
     }
 
     return customSelect(sql, variables: variables, readsFrom: { orders, orderStatusHistories }).map((row) {
@@ -119,10 +120,14 @@ class AppDatabase extends _$AppDatabase {
 
   Stream<List<Announcement>> watchAllAnnouncementsForAdmin() => (select(announcements)..orderBy([(a) => OrderingTerm(expression: a.createdAt, mode: OrderingMode.desc)])).watch();
   Stream<List<Announcement>> watchAllAnnouncements() => (select(announcements)..where((a) => a.isActive.equals(true))..orderBy([(a) => OrderingTerm(expression: a.createdAt, mode: OrderingMode.desc)])).watch();
-  Stream<List<Product>> watchAllProducts() => (select(products)..orderBy([(p) => OrderingTerm(expression: p.createdAt, mode: OrderingMode.desc)])).watch();
+  
+  // ✅ AJOUTÉ: Requête pour l'admin qui voit tous les produits
+  Stream<List<Product>> watchAllProductsForAdmin() => (select(products)..orderBy([(p) => OrderingTerm(expression: p.createdAt, mode: OrderingMode.desc)])).watch();
+  // Requête pour les clients (ne voit que les produits actifs)
+  Stream<List<Product>> watchAllProducts() => (select(products)..where((p) => p.isActive.equals(true))..orderBy([(p) => OrderingTerm(expression: p.createdAt, mode: OrderingMode.desc)])).watch();
+  
   Stream<List<Ingredient>> watchAllIngredients() => select(ingredients).watch();
   
-  // ✅ MODIFIÉ: Logique des ingrédients globaux ajoutée
   Stream<Map<String, List<Ingredient>>> watchIngredientsForProductSeparated(int productId) {
     final linkedIngredientsQuery = select(productIngredientLinks).join([
       innerJoin(ingredients, ingredients.id.equalsExp(productIngredientLinks.ingredientId))
@@ -189,7 +194,7 @@ class AppDatabase extends _$AppDatabase {
     return admin != null;
   }
 
-  Future<List<Product>> getAllProducts() => select(products).get();
+  Future<List<Product>> getAllProducts() => (select(products)..where((p) => p.isActive.equals(true))).get();
   Future<List<Ingredient>> getAllIngredients() => select(ingredients).get();
 
   Stream<LoyaltySetting?> watchLoyaltySettings() => (select(loyaltySettings)..where((s) => s.id.equals(1))).watchSingleOrNull();

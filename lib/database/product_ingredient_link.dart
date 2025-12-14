@@ -1,14 +1,10 @@
-import 'package:drift/drift.dart';
-import 'product.dart';
-import 'ingredient.dart';
+part of 'app_database.dart';
 
 @DataClassName('ProductIngredientLink')
 class ProductIngredientLinks extends Table {
   IntColumn get productId => integer().references(Products, #id)();
   IntColumn get ingredientId => integer().references(Ingredients, #id)();
-  
-  // ✅ AJOUTÉ: Colonne pour différencier les ingrédients de base des suppléments
-  BoolColumn get isBaseIngredient => boolean().withDefault(const Constant(true))();
+  BoolColumn get isBaseIngredient => boolean().named('is_base_ingredient').withDefault(const Constant(false))();
 
   @override
   Set<Column> get primaryKey => {productId, ingredientId};

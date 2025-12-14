@@ -1,4 +1,4 @@
-import 'package:drift/drift.dart';
+part of 'app_database.dart';
 
 // La table Users est maintenant liée aux utilisateurs de Supabase Auth
 class Users extends Table {

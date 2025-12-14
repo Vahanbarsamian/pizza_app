@@ -65,6 +65,16 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
   late final GeneratedColumn<int> maxSupplements = GeneratedColumn<int>(
       'max_supplements', aliasedName, true,
       type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _isActiveMeta =
+      const VerificationMeta('isActive');
+  @override
+  late final GeneratedColumn<bool> isActive = GeneratedColumn<bool>(
+      'is_active', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_active" IN (0, 1))'),
+      defaultValue: const Constant(true));
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -82,6 +92,7 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
         hasGlobalDiscount,
         discountPercentage,
         maxSupplements,
+        isActive,
         createdAt
       ];
   @override
@@ -141,6 +152,10 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
           maxSupplements.isAcceptableOrUnknown(
               data['max_supplements']!, _maxSupplementsMeta));
     }
+    if (data.containsKey('is_active')) {
+      context.handle(_isActiveMeta,
+          isActive.isAcceptableOrUnknown(data['is_active']!, _isActiveMeta));
+    }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
@@ -174,6 +189,8 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
           DriftSqlType.double, data['${effectivePrefix}discount_percentage'])!,
       maxSupplements: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}max_supplements']),
+      isActive: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_active'])!,
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
     );
@@ -195,6 +212,7 @@ class Product extends DataClass implements Insertable<Product> {
   final bool hasGlobalDiscount;
   final double discountPercentage;
   final int? maxSupplements;
+  final bool isActive;
   final DateTime createdAt;
   const Product(
       {required this.id,
@@ -206,6 +224,7 @@ class Product extends DataClass implements Insertable<Product> {
       required this.hasGlobalDiscount,
       required this.discountPercentage,
       this.maxSupplements,
+      required this.isActive,
       required this.createdAt});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -227,6 +246,7 @@ class Product extends DataClass implements Insertable<Product> {
     if (!nullToAbsent || maxSupplements != null) {
       map['max_supplements'] = Variable<int>(maxSupplements);
     }
+    map['is_active'] = Variable<bool>(isActive);
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
@@ -249,6 +269,7 @@ class Product extends DataClass implements Insertable<Product> {
       maxSupplements: maxSupplements == null && nullToAbsent
           ? const Value.absent()
           : Value(maxSupplements),
+      isActive: Value(isActive),
       createdAt: Value(createdAt),
     );
   }
@@ -267,6 +288,7 @@ class Product extends DataClass implements Insertable<Product> {
       discountPercentage:
           serializer.fromJson<double>(json['discountPercentage']),
       maxSupplements: serializer.fromJson<int?>(json['maxSupplements']),
+      isActive: serializer.fromJson<bool>(json['isActive']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -283,6 +305,7 @@ class Product extends DataClass implements Insertable<Product> {
       'hasGlobalDiscount': serializer.toJson<bool>(hasGlobalDiscount),
       'discountPercentage': serializer.toJson<double>(discountPercentage),
       'maxSupplements': serializer.toJson<int?>(maxSupplements),
+      'isActive': serializer.toJson<bool>(isActive),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -297,6 +320,7 @@ class Product extends DataClass implements Insertable<Product> {
           bool? hasGlobalDiscount,
           double? discountPercentage,
           Value<int?> maxSupplements = const Value.absent(),
+          bool? isActive,
           DateTime? createdAt}) =>
       Product(
         id: id ?? this.id,
@@ -309,6 +333,7 @@ class Product extends DataClass implements Insertable<Product> {
         discountPercentage: discountPercentage ?? this.discountPercentage,
         maxSupplements:
             maxSupplements.present ? maxSupplements.value : this.maxSupplements,
+        isActive: isActive ?? this.isActive,
         createdAt: createdAt ?? this.createdAt,
       );
   Product copyWithCompanion(ProductsCompanion data) {
@@ -329,6 +354,7 @@ class Product extends DataClass implements Insertable<Product> {
       maxSupplements: data.maxSupplements.present
           ? data.maxSupplements.value
           : this.maxSupplements,
+      isActive: data.isActive.present ? data.isActive.value : this.isActive,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -345,6 +371,7 @@ class Product extends DataClass implements Insertable<Product> {
           ..write('hasGlobalDiscount: $hasGlobalDiscount, ')
           ..write('discountPercentage: $discountPercentage, ')
           ..write('maxSupplements: $maxSupplements, ')
+          ..write('isActive: $isActive, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -361,6 +388,7 @@ class Product extends DataClass implements Insertable<Product> {
       hasGlobalDiscount,
       discountPercentage,
       maxSupplements,
+      isActive,
       createdAt);
   @override
   bool operator ==(Object other) =>
@@ -375,6 +403,7 @@ class Product extends DataClass implements Insertable<Product> {
           other.hasGlobalDiscount == this.hasGlobalDiscount &&
           other.discountPercentage == this.discountPercentage &&
           other.maxSupplements == this.maxSupplements &&
+          other.isActive == this.isActive &&
           other.createdAt == this.createdAt);
 }
 
@@ -388,6 +417,7 @@ class ProductsCompanion extends UpdateCompanion<Product> {
   final Value<bool> hasGlobalDiscount;
   final Value<double> discountPercentage;
   final Value<int?> maxSupplements;
+  final Value<bool> isActive;
   final Value<DateTime> createdAt;
   const ProductsCompanion({
     this.id = const Value.absent(),
@@ -399,6 +429,7 @@ class ProductsCompanion extends UpdateCompanion<Product> {
     this.hasGlobalDiscount = const Value.absent(),
     this.discountPercentage = const Value.absent(),
     this.maxSupplements = const Value.absent(),
+    this.isActive = const Value.absent(),
     this.createdAt = const Value.absent(),
   });
   ProductsCompanion.insert({
@@ -411,6 +442,7 @@ class ProductsCompanion extends UpdateCompanion<Product> {
     this.hasGlobalDiscount = const Value.absent(),
     this.discountPercentage = const Value.absent(),
     this.maxSupplements = const Value.absent(),
+    this.isActive = const Value.absent(),
     required DateTime createdAt,
   })  : name = Value(name),
         basePrice = Value(basePrice),
@@ -425,6 +457,7 @@ class ProductsCompanion extends UpdateCompanion<Product> {
     Expression<bool>? hasGlobalDiscount,
     Expression<double>? discountPercentage,
     Expression<int>? maxSupplements,
+    Expression<bool>? isActive,
     Expression<DateTime>? createdAt,
   }) {
     return RawValuesInsertable({
@@ -437,6 +470,7 @@ class ProductsCompanion extends UpdateCompanion<Product> {
       if (hasGlobalDiscount != null) 'has_global_discount': hasGlobalDiscount,
       if (discountPercentage != null) 'discount_percentage': discountPercentage,
       if (maxSupplements != null) 'max_supplements': maxSupplements,
+      if (isActive != null) 'is_active': isActive,
       if (createdAt != null) 'created_at': createdAt,
     });
   }
@@ -451,6 +485,7 @@ class ProductsCompanion extends UpdateCompanion<Product> {
       Value<bool>? hasGlobalDiscount,
       Value<double>? discountPercentage,
       Value<int?>? maxSupplements,
+      Value<bool>? isActive,
       Value<DateTime>? createdAt}) {
     return ProductsCompanion(
       id: id ?? this.id,
@@ -462,6 +497,7 @@ class ProductsCompanion extends UpdateCompanion<Product> {
       hasGlobalDiscount: hasGlobalDiscount ?? this.hasGlobalDiscount,
       discountPercentage: discountPercentage ?? this.discountPercentage,
       maxSupplements: maxSupplements ?? this.maxSupplements,
+      isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -496,6 +532,9 @@ class ProductsCompanion extends UpdateCompanion<Product> {
     if (maxSupplements.present) {
       map['max_supplements'] = Variable<int>(maxSupplements.value);
     }
+    if (isActive.present) {
+      map['is_active'] = Variable<bool>(isActive.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -514,6 +553,7 @@ class ProductsCompanion extends UpdateCompanion<Product> {
           ..write('hasGlobalDiscount: $hasGlobalDiscount, ')
           ..write('discountPercentage: $discountPercentage, ')
           ..write('maxSupplements: $maxSupplements, ')
+          ..write('isActive: $isActive, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -4062,7 +4102,7 @@ class $ProductIngredientLinksTable extends ProductIngredientLinks
       requiredDuringInsert: false,
       defaultConstraints: GeneratedColumn.constraintIsAlways(
           'CHECK ("is_base_ingredient" IN (0, 1))'),
-      defaultValue: const Constant(true));
+      defaultValue: const Constant(false));
   @override
   List<GeneratedColumn> get $columns =>
       [productId, ingredientId, isBaseIngredient];
@@ -5178,7 +5218,17 @@ class $UserLoyaltiesTable extends UserLoyalties
   @override
   late final GeneratedColumn<String> userId = GeneratedColumn<String>(
       'user_id', aliasedName, false,
-      type: DriftSqlType.string, requiredDuringInsert: true);
+      type: DriftSqlType.string,
+      requiredDuringInsert: true,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES users (id)'));
+  static const VerificationMeta _pointsMeta = const VerificationMeta('points');
+  @override
+  late final GeneratedColumn<int> points = GeneratedColumn<int>(
+      'points', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
   static const VerificationMeta _pizzaCountMeta =
       const VerificationMeta('pizzaCount');
   @override
@@ -5188,7 +5238,7 @@ class $UserLoyaltiesTable extends UserLoyalties
       requiredDuringInsert: false,
       defaultValue: const Constant(0));
   @override
-  List<GeneratedColumn> get $columns => [userId, pizzaCount];
+  List<GeneratedColumn> get $columns => [userId, points, pizzaCount];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -5204,6 +5254,10 @@ class $UserLoyaltiesTable extends UserLoyalties
           userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta));
     } else if (isInserting) {
       context.missing(_userIdMeta);
+    }
+    if (data.containsKey('points')) {
+      context.handle(_pointsMeta,
+          points.isAcceptableOrUnknown(data['points']!, _pointsMeta));
     }
     if (data.containsKey('pizza_count')) {
       context.handle(
@@ -5222,6 +5276,8 @@ class $UserLoyaltiesTable extends UserLoyalties
     return UserLoyalty(
       userId: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}user_id'])!,
+      points: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}points'])!,
       pizzaCount: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}pizza_count'])!,
     );
@@ -5235,12 +5291,15 @@ class $UserLoyaltiesTable extends UserLoyalties
 
 class UserLoyalty extends DataClass implements Insertable<UserLoyalty> {
   final String userId;
+  final int points;
   final int pizzaCount;
-  const UserLoyalty({required this.userId, required this.pizzaCount});
+  const UserLoyalty(
+      {required this.userId, required this.points, required this.pizzaCount});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['user_id'] = Variable<String>(userId);
+    map['points'] = Variable<int>(points);
     map['pizza_count'] = Variable<int>(pizzaCount);
     return map;
   }
@@ -5248,6 +5307,7 @@ class UserLoyalty extends DataClass implements Insertable<UserLoyalty> {
   UserLoyaltiesCompanion toCompanion(bool nullToAbsent) {
     return UserLoyaltiesCompanion(
       userId: Value(userId),
+      points: Value(points),
       pizzaCount: Value(pizzaCount),
     );
   }
@@ -5257,6 +5317,7 @@ class UserLoyalty extends DataClass implements Insertable<UserLoyalty> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return UserLoyalty(
       userId: serializer.fromJson<String>(json['userId']),
+      points: serializer.fromJson<int>(json['points']),
       pizzaCount: serializer.fromJson<int>(json['pizzaCount']),
     );
   }
@@ -5265,17 +5326,21 @@ class UserLoyalty extends DataClass implements Insertable<UserLoyalty> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'userId': serializer.toJson<String>(userId),
+      'points': serializer.toJson<int>(points),
       'pizzaCount': serializer.toJson<int>(pizzaCount),
     };
   }
 
-  UserLoyalty copyWith({String? userId, int? pizzaCount}) => UserLoyalty(
+  UserLoyalty copyWith({String? userId, int? points, int? pizzaCount}) =>
+      UserLoyalty(
         userId: userId ?? this.userId,
+        points: points ?? this.points,
         pizzaCount: pizzaCount ?? this.pizzaCount,
       );
   UserLoyalty copyWithCompanion(UserLoyaltiesCompanion data) {
     return UserLoyalty(
       userId: data.userId.present ? data.userId.value : this.userId,
+      points: data.points.present ? data.points.value : this.points,
       pizzaCount:
           data.pizzaCount.present ? data.pizzaCount.value : this.pizzaCount,
     );
@@ -5285,51 +5350,62 @@ class UserLoyalty extends DataClass implements Insertable<UserLoyalty> {
   String toString() {
     return (StringBuffer('UserLoyalty(')
           ..write('userId: $userId, ')
+          ..write('points: $points, ')
           ..write('pizzaCount: $pizzaCount')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(userId, pizzaCount);
+  int get hashCode => Object.hash(userId, points, pizzaCount);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is UserLoyalty &&
           other.userId == this.userId &&
+          other.points == this.points &&
           other.pizzaCount == this.pizzaCount);
 }
 
 class UserLoyaltiesCompanion extends UpdateCompanion<UserLoyalty> {
   final Value<String> userId;
+  final Value<int> points;
   final Value<int> pizzaCount;
   final Value<int> rowid;
   const UserLoyaltiesCompanion({
     this.userId = const Value.absent(),
+    this.points = const Value.absent(),
     this.pizzaCount = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   UserLoyaltiesCompanion.insert({
     required String userId,
+    this.points = const Value.absent(),
     this.pizzaCount = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : userId = Value(userId);
   static Insertable<UserLoyalty> custom({
     Expression<String>? userId,
+    Expression<int>? points,
     Expression<int>? pizzaCount,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (userId != null) 'user_id': userId,
+      if (points != null) 'points': points,
       if (pizzaCount != null) 'pizza_count': pizzaCount,
       if (rowid != null) 'rowid': rowid,
     });
   }
 
   UserLoyaltiesCompanion copyWith(
-      {Value<String>? userId, Value<int>? pizzaCount, Value<int>? rowid}) {
+      {Value<String>? userId,
+      Value<int>? points,
+      Value<int>? pizzaCount,
+      Value<int>? rowid}) {
     return UserLoyaltiesCompanion(
       userId: userId ?? this.userId,
+      points: points ?? this.points,
       pizzaCount: pizzaCount ?? this.pizzaCount,
       rowid: rowid ?? this.rowid,
     );
@@ -5340,6 +5416,9 @@ class UserLoyaltiesCompanion extends UpdateCompanion<UserLoyalty> {
     final map = <String, Expression>{};
     if (userId.present) {
       map['user_id'] = Variable<String>(userId.value);
+    }
+    if (points.present) {
+      map['points'] = Variable<int>(points.value);
     }
     if (pizzaCount.present) {
       map['pizza_count'] = Variable<int>(pizzaCount.value);
@@ -5354,6 +5433,7 @@ class UserLoyaltiesCompanion extends UpdateCompanion<UserLoyalty> {
   String toString() {
     return (StringBuffer('UserLoyaltiesCompanion(')
           ..write('userId: $userId, ')
+          ..write('points: $points, ')
           ..write('pizzaCount: $pizzaCount, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -5381,6 +5461,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $LoyaltySettingsTable loyaltySettings =
       $LoyaltySettingsTable(this);
   late final $UserLoyaltiesTable userLoyalties = $UserLoyaltiesTable(this);
+  late final ProductDao productDao = ProductDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -5413,6 +5494,7 @@ typedef $$ProductsTableCreateCompanionBuilder = ProductsCompanion Function({
   Value<bool> hasGlobalDiscount,
   Value<double> discountPercentage,
   Value<int?> maxSupplements,
+  Value<bool> isActive,
   required DateTime createdAt,
 });
 typedef $$ProductsTableUpdateCompanionBuilder = ProductsCompanion Function({
@@ -5425,6 +5507,7 @@ typedef $$ProductsTableUpdateCompanionBuilder = ProductsCompanion Function({
   Value<bool> hasGlobalDiscount,
   Value<double> discountPercentage,
   Value<int?> maxSupplements,
+  Value<bool> isActive,
   Value<DateTime> createdAt,
 });
 
@@ -5490,6 +5573,9 @@ class $$ProductsTableFilterComposer
   ColumnFilters<int> get maxSupplements => $composableBuilder(
       column: $table.maxSupplements,
       builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isActive => $composableBuilder(
+      column: $table.isActive, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnFilters(column));
@@ -5557,6 +5643,9 @@ class $$ProductsTableOrderingComposer
       column: $table.maxSupplements,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<bool> get isActive => $composableBuilder(
+      column: $table.isActive, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnOrderings(column));
 }
@@ -5596,6 +5685,9 @@ class $$ProductsTableAnnotationComposer
 
   GeneratedColumn<int> get maxSupplements => $composableBuilder(
       column: $table.maxSupplements, builder: (column) => column);
+
+  GeneratedColumn<bool> get isActive =>
+      $composableBuilder(column: $table.isActive, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -5656,6 +5748,7 @@ class $$ProductsTableTableManager extends RootTableManager<
             Value<bool> hasGlobalDiscount = const Value.absent(),
             Value<double> discountPercentage = const Value.absent(),
             Value<int?> maxSupplements = const Value.absent(),
+            Value<bool> isActive = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
           }) =>
               ProductsCompanion(
@@ -5668,6 +5761,7 @@ class $$ProductsTableTableManager extends RootTableManager<
             hasGlobalDiscount: hasGlobalDiscount,
             discountPercentage: discountPercentage,
             maxSupplements: maxSupplements,
+            isActive: isActive,
             createdAt: createdAt,
           ),
           createCompanionCallback: ({
@@ -5680,6 +5774,7 @@ class $$ProductsTableTableManager extends RootTableManager<
             Value<bool> hasGlobalDiscount = const Value.absent(),
             Value<double> discountPercentage = const Value.absent(),
             Value<int?> maxSupplements = const Value.absent(),
+            Value<bool> isActive = const Value.absent(),
             required DateTime createdAt,
           }) =>
               ProductsCompanion.insert(
@@ -5692,6 +5787,7 @@ class $$ProductsTableTableManager extends RootTableManager<
             hasGlobalDiscount: hasGlobalDiscount,
             discountPercentage: discountPercentage,
             maxSupplements: maxSupplements,
+            isActive: isActive,
             createdAt: createdAt,
           ),
           withReferenceMapper: (p0) => p0
@@ -5773,6 +5869,21 @@ final class $$UsersTableReferences
     return ProcessedTableManager(
         manager.$state.copyWith(prefetchedData: cache));
   }
+
+  static MultiTypedResultKey<$UserLoyaltiesTable, List<UserLoyalty>>
+      _userLoyaltiesRefsTable(_$AppDatabase db) =>
+          MultiTypedResultKey.fromTable(db.userLoyalties,
+              aliasName:
+                  $_aliasNameGenerator(db.users.id, db.userLoyalties.userId));
+
+  $$UserLoyaltiesTableProcessedTableManager get userLoyaltiesRefs {
+    final manager = $$UserLoyaltiesTableTableManager($_db, $_db.userLoyalties)
+        .filter((f) => f.userId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_userLoyaltiesRefsTable($_db));
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: cache));
+  }
 }
 
 class $$UsersTableFilterComposer extends Composer<_$AppDatabase, $UsersTable> {
@@ -5811,6 +5922,27 @@ class $$UsersTableFilterComposer extends Composer<_$AppDatabase, $UsersTable> {
             $$ReviewsTableFilterComposer(
               $db: $db,
               $table: $db.reviews,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return f(composer);
+  }
+
+  Expression<bool> userLoyaltiesRefs(
+      Expression<bool> Function($$UserLoyaltiesTableFilterComposer f) f) {
+    final $$UserLoyaltiesTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $db.userLoyalties,
+        getReferencedColumn: (t) => t.userId,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$UserLoyaltiesTableFilterComposer(
+              $db: $db,
+              $table: $db.userLoyalties,
               $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
               joinBuilder: joinBuilder,
               $removeJoinBuilderFromRootComposer:
@@ -5889,6 +6021,27 @@ class $$UsersTableAnnotationComposer
             ));
     return f(composer);
   }
+
+  Expression<T> userLoyaltiesRefs<T extends Object>(
+      Expression<T> Function($$UserLoyaltiesTableAnnotationComposer a) f) {
+    final $$UserLoyaltiesTableAnnotationComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $db.userLoyalties,
+        getReferencedColumn: (t) => t.userId,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$UserLoyaltiesTableAnnotationComposer(
+              $db: $db,
+              $table: $db.userLoyalties,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return f(composer);
+  }
 }
 
 class $$UsersTableTableManager extends RootTableManager<
@@ -5902,7 +6055,7 @@ class $$UsersTableTableManager extends RootTableManager<
     $$UsersTableUpdateCompanionBuilder,
     (User, $$UsersTableReferences),
     User,
-    PrefetchHooks Function({bool reviewsRefs})> {
+    PrefetchHooks Function({bool reviewsRefs, bool userLoyaltiesRefs})> {
   $$UsersTableTableManager(_$AppDatabase db, $UsersTable table)
       : super(TableManagerState(
           db: db,
@@ -5949,10 +6102,14 @@ class $$UsersTableTableManager extends RootTableManager<
               .map((e) =>
                   (e.readTable(table), $$UsersTableReferences(db, table, e)))
               .toList(),
-          prefetchHooksCallback: ({reviewsRefs = false}) {
+          prefetchHooksCallback: (
+              {reviewsRefs = false, userLoyaltiesRefs = false}) {
             return PrefetchHooks(
               db: db,
-              explicitlyWatchedTables: [if (reviewsRefs) db.reviews],
+              explicitlyWatchedTables: [
+                if (reviewsRefs) db.reviews,
+                if (userLoyaltiesRefs) db.userLoyalties
+              ],
               addJoins: null,
               getPrefetchedDataCallback: (items) async {
                 return [
@@ -5963,6 +6120,18 @@ class $$UsersTableTableManager extends RootTableManager<
                             $$UsersTableReferences._reviewsRefsTable(db),
                         managerFromTypedResult: (p0) =>
                             $$UsersTableReferences(db, table, p0).reviewsRefs,
+                        referencedItemsForCurrentItem: (item,
+                                referencedItems) =>
+                            referencedItems.where((e) => e.userId == item.id),
+                        typedResults: items),
+                  if (userLoyaltiesRefs)
+                    await $_getPrefetchedData<User, $UsersTable, UserLoyalty>(
+                        currentTable: table,
+                        referencedTable:
+                            $$UsersTableReferences._userLoyaltiesRefsTable(db),
+                        managerFromTypedResult: (p0) =>
+                            $$UsersTableReferences(db, table, p0)
+                                .userLoyaltiesRefs,
                         referencedItemsForCurrentItem: (item,
                                 referencedItems) =>
                             referencedItems.where((e) => e.userId == item.id),
@@ -5985,7 +6154,7 @@ typedef $$UsersTableProcessedTableManager = ProcessedTableManager<
     $$UsersTableUpdateCompanionBuilder,
     (User, $$UsersTableReferences),
     User,
-    PrefetchHooks Function({bool reviewsRefs})>;
+    PrefetchHooks Function({bool reviewsRefs, bool userLoyaltiesRefs})>;
 typedef $$OrdersTableCreateCompanionBuilder = OrdersCompanion Function({
   Value<int> id,
   required String userId,
@@ -9081,15 +9250,37 @@ typedef $$LoyaltySettingsTableProcessedTableManager = ProcessedTableManager<
 typedef $$UserLoyaltiesTableCreateCompanionBuilder = UserLoyaltiesCompanion
     Function({
   required String userId,
+  Value<int> points,
   Value<int> pizzaCount,
   Value<int> rowid,
 });
 typedef $$UserLoyaltiesTableUpdateCompanionBuilder = UserLoyaltiesCompanion
     Function({
   Value<String> userId,
+  Value<int> points,
   Value<int> pizzaCount,
   Value<int> rowid,
 });
+
+final class $$UserLoyaltiesTableReferences
+    extends BaseReferences<_$AppDatabase, $UserLoyaltiesTable, UserLoyalty> {
+  $$UserLoyaltiesTableReferences(
+      super.$_db, super.$_table, super.$_typedResult);
+
+  static $UsersTable _userIdTable(_$AppDatabase db) => db.users
+      .createAlias($_aliasNameGenerator(db.userLoyalties.userId, db.users.id));
+
+  $$UsersTableProcessedTableManager get userId {
+    final $_column = $_itemColumn<String>('user_id')!;
+
+    final manager = $$UsersTableTableManager($_db, $_db.users)
+        .filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_userIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: [item]));
+  }
+}
 
 class $$UserLoyaltiesTableFilterComposer
     extends Composer<_$AppDatabase, $UserLoyaltiesTable> {
@@ -9100,11 +9291,31 @@ class $$UserLoyaltiesTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<String> get userId => $composableBuilder(
-      column: $table.userId, builder: (column) => ColumnFilters(column));
+  ColumnFilters<int> get points => $composableBuilder(
+      column: $table.points, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<int> get pizzaCount => $composableBuilder(
       column: $table.pizzaCount, builder: (column) => ColumnFilters(column));
+
+  $$UsersTableFilterComposer get userId {
+    final $$UsersTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.userId,
+        referencedTable: $db.users,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$UsersTableFilterComposer(
+              $db: $db,
+              $table: $db.users,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
 }
 
 class $$UserLoyaltiesTableOrderingComposer
@@ -9116,11 +9327,31 @@ class $$UserLoyaltiesTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<String> get userId => $composableBuilder(
-      column: $table.userId, builder: (column) => ColumnOrderings(column));
+  ColumnOrderings<int> get points => $composableBuilder(
+      column: $table.points, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<int> get pizzaCount => $composableBuilder(
       column: $table.pizzaCount, builder: (column) => ColumnOrderings(column));
+
+  $$UsersTableOrderingComposer get userId {
+    final $$UsersTableOrderingComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.userId,
+        referencedTable: $db.users,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$UsersTableOrderingComposer(
+              $db: $db,
+              $table: $db.users,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
 }
 
 class $$UserLoyaltiesTableAnnotationComposer
@@ -9132,11 +9363,31 @@ class $$UserLoyaltiesTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<String> get userId =>
-      $composableBuilder(column: $table.userId, builder: (column) => column);
+  GeneratedColumn<int> get points =>
+      $composableBuilder(column: $table.points, builder: (column) => column);
 
   GeneratedColumn<int> get pizzaCount => $composableBuilder(
       column: $table.pizzaCount, builder: (column) => column);
+
+  $$UsersTableAnnotationComposer get userId {
+    final $$UsersTableAnnotationComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.userId,
+        referencedTable: $db.users,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$UsersTableAnnotationComposer(
+              $db: $db,
+              $table: $db.users,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
 }
 
 class $$UserLoyaltiesTableTableManager extends RootTableManager<
@@ -9148,12 +9399,9 @@ class $$UserLoyaltiesTableTableManager extends RootTableManager<
     $$UserLoyaltiesTableAnnotationComposer,
     $$UserLoyaltiesTableCreateCompanionBuilder,
     $$UserLoyaltiesTableUpdateCompanionBuilder,
-    (
-      UserLoyalty,
-      BaseReferences<_$AppDatabase, $UserLoyaltiesTable, UserLoyalty>
-    ),
+    (UserLoyalty, $$UserLoyaltiesTableReferences),
     UserLoyalty,
-    PrefetchHooks Function()> {
+    PrefetchHooks Function({bool userId})> {
   $$UserLoyaltiesTableTableManager(_$AppDatabase db, $UserLoyaltiesTable table)
       : super(TableManagerState(
           db: db,
@@ -9166,28 +9414,69 @@ class $$UserLoyaltiesTableTableManager extends RootTableManager<
               $$UserLoyaltiesTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback: ({
             Value<String> userId = const Value.absent(),
+            Value<int> points = const Value.absent(),
             Value<int> pizzaCount = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               UserLoyaltiesCompanion(
             userId: userId,
+            points: points,
             pizzaCount: pizzaCount,
             rowid: rowid,
           ),
           createCompanionCallback: ({
             required String userId,
+            Value<int> points = const Value.absent(),
             Value<int> pizzaCount = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               UserLoyaltiesCompanion.insert(
             userId: userId,
+            points: points,
             pizzaCount: pizzaCount,
             rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map((e) => (
+                    e.readTable(table),
+                    $$UserLoyaltiesTableReferences(db, table, e)
+                  ))
               .toList(),
-          prefetchHooksCallback: null,
+          prefetchHooksCallback: ({userId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                  T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic>>(state) {
+                if (userId) {
+                  state = state.withJoin(
+                    currentTable: table,
+                    currentColumn: table.userId,
+                    referencedTable:
+                        $$UserLoyaltiesTableReferences._userIdTable(db),
+                    referencedColumn:
+                        $$UserLoyaltiesTableReferences._userIdTable(db).id,
+                  ) as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
         ));
 }
 
@@ -9200,12 +9489,9 @@ typedef $$UserLoyaltiesTableProcessedTableManager = ProcessedTableManager<
     $$UserLoyaltiesTableAnnotationComposer,
     $$UserLoyaltiesTableCreateCompanionBuilder,
     $$UserLoyaltiesTableUpdateCompanionBuilder,
-    (
-      UserLoyalty,
-      BaseReferences<_$AppDatabase, $UserLoyaltiesTable, UserLoyalty>
-    ),
+    (UserLoyalty, $$UserLoyaltiesTableReferences),
     UserLoyalty,
-    PrefetchHooks Function()>;
+    PrefetchHooks Function({bool userId})>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -9239,4 +9525,8 @@ class $AppDatabaseManager {
       $$LoyaltySettingsTableTableManager(_db, _db.loyaltySettings);
   $$UserLoyaltiesTableTableManager get userLoyalties =>
       $$UserLoyaltiesTableTableManager(_db, _db.userLoyalties);
+}
+
+mixin _$ProductDaoMixin on DatabaseAccessor<AppDatabase> {
+  $ProductsTable get products => attachedDatabase.products;
 }

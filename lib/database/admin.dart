@@ -1,4 +1,4 @@
-import 'package:drift/drift.dart';
+part of 'app_database.dart';
 
 // La table 'admins' liste les utilisateurs ayant des droits d'administration.
 // La clé primaire est l'UUID de l'utilisateur dans Supabase Auth.

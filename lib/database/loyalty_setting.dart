@@ -1,4 +1,4 @@
-import 'package:drift/drift.dart';
+part of 'app_database.dart';
 
 // Définition de la table pour les paramètres de fidélité
 @DataClassName('LoyaltySetting')
@@ -11,4 +11,15 @@ class LoyaltySettings extends Table {
 
   @override
   Set<Column> get primaryKey => {id};
+}
+
+// ✅ AJOUTÉ: Table UserLoyalties avec la colonne manquante
+@DataClassName('UserLoyalty')
+class UserLoyalties extends Table {
+  TextColumn get userId => text().references(Users, #id)();
+  IntColumn get points => integer().withDefault(const Constant(0))();
+  IntColumn get pizzaCount => integer().named('pizza_count').withDefault(const Constant(0))();
+
+  @override
+  Set<Column> get primaryKey => {userId};
 }

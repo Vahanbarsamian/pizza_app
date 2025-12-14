@@ -1,15 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
-import '../database/app_database.dart';
-import 'admin_edit_product_screen.dart'; 
+import 'admin_products_tab.dart'; // ✅ AJOUTÉ: Importe le bon widget
 import 'admin_options_tab.dart';
 
 // Converti en StatefulWidget pour gérer le TabController
 class AdminMenuTab extends StatefulWidget {
-  final Product? productToEdit; 
-
-  const AdminMenuTab({super.key, this.productToEdit});
+  const AdminMenuTab({super.key});
 
   @override
   State<AdminMenuTab> createState() => _AdminMenuTabState();
@@ -43,10 +39,12 @@ class _AdminMenuTabState extends State<AdminMenuTab> with SingleTickerProviderSt
         ),
         Expanded(
           child: TabBarView(
+            // ✅ MODIFIÉ: Désactive le glissement pour éviter les conflits
+            physics: const NeverScrollableScrollPhysics(),
             controller: _tabController,
             children: const [
-              // Onglet 1: Gestion des produits
-              _ProductsListTab(),
+              // ✅ MODIFIÉ: Utilise le widget AdminProductsTab corrigé
+              AdminProductsTab(),
               // Onglet 2: Gestion des ingrédients (votre bibliothèque)
               AdminOptionsTab(),
             ],
@@ -57,47 +55,4 @@ class _AdminMenuTabState extends State<AdminMenuTab> with SingleTickerProviderSt
   }
 }
 
-// Widget séparé pour la liste des produits
-class _ProductsListTab extends StatelessWidget {
-  const _ProductsListTab();
-
-  @override
-  Widget build(BuildContext context) {
-    final db = Provider.of<AppDatabase>(context);
-    return Scaffold(
-      body: StreamBuilder<List<Product>>(
-        stream: db.watchAllProducts(),
-        builder: (context, snapshot) {
-          final products = snapshot.data ?? [];
-          return ListView.builder(
-            itemCount: products.length,
-            itemBuilder: (context, index) {
-              final product = products[index];
-              return ListTile(
-                title: Text(product.name),
-                subtitle: Text('${product.basePrice.toStringAsFixed(2)} €'),
-                trailing: IconButton(
-                  icon: const Icon(Icons.edit, color: Colors.blue),
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => AdminEditProductScreen(product: product)),
-                    );
-                  },
-                ),
-              );
-            },
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const AdminEditProductScreen()),
-          );
-        },
-        label: const Text('Ajouter une Pizza'),
-        icon: const Icon(Icons.add),
-      ),
-    );
-  }
-}
+// ❌ SUPPRIMÉ: Le widget _ProductsListTab interne et incorrect a été supprimé.

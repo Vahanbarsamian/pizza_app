@@ -151,11 +151,15 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
                                 const SizedBox(height: 12),
                                 TextField(controller: _descriptionController, decoration: const InputDecoration(labelText: 'Description', border: OutlineInputBorder()), maxLines: 3),
                                 const SizedBox(height: 20),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                // ✅ MODIFIÉ: Utilisation de Wrap pour la flexibilité
+                                Wrap(
+                                  alignment: WrapAlignment.spaceBetween,
+                                  crossAxisAlignment: WrapCrossAlignment.center,
+                                  runSpacing: 4.0,
                                   children: [
                                     const Text('Nombre max. de suppléments:', style: TextStyle(fontSize: 16)),
                                     Row(
+                                      mainAxisSize: MainAxisSize.min,
                                       children: [
                                         IconButton(
                                           icon: const Icon(Icons.remove_circle_outline),

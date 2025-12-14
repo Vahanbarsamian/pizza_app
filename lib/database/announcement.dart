@@ -1,4 +1,4 @@
-import 'package:drift/drift.dart';
+part of 'app_database.dart';
 
 @DataClassName('Announcement')
 class Announcements extends Table {

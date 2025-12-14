@@ -1,8 +1,4 @@
-import 'package:drift/drift.dart';
-import '../../product.dart';
-import '../app_database.dart';
-
-part 'product_dao.g.dart';
+part of '../app_database.dart';
 
 @DriftAccessor(tables: [Products])
 class ProductDao extends DatabaseAccessor<AppDatabase> with _$ProductDaoMixin {
@@ -19,7 +15,7 @@ class ProductDao extends DatabaseAccessor<AppDatabase> with _$ProductDaoMixin {
   }
 
   Future<double?> getAveragePrice() {
-    final avgPrice = products.price.avg();
+    final avgPrice = products.basePrice.avg(); // Corrected from products.price
     final query = selectOnly(products)..addColumns([avgPrice]);
     return query.map((row) => row.read(avgPrice)).getSingle();
   }
