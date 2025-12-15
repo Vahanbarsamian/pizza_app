@@ -75,6 +75,16 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
       defaultConstraints:
           GeneratedColumn.constraintIsAlways('CHECK ("is_active" IN (0, 1))'),
       defaultValue: const Constant(true));
+  static const VerificationMeta _isDrinkMeta =
+      const VerificationMeta('isDrink');
+  @override
+  late final GeneratedColumn<bool> isDrink = GeneratedColumn<bool>(
+      'is_drink', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_drink" IN (0, 1))'),
+      defaultValue: const Constant(false));
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -93,6 +103,7 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
         discountPercentage,
         maxSupplements,
         isActive,
+        isDrink,
         createdAt
       ];
   @override
@@ -156,6 +167,10 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
       context.handle(_isActiveMeta,
           isActive.isAcceptableOrUnknown(data['is_active']!, _isActiveMeta));
     }
+    if (data.containsKey('is_drink')) {
+      context.handle(_isDrinkMeta,
+          isDrink.isAcceptableOrUnknown(data['is_drink']!, _isDrinkMeta));
+    }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
@@ -191,6 +206,8 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
           .read(DriftSqlType.int, data['${effectivePrefix}max_supplements']),
       isActive: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}is_active'])!,
+      isDrink: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_drink'])!,
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
     );
@@ -213,6 +230,7 @@ class Product extends DataClass implements Insertable<Product> {
   final double discountPercentage;
   final int? maxSupplements;
   final bool isActive;
+  final bool isDrink;
   final DateTime createdAt;
   const Product(
       {required this.id,
@@ -225,6 +243,7 @@ class Product extends DataClass implements Insertable<Product> {
       required this.discountPercentage,
       this.maxSupplements,
       required this.isActive,
+      required this.isDrink,
       required this.createdAt});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -247,6 +266,7 @@ class Product extends DataClass implements Insertable<Product> {
       map['max_supplements'] = Variable<int>(maxSupplements);
     }
     map['is_active'] = Variable<bool>(isActive);
+    map['is_drink'] = Variable<bool>(isDrink);
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
@@ -270,6 +290,7 @@ class Product extends DataClass implements Insertable<Product> {
           ? const Value.absent()
           : Value(maxSupplements),
       isActive: Value(isActive),
+      isDrink: Value(isDrink),
       createdAt: Value(createdAt),
     );
   }
@@ -289,6 +310,7 @@ class Product extends DataClass implements Insertable<Product> {
           serializer.fromJson<double>(json['discountPercentage']),
       maxSupplements: serializer.fromJson<int?>(json['maxSupplements']),
       isActive: serializer.fromJson<bool>(json['isActive']),
+      isDrink: serializer.fromJson<bool>(json['isDrink']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -306,6 +328,7 @@ class Product extends DataClass implements Insertable<Product> {
       'discountPercentage': serializer.toJson<double>(discountPercentage),
       'maxSupplements': serializer.toJson<int?>(maxSupplements),
       'isActive': serializer.toJson<bool>(isActive),
+      'isDrink': serializer.toJson<bool>(isDrink),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -321,6 +344,7 @@ class Product extends DataClass implements Insertable<Product> {
           double? discountPercentage,
           Value<int?> maxSupplements = const Value.absent(),
           bool? isActive,
+          bool? isDrink,
           DateTime? createdAt}) =>
       Product(
         id: id ?? this.id,
@@ -334,6 +358,7 @@ class Product extends DataClass implements Insertable<Product> {
         maxSupplements:
             maxSupplements.present ? maxSupplements.value : this.maxSupplements,
         isActive: isActive ?? this.isActive,
+        isDrink: isDrink ?? this.isDrink,
         createdAt: createdAt ?? this.createdAt,
       );
   Product copyWithCompanion(ProductsCompanion data) {
@@ -355,6 +380,7 @@ class Product extends DataClass implements Insertable<Product> {
           ? data.maxSupplements.value
           : this.maxSupplements,
       isActive: data.isActive.present ? data.isActive.value : this.isActive,
+      isDrink: data.isDrink.present ? data.isDrink.value : this.isDrink,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -372,6 +398,7 @@ class Product extends DataClass implements Insertable<Product> {
           ..write('discountPercentage: $discountPercentage, ')
           ..write('maxSupplements: $maxSupplements, ')
           ..write('isActive: $isActive, ')
+          ..write('isDrink: $isDrink, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -389,6 +416,7 @@ class Product extends DataClass implements Insertable<Product> {
       discountPercentage,
       maxSupplements,
       isActive,
+      isDrink,
       createdAt);
   @override
   bool operator ==(Object other) =>
@@ -404,6 +432,7 @@ class Product extends DataClass implements Insertable<Product> {
           other.discountPercentage == this.discountPercentage &&
           other.maxSupplements == this.maxSupplements &&
           other.isActive == this.isActive &&
+          other.isDrink == this.isDrink &&
           other.createdAt == this.createdAt);
 }
 
@@ -418,6 +447,7 @@ class ProductsCompanion extends UpdateCompanion<Product> {
   final Value<double> discountPercentage;
   final Value<int?> maxSupplements;
   final Value<bool> isActive;
+  final Value<bool> isDrink;
   final Value<DateTime> createdAt;
   const ProductsCompanion({
     this.id = const Value.absent(),
@@ -430,6 +460,7 @@ class ProductsCompanion extends UpdateCompanion<Product> {
     this.discountPercentage = const Value.absent(),
     this.maxSupplements = const Value.absent(),
     this.isActive = const Value.absent(),
+    this.isDrink = const Value.absent(),
     this.createdAt = const Value.absent(),
   });
   ProductsCompanion.insert({
@@ -443,6 +474,7 @@ class ProductsCompanion extends UpdateCompanion<Product> {
     this.discountPercentage = const Value.absent(),
     this.maxSupplements = const Value.absent(),
     this.isActive = const Value.absent(),
+    this.isDrink = const Value.absent(),
     required DateTime createdAt,
   })  : name = Value(name),
         basePrice = Value(basePrice),
@@ -458,6 +490,7 @@ class ProductsCompanion extends UpdateCompanion<Product> {
     Expression<double>? discountPercentage,
     Expression<int>? maxSupplements,
     Expression<bool>? isActive,
+    Expression<bool>? isDrink,
     Expression<DateTime>? createdAt,
   }) {
     return RawValuesInsertable({
@@ -471,6 +504,7 @@ class ProductsCompanion extends UpdateCompanion<Product> {
       if (discountPercentage != null) 'discount_percentage': discountPercentage,
       if (maxSupplements != null) 'max_supplements': maxSupplements,
       if (isActive != null) 'is_active': isActive,
+      if (isDrink != null) 'is_drink': isDrink,
       if (createdAt != null) 'created_at': createdAt,
     });
   }
@@ -486,6 +520,7 @@ class ProductsCompanion extends UpdateCompanion<Product> {
       Value<double>? discountPercentage,
       Value<int?>? maxSupplements,
       Value<bool>? isActive,
+      Value<bool>? isDrink,
       Value<DateTime>? createdAt}) {
     return ProductsCompanion(
       id: id ?? this.id,
@@ -498,6 +533,7 @@ class ProductsCompanion extends UpdateCompanion<Product> {
       discountPercentage: discountPercentage ?? this.discountPercentage,
       maxSupplements: maxSupplements ?? this.maxSupplements,
       isActive: isActive ?? this.isActive,
+      isDrink: isDrink ?? this.isDrink,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -535,6 +571,9 @@ class ProductsCompanion extends UpdateCompanion<Product> {
     if (isActive.present) {
       map['is_active'] = Variable<bool>(isActive.value);
     }
+    if (isDrink.present) {
+      map['is_drink'] = Variable<bool>(isDrink.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -554,6 +593,7 @@ class ProductsCompanion extends UpdateCompanion<Product> {
           ..write('discountPercentage: $discountPercentage, ')
           ..write('maxSupplements: $maxSupplements, ')
           ..write('isActive: $isActive, ')
+          ..write('isDrink: $isDrink, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -5495,6 +5535,7 @@ typedef $$ProductsTableCreateCompanionBuilder = ProductsCompanion Function({
   Value<double> discountPercentage,
   Value<int?> maxSupplements,
   Value<bool> isActive,
+  Value<bool> isDrink,
   required DateTime createdAt,
 });
 typedef $$ProductsTableUpdateCompanionBuilder = ProductsCompanion Function({
@@ -5508,6 +5549,7 @@ typedef $$ProductsTableUpdateCompanionBuilder = ProductsCompanion Function({
   Value<double> discountPercentage,
   Value<int?> maxSupplements,
   Value<bool> isActive,
+  Value<bool> isDrink,
   Value<DateTime> createdAt,
 });
 
@@ -5576,6 +5618,9 @@ class $$ProductsTableFilterComposer
 
   ColumnFilters<bool> get isActive => $composableBuilder(
       column: $table.isActive, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isDrink => $composableBuilder(
+      column: $table.isDrink, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnFilters(column));
@@ -5646,6 +5691,9 @@ class $$ProductsTableOrderingComposer
   ColumnOrderings<bool> get isActive => $composableBuilder(
       column: $table.isActive, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<bool> get isDrink => $composableBuilder(
+      column: $table.isDrink, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnOrderings(column));
 }
@@ -5688,6 +5736,9 @@ class $$ProductsTableAnnotationComposer
 
   GeneratedColumn<bool> get isActive =>
       $composableBuilder(column: $table.isActive, builder: (column) => column);
+
+  GeneratedColumn<bool> get isDrink =>
+      $composableBuilder(column: $table.isDrink, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -5749,6 +5800,7 @@ class $$ProductsTableTableManager extends RootTableManager<
             Value<double> discountPercentage = const Value.absent(),
             Value<int?> maxSupplements = const Value.absent(),
             Value<bool> isActive = const Value.absent(),
+            Value<bool> isDrink = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
           }) =>
               ProductsCompanion(
@@ -5762,6 +5814,7 @@ class $$ProductsTableTableManager extends RootTableManager<
             discountPercentage: discountPercentage,
             maxSupplements: maxSupplements,
             isActive: isActive,
+            isDrink: isDrink,
             createdAt: createdAt,
           ),
           createCompanionCallback: ({
@@ -5775,6 +5828,7 @@ class $$ProductsTableTableManager extends RootTableManager<
             Value<double> discountPercentage = const Value.absent(),
             Value<int?> maxSupplements = const Value.absent(),
             Value<bool> isActive = const Value.absent(),
+            Value<bool> isDrink = const Value.absent(),
             required DateTime createdAt,
           }) =>
               ProductsCompanion.insert(
@@ -5788,6 +5842,7 @@ class $$ProductsTableTableManager extends RootTableManager<
             discountPercentage: discountPercentage,
             maxSupplements: maxSupplements,
             isActive: isActive,
+            isDrink: isDrink,
             createdAt: createdAt,
           ),
           withReferenceMapper: (p0) => p0

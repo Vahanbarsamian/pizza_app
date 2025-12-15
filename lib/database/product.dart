@@ -12,6 +12,8 @@ class Products extends Table {
   RealColumn get discountPercentage => real().named('discount_percentage').withDefault(const Constant(0.0))();
   IntColumn get maxSupplements => integer().named('max_supplements').nullable()();
   BoolColumn get isActive => boolean().named('is_active').withDefault(const Constant(true))();
+  // ✅ AJOUT: Colonne pour identifier les boissons
+  BoolColumn get isDrink => boolean().named('is_drink').withDefault(const Constant(false))();
   DateTimeColumn get createdAt => dateTime().named('created_at')();
 
   @override

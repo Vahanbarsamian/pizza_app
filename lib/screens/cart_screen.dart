@@ -7,7 +7,7 @@ import '../services/order_service.dart';
 import '../services/auth_service.dart';
 import '../services/sync_service.dart';
 import 'login_screen.dart';
-import 'checkout_screen.dart'; // ✅ AJOUTÉ: Import du nouvel écran
+import 'checkout_screen.dart';
 
 String formatPrice(double price) {
   return '${price.toStringAsFixed(2)} € TTC';
@@ -24,7 +24,17 @@ class _CartScreenState extends State<CartScreen> {
   bool _isCheckingOut = false;
 
   Widget? _buildOptionsSubtitle(BuildContext context, CartItem item) {
-    // ... (code inchangé)
+    final options = <String>[];
+    if (item.selectedIngredients.isNotEmpty) {
+      options.add(item.selectedIngredients.map((i) => '+ ${i.name}').join(', '));
+    }
+    if (item.removedIngredients.isNotEmpty) {
+      options.add(item.removedIngredients.map((i) => '(sans ${i.name})').join(', '));
+    }
+
+    if (options.isEmpty) return null;
+
+    return Text(options.join(', '), style: const TextStyle(color: Colors.grey));
   }
 
   Future<void> _checkout(BuildContext context) async {
@@ -43,12 +53,10 @@ class _CartScreenState extends State<CartScreen> {
         return;
       }
 
-      // ✅ MODIFIÉ: Remplace showDialog par une navigation vers le nouvel écran
       final orderDetails = await Navigator.of(context).push<Map<String, String>>(
         MaterialPageRoute(builder: (_) => const CheckoutScreen()),
       );
 
-      // Si l'utilisateur a annulé depuis l'écran de checkout
       if (orderDetails == null) {
           setState(() => _isCheckingOut = false);
           return;
@@ -58,13 +66,17 @@ class _CartScreenState extends State<CartScreen> {
       final pickupTime = orderDetails['time']!;
       final paymentMethod = orderDetails['payment']!;
 
+      // ✅ CORRIGÉ: Appel mis à jour sans le service de fidélité
       await orderService.createOrderFromCart(cart, user.id, referenceName, pickupTime, paymentMethod);
-      await syncService.syncAll();
+      
+      // La synchronisation est cruciale pour que le client voie sa commande et ses points à jour
+      await syncService.syncAll(); 
+      
       cart.clearCart();
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('✅ Commande pour $referenceName à $pickupTime enregistrée !'), backgroundColor: Colors.green));
-        Navigator.of(context).popUntil((route) => route.isFirst); // Retourne à l'écran principal
+        Navigator.of(context).popUntil((route) => route.isFirst);
       }
     } catch (e) {
       if (context.mounted) {

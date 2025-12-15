@@ -5,6 +5,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:rxdart/rxdart.dart';
 
+import 'initial_data.dart'; // ✅ AJOUT: Import des données initiales
+
 part 'product.dart';
 part 'user.dart';
 part 'order.dart';
@@ -43,16 +45,27 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 31;
+  int get schemaVersion => 32;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-        onCreate: (m) => m.createAll(),
+        onCreate: (m) async {
+          await m.createAll();
+          // ✅ AJOUT: Peuplement de la base de données avec les produits initiaux
+          await batch((batch) {
+            batch.insertAll(products, initialProducts);
+          });
+        },
         onUpgrade: (m, from, to) async {
+          // Simplicité pour le développement: tout supprimer et tout recréer
           for (final table in allTables) {
             await m.deleteTable(table.actualTableName);
           }
           await m.createAll();
+          // ✅ AJOUT: Repeuplement après la mise à jour
+           await batch((batch) {
+            batch.insertAll(products, initialProducts);
+          });
         },
       );
       
@@ -121,10 +134,10 @@ class AppDatabase extends _$AppDatabase {
   Stream<List<Announcement>> watchAllAnnouncementsForAdmin() => (select(announcements)..orderBy([(a) => OrderingTerm(expression: a.createdAt, mode: OrderingMode.desc)])).watch();
   Stream<List<Announcement>> watchAllAnnouncements() => (select(announcements)..where((a) => a.isActive.equals(true))..orderBy([(a) => OrderingTerm(expression: a.createdAt, mode: OrderingMode.desc)])).watch();
   
-  // ✅ AJOUTÉ: Requête pour l'admin qui voit tous les produits
   Stream<List<Product>> watchAllProductsForAdmin() => (select(products)..orderBy([(p) => OrderingTerm(expression: p.createdAt, mode: OrderingMode.desc)])).watch();
-  // Requête pour les clients (ne voit que les produits actifs)
-  Stream<List<Product>> watchAllProducts() => (select(products)..where((p) => p.isActive.equals(true))..orderBy([(p) => OrderingTerm(expression: p.createdAt, mode: OrderingMode.desc)])).watch();
+  Stream<List<Product>> watchAllProducts() => (select(products)..where((p) => p.isActive.equals(true) & p.isDrink.equals(false))..orderBy([(p) => OrderingTerm(expression: p.createdAt, mode: OrderingMode.desc)])).watch();
+  // ✅ AJOUT: Requête pour récupérer uniquement les boissons
+  Stream<List<Product>> watchAllDrinks() => (select(products)..where((p) => p.isActive.equals(true) & p.isDrink.equals(true))..orderBy([(p) => OrderingTerm(expression: p.name)])).watch();
   
   Stream<List<Ingredient>> watchAllIngredients() => select(ingredients).watch();
   

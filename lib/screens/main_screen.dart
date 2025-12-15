@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../database/app_database.dart';
 import '../services/auth_service.dart';
 import '../services/cart_service.dart';
-import '../widgets/loyalty_status_widget.dart';
+import '../widgets/drink_suggestion_bottom_sheet.dart'; // ✅ AJOUT
 import 'menu_screen.dart';
 import 'promotions_screen.dart';
 import 'about_us_screen.dart';
@@ -13,6 +13,7 @@ import 'login_screen.dart';
 import 'admin_screen.dart';
 import 'client_area_screen.dart';
 import 'public_reviews_screen.dart';
+import 'drinks_page.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -26,6 +27,7 @@ class _MainScreenState extends State<MainScreen> {
 
   static const List<Widget> _widgetOptions = <Widget>[
     MenuScreen(),
+    DrinksPage(),
     PromotionsScreen(),
     PublicReviewsScreen(),
     AboutUsScreen(),
@@ -33,6 +35,7 @@ class _MainScreenState extends State<MainScreen> {
 
   static const List<String> _appBarTitles = <String>[
     'Menu',
+    'Nos Boissons',
     'Promotions & Annonces',
     'Avis des Clients',
     'À Propos',
@@ -42,6 +45,26 @@ class _MainScreenState extends State<MainScreen> {
     setState(() {
       _selectedIndex = index;
     });
+  }
+
+  // ✅ CORRIGÉ: Logique de suggestion de boissons
+  void _handleCartPressed(BuildContext context) async {
+    final cartService = context.read<CartService>();
+    final navigator = Navigator.of(context);
+
+    // ✅ CORRIGÉ: Utilise .values.any sur la map
+    final bool shouldSuggestDrinks = cartService.items.isEmpty || !cartService.items.values.any((item) => item.product.isDrink);
+
+    if (shouldSuggestDrinks) {
+      await showModalBottomSheet(
+        context: context,
+        builder: (ctx) => const DrinkSuggestionBottomSheet(),
+        isScrollControlled: true,
+      );
+      navigator.push(MaterialPageRoute(builder: (context) => const CartScreen()));
+    } else {
+      navigator.push(MaterialPageRoute(builder: (context) => const CartScreen()));
+    }
   }
 
   @override
@@ -79,7 +102,7 @@ class _MainScreenState extends State<MainScreen> {
             largeSize: 18,
             child: IconButton(
               icon: const Icon(Icons.shopping_cart),
-              onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (context) => const CartScreen())),
+              onPressed: () => _handleCartPressed(context),
             ),
           ),
           if (authService.currentUser != null && !authService.isAdmin)
@@ -124,8 +147,9 @@ class _MainScreenState extends State<MainScreen> {
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(icon: Icon(Icons.local_pizza), label: 'Menu'),
-          BottomNavigationBarItem(icon: Icon(Icons.campaign), label: 'Promotions/Annonces'),
+          BottomNavigationBarItem(icon: Icon(Icons.local_pizza), label: 'Pizzas'),
+          BottomNavigationBarItem(icon: Icon(Icons.local_bar), label: 'Boissons'),
+          BottomNavigationBarItem(icon: Icon(Icons.campaign), label: 'Promos'),
           BottomNavigationBarItem(icon: Icon(Icons.rate_review), label: 'Avis'),
           BottomNavigationBarItem(icon: Icon(Icons.info_outline), label: 'Info'),
         ],

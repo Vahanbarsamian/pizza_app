@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../database/app_database.dart';
 import '../services/admin_service.dart';
+import '../services/storage_service.dart';
 import '../services/sync_service.dart';
 
 class AdminEditProductScreen extends StatefulWidget {
@@ -19,8 +21,10 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
   final _priceController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _discountController = TextEditingController();
+  final _imageController = TextEditingController();
 
   late bool _isEditing;
+  bool _isDrink = false; // ✅ AJOUT
   List<int> _baseIngredientIds = [];
   List<int> _supplementIngredientIds = [];
   bool _isLoading = false;
@@ -36,7 +40,9 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
       _priceController.text = product.basePrice.toString();
       _descriptionController.text = product.description ?? '';
       _discountController.text = (product.discountPercentage * 100).toStringAsFixed(0);
+      _imageController.text = product.image ?? '';
       _maxSupplementsValue = product.maxSupplements ?? 4;
+      _isDrink = product.isDrink; // ✅ AJOUT
 
       final db = Provider.of<AppDatabase>(context, listen: false);
       final query = db.select(db.productIngredientLinks)..where((link) => link.productId.equals(product.id));
@@ -57,7 +63,34 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
     _priceController.dispose();
     _descriptionController.dispose();
     _discountController.dispose();
+    _imageController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickAndUploadImage() async {
+    final storageService = context.read<StorageService>();
+    final imagePicker = ImagePicker();
+
+    final XFile? image = await imagePicker.pickImage(source: ImageSource.gallery);
+
+    if (image == null) return;
+
+    setState(() => _isLoading = true);
+    try {
+      final imageUrl = await storageService.uploadProductImage(image);
+      setState(() {
+        _imageController.text = imageUrl;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur lors de l\'envoi de l\'image: $e')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   Future<void> _save() async {
@@ -71,8 +104,10 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
         name: _nameController.text,
         price: double.tryParse(_priceController.text) ?? 0.0,
         description: _descriptionController.text,
+        image: _imageController.text,
         discountPercentage: (double.tryParse(_discountController.text) ?? 0.0) / 100,
         maxSupplements: _maxSupplementsValue,
+        isDrink: _isDrink, // ✅ AJOUT
       );
       final savedProductId = savedProductData['id'] as int;
 
@@ -119,7 +154,7 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
     final db = Provider.of<AppDatabase>(context);
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEditing ? 'Modifier la Pizza' : 'Nouvelle Pizza'),
+        title: Text(_isEditing ? 'Modifier le Produit' : 'Nouveau Produit'),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -137,12 +172,23 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          _CardHeader(title: 'Informations de la Pizza', icon: Icons.info_outline),
+                          _CardHeader(title: 'Informations du Produit', icon: Icons.info_outline),
                           Padding(
                             padding: const EdgeInsets.all(16.0),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+                                // ✅ AJOUT: Interrupteur pour les boissons
+                                SwitchListTile(
+                                  title: const Text('Ce produit est une boisson'),
+                                  value: _isDrink,
+                                  onChanged: (bool value) {
+                                    setState(() {
+                                      _isDrink = value;
+                                    });
+                                  },
+                                ),
+                                const SizedBox(height: 12),
                                 TextField(controller: _nameController, decoration: const InputDecoration(labelText: 'Nom', border: OutlineInputBorder())),
                                 const SizedBox(height: 12),
                                 TextField(controller: _priceController, decoration: const InputDecoration(labelText: 'Prix (€)', border: OutlineInputBorder()), keyboardType: TextInputType.number),
@@ -150,36 +196,48 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
                                 TextField(controller: _discountController, decoration: const InputDecoration(labelText: 'Réduction (%)', border: OutlineInputBorder()), keyboardType: TextInputType.number),
                                 const SizedBox(height: 12),
                                 TextField(controller: _descriptionController, decoration: const InputDecoration(labelText: 'Description', border: OutlineInputBorder()), maxLines: 3),
-                                const SizedBox(height: 20),
-                                // ✅ MODIFIÉ: Utilisation de Wrap pour la flexibilité
-                                Wrap(
-                                  alignment: WrapAlignment.spaceBetween,
-                                  crossAxisAlignment: WrapCrossAlignment.center,
-                                  runSpacing: 4.0,
-                                  children: [
-                                    const Text('Nombre max. de suppléments:', style: TextStyle(fontSize: 16)),
-                                    Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        IconButton(
-                                          icon: const Icon(Icons.remove_circle_outline),
-                                          onPressed: () {
-                                            if (_maxSupplementsValue > 0) {
-                                              setState(() => _maxSupplementsValue--);
-                                            }
-                                          },
-                                        ),
-                                        Text(_maxSupplementsValue.toString(), style: Theme.of(context).textTheme.titleLarge),
-                                        IconButton(
-                                          icon: const Icon(Icons.add_circle_outline),
-                                          onPressed: () {
-                                            setState(() => _maxSupplementsValue++);
-                                          },
-                                        ),
-                                      ],
-                                    ),
-                                  ],
+                                const SizedBox(height: 12),
+                                TextField(controller: _imageController, decoration: const InputDecoration(labelText: 'URL de l\'image', border: OutlineInputBorder())),
+                                const SizedBox(height: 8),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton.icon(
+                                    onPressed: _pickAndUploadImage,
+                                    icon: const Icon(Icons.upload_file),
+                                    label: const Text('Choisir une image'),
+                                  ),
                                 ),
+                                if (!_isDrink) ...[
+                                  const SizedBox(height: 20),
+                                  Wrap(
+                                    alignment: WrapAlignment.spaceBetween,
+                                    crossAxisAlignment: WrapCrossAlignment.center,
+                                    runSpacing: 4.0,
+                                    children: [
+                                      const Text('Nombre max. de suppléments:', style: TextStyle(fontSize: 16)),
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          IconButton(
+                                            icon: const Icon(Icons.remove_circle_outline),
+                                            onPressed: () {
+                                              if (_maxSupplementsValue > 0) {
+                                                setState(() => _maxSupplementsValue--);
+                                              }
+                                            },
+                                          ),
+                                          Text(_maxSupplementsValue.toString(), style: Theme.of(context).textTheme.titleLarge),
+                                          IconButton(
+                                            icon: const Icon(Icons.add_circle_outline),
+                                            onPressed: () {
+                                              setState(() => _maxSupplementsValue++);
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ],
                             ),
                           ),
@@ -187,12 +245,15 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
                       ),
                     ),
                   ),
-                  const Divider(height: 16, indent: 16, endIndent: 16),
-                  _ListHeader(title: 'Ingrédients de Base', icon: Icons.kitchen),
-                  _buildIngredientsList(db, isBaseIngredients: true),
-                  const Divider(height: 16, indent: 16, endIndent: 16),
-                  _ListHeader(title: 'Suppléments autorisés', icon: Icons.add_shopping_cart),
-                  _buildIngredientsList(db, isBaseIngredients: false),
+                  // ✅ AJOUT: Masque les sections d'ingrédients pour les boissons
+                  if (!_isDrink) ...[
+                    const Divider(height: 16, indent: 16, endIndent: 16),
+                    _ListHeader(title: 'Ingrédients de Base', icon: Icons.kitchen),
+                    _buildIngredientsList(db, isBaseIngredients: true),
+                    const Divider(height: 16, indent: 16, endIndent: 16),
+                    _ListHeader(title: 'Suppléments autorisés', icon: Icons.add_shopping_cart),
+                    _buildIngredientsList(db, isBaseIngredients: false),
+                  ],
                 ],
               ),
             ),

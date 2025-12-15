@@ -19,7 +19,6 @@ class AdminService {
     await _supabase.rpc('delete_product_and_dependencies', params: { 'product_id_to_delete': productId });
   }
 
-  // ✅ AJOUTÉ: Méthode pour réactiver un produit
   Future<void> reactivateProduct(int productId) async {
     await _supabase
       .from('products')
@@ -88,20 +87,25 @@ class AdminService {
     await _supabase.from('company_info').update(dataToSave).eq('id', 1);
   }
 
+  // ✅ MODIFIÉ: Ajout de 'isDrink'
   Future<Map<String, dynamic>> saveProduct({
     int? id,
     required String name,
     required double price,
     String? description,
+    String? image,
     double? discountPercentage,
     int? maxSupplements,
+    required bool isDrink,
   }) async {
     final data = {
       'name': name,
       'base_price': price,
       'description': description,
+      'image': image,
       'discount_percentage': discountPercentage,
       'max_supplements': maxSupplements,
+      'is_drink': isDrink,
     };
 
     if (id != null) {

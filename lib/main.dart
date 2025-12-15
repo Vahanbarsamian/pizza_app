@@ -13,7 +13,8 @@ import 'services/order_service.dart';
 import 'services/review_service.dart';
 import 'services/public_review_service.dart';
 import 'services/preferences_service.dart';
-import 'services/loyalty_service.dart'; 
+import 'services/loyalty_service.dart';
+import 'services/storage_service.dart'; // ✅ AJOUT
 
 import 'screens/pizza_splash_screen.dart';
 
@@ -43,6 +44,7 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         Provider<AppDatabase>.value(value: database),
+        Provider(create: (_) => StorageService()), // ✅ AJOUT
         ChangeNotifierProvider(create: (_) => AuthService()),
         ChangeNotifierProvider(create: (_) => PreferencesService()),
         ChangeNotifierProxyProvider<AppDatabase, CartService>(
@@ -55,16 +57,12 @@ class MyApp extends StatelessWidget {
         ProxyProvider<AppDatabase, AdminService>(
           update: (_, db, __) => AdminService(db: db),
         ),
-        // ✅ MODIFIÉ: LoyaltyService est maintenant avant OrderService
         ProxyProvider<AppDatabase, LoyaltyService>(
           update: (_, db, __) => LoyaltyService(db: db),
         ),
-        // ✅ MODIFIÉ: ProxyProvider qui injecte LoyaltyService dans OrderService
-        ProxyProvider<LoyaltyService, OrderService>(
-          update: (context, loyaltyService, previous) => OrderService(
-            db: context.read<AppDatabase>(),
-            loyaltyService: loyaltyService,
-          ),
+        // ✅ CORRIGÉ: OrderService n'a plus besoin de LoyaltyService
+        ProxyProvider<AppDatabase, OrderService>(
+          update: (context, db, previous) => OrderService(db: db),
         ),
         Provider(create: (_) => ReviewService()),
         ChangeNotifierProxyProvider<AppDatabase, PublicReviewService>(

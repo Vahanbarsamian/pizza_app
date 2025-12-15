@@ -49,6 +49,7 @@ class SyncService {
       final response = await _supabase.from('user_loyalty').select();
       final loyaltyDataToSync = response.map((item) => UserLoyaltiesCompanion(
         userId: Value(item['user_id'] as String),
+        // ✅ CORRECTION FINALE: Lecture de la colonne 'pizza_count' depuis Supabase
         pizzaCount: Value(item['pizza_count'] as int? ?? 0),
       )).toList();
       await db.transaction(() async {
@@ -125,17 +126,8 @@ class SyncService {
   }
 
   Future<void> _syncProducts() async {
-    print('ℹ️ [SyncService] Début de la synchronisation des produits.');
     try {
       final response = await _supabase.from('products').select();
-      print('ℹ️ [SyncService] ${response.length} produits reçus de Supabase.');
-
-      if (response.isEmpty) {
-          print('⚠️ [SyncService] Aucune produit à synchroniser.');
-          await db.delete(db.products).go(); // Vide la table locale si Supabase est vide
-          return;
-      }
-
       final productsToSync = response.map((item) {
         return ProductsCompanion(
           id: Value(item['id'] as int),
@@ -147,8 +139,8 @@ class SyncService {
           hasGlobalDiscount: Value(item['has_global_discount'] as bool? ?? false),
           discountPercentage: Value((item['discount_percentage'] as num? ?? 0).toDouble()),
           maxSupplements: Value(item['max_supplements'] as int?),
-          // ✅ AJOUTÉ: Synchronisation du statut is_active
           isActive: Value(item['is_active'] as bool? ?? true),
+          isDrink: Value(item['is_drink'] as bool? ?? false),
           createdAt: Value(DateTime.parse(item['created_at'] as String? ?? '2023-01-01T00:00:00Z')),
         );
       }).toList();
@@ -157,9 +149,8 @@ class SyncService {
         await db.delete(db.products).go();
         await db.batch((batch) => batch.insertAll(db.products, productsToSync));
       });
-      print('✅ [SyncService] ${productsToSync.length} produits synchronisés avec succès dans la DB locale.');
     } catch (e) {
-      print('❌ [SyncService] Erreur de synchronisation (Products): $e');
+      print('❌ Erreur de synchronisation (Products): $e');
     }
   }
 
