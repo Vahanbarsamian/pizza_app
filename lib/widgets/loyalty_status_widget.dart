@@ -19,7 +19,7 @@ class LoyaltyStatusWidget extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    return StreamBuilder<LoyaltySetting?>(
+    return StreamBuilder<LoyaltySetting?>( 
       stream: loyaltyService.watchLoyaltySettings(),
       builder: (context, settingsSnapshot) {
         final settings = settingsSnapshot.data;
@@ -32,23 +32,32 @@ class LoyaltyStatusWidget extends StatelessWidget {
           stream: loyaltyService.watchUserLoyalty(currentUser.id),
           builder: (context, loyaltySnapshot) {
             final userLoyalty = loyaltySnapshot.data;
-            final pizzaCount = userLoyalty?.pizzaCount ?? 0;
+            // ✅ CORRIGÉ: Utilisation de 'pizzaCount' au lieu de 'points'
+            final points = userLoyalty?.pizzaCount ?? 0;
             final threshold = settings.threshold;
 
-            final pizzasRemaining = threshold - pizzaCount;
+            // Si l'utilisateur a atteint ou dépassé le seuil
+            if (points >= threshold) {
+              // ✅ MODIFIÉ: Logique d'affichage améliorée pour la récompense
+              final extraPoints = points - threshold;
+              String subtitleText = 'Utilisez votre récompense sur la prochaine commande !';
+              if (extraPoints > 0) {
+                subtitleText += ' Vous avez déjà $extraPoints point(s) pour la suivante.';
+              }
 
-            if (pizzasRemaining <= 0) {
               return Card(
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 color: Colors.green.shade600,
-                child: const ListTile(
-                  leading: Icon(Icons.star, color: Colors.white, size: 32),
-                  title: Text('Félicitations !', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
-                  subtitle: Text('Vous avez une récompense disponible !', style: TextStyle(color: Colors.white70)),
+                child: ListTile(
+                  leading: const Icon(Icons.star, color: Colors.white, size: 32),
+                  title: const Text('Félicitations, récompense disponible !', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
+                  subtitle: Text(subtitleText, style: const TextStyle(color: Colors.white70)),
                 ),
               );
             }
 
+            // Affichage normal du compteur de progression
+            final pointsRemaining = threshold - points;
             return Card(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Padding(
@@ -62,7 +71,7 @@ class LoyaltyStatusWidget extends StatelessWidget {
                         children: [
                           PieChart(
                             PieChartData(
-                              sections: _buildPizzaSlices(pizzaCount, threshold),
+                              sections: _buildPizzaSlices(points, threshold),
                               startDegreeOffset: -90,
                               centerSpaceRadius: 25,
                               sectionsSpace: 2,
@@ -70,7 +79,7 @@ class LoyaltyStatusWidget extends StatelessWidget {
                           ),
                           Center(
                             child: Text(
-                              '$pizzaCount/$threshold',
+                              '$points/$threshold',
                               style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                             ),
                           ),
@@ -85,14 +94,14 @@ class LoyaltyStatusWidget extends StatelessWidget {
                           Text('Votre fidélité', style: Theme.of(context).textTheme.titleLarge),
                           const SizedBox(height: 4),
                           Text(
-                            'Plus que $pizzasRemaining pizzas avant votre prochaine récompense.',
+                            'Plus que $pointsRemaining pizzas avant votre prochaine récompense.',
                             style: Theme.of(context).textTheme.bodyMedium,
                           ),
                         ],
                       ),
                     ),
                   ],
-                ),
+                ), 
               ),
             );
           },
@@ -109,7 +118,7 @@ class LoyaltyStatusWidget extends StatelessWidget {
       PieChartSectionData(
         color: Colors.orange.shade600,
         value: filledPercentage,
-        title: '', // Pas de titre sur les parts
+        title: '',
         radius: 20,
       ),
       PieChartSectionData(
