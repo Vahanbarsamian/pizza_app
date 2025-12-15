@@ -6,8 +6,6 @@ import '../database/app_database.dart';
 import '../screens/admin_edit_product_screen.dart';
 import '../screens/pizza_detail_screen.dart';
 
-// ✅ WIDGET GÉNÉRALISÉ POUR AFFICHER UN PRODUIT (PIZZA OU BOISSON)
-
 class ProductDisplayCard extends StatelessWidget {
   final Product product;
   final bool isAdmin;
@@ -28,7 +26,6 @@ class ProductDisplayCard extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         onTap: () {
-          // Les boissons n'ont pas de page de détail, contrairement aux pizzas
           if (!product.isDrink) {
              Navigator.of(context).push(
               MaterialPageRoute(
@@ -133,7 +130,8 @@ class ProductDisplayCard extends StatelessWidget {
     return Container(
       color: Colors.grey[200],
       child: Icon(
-        product.isDrink ? Icons.local_bar_outlined : Icons.local_pizza_outlined,
+        // ✅ ICÔNE MISE À JOUR
+        product.isDrink ? Icons.local_cafe_outlined : Icons.local_pizza_outlined,
         size: 50,
         color: Colors.grey,
       ),

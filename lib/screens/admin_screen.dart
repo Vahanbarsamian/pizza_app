@@ -1,19 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../database/app_database.dart';
 import '../services/auth_service.dart';
 import 'main_screen.dart';
-import 'admin_menu_tab.dart';
-import 'admin_announcements_tab.dart';
-import 'admin_info_tab.dart';
 import 'admin_orders_tab.dart';
+import 'admin_main_screen.dart';
 import 'admin_loyalty_tab.dart';
 
 class AdminScreen extends StatefulWidget {
-  // ❌ SUPPRIMÉ: Le paramètre productToEdit n'est plus nécessaire ici.
-  // final Product? productToEdit;
-
   const AdminScreen({super.key});
 
   @override
@@ -23,28 +17,12 @@ class AdminScreen extends StatefulWidget {
 class _AdminScreenState extends State<AdminScreen> {
   int _selectedIndex = 0;
 
-  late final List<Widget> _adminTabs;
-  late final List<String> _adminTitles;
-
-  @override
-  void initState() {
-    super.initState();
-    _adminTabs = [
-      const AdminOrdersTab(),
-      const AdminLoyaltyTab(),
-      // ✅ CORRIGÉ: Appel simple sans paramètre
-      const AdminMenuTab(), 
-      const AdminAnnouncementsTab(),
-      const AdminInfoTab(),
-    ];
-    _adminTitles = [
-      'Commandes & Archives',
-      'Gestion Fidélité',
-      'Menu & Options',
-      'Annonces',
-      'Infos Pratiques',
-    ];
-  }
+  // ✅ CORRIGÉ: Utilisation du bon nom de widget
+  static final List<Widget> _widgetOptions = <Widget>[
+    const AdminOrdersTab(),
+    const AdminMainScreen(),
+    const AdminLoyaltyTab(),
+  ];
 
   void _onItemTapped(int index) {
     setState(() {
@@ -52,40 +30,42 @@ class _AdminScreenState extends State<AdminScreen> {
     });
   }
 
+  void _onMenuAction(BuildContext context, String action) {
+    switch (action) {
+      case 'store':
+        Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const MainScreen()));
+        break;
+      case 'logout':
+        context.read<AuthService>().signOut();
+        Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const MainScreen()));
+        break;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final authService = context.watch<AuthService>();
-
-    if (!authService.isAdmin) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const MainScreen()),
-          (route) => false,
-        );
-      });
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-
     return Scaffold(
       appBar: AppBar(
-        title: Text(_adminTitles[_selectedIndex]),
-        backgroundColor: Theme.of(context).primaryColor,
-        foregroundColor: Colors.white,
-        elevation: 10,
+        automaticallyImplyLeading: false,
+        title: const Text('Panneau Administrateur'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.exit_to_app),
-            tooltip: 'Retour à l\'application',
-            onPressed: () {
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (_) => const MainScreen()),
-                (route) => false,
-              );
-            },
+          PopupMenuButton<String>(
+            onSelected: (value) => _onMenuAction(context, value),
+            itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+              const PopupMenuItem<String>(
+                value: 'store',
+                child: ListTile(leading: Icon(Icons.store), title: Text('Retour à la boutique')),
+              ),
+              const PopupMenuDivider(),
+              const PopupMenuItem<String>(
+                value: 'logout',
+                child: ListTile(leading: Icon(Icons.logout, color: Colors.red), title: Text('Déconnexion', style: TextStyle(color: Colors.red))),
+              ),
+            ],
           ),
         ],
       ),
-      body: _adminTabs.elementAt(_selectedIndex),
+      body: _widgetOptions.elementAt(_selectedIndex),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed, 
         items: const <BottomNavigationBarItem>[
@@ -94,20 +74,12 @@ class _AdminScreenState extends State<AdminScreen> {
             label: 'Commandes',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.loyalty),
+            icon: Icon(Icons.settings),
+            label: 'Gestion',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.card_giftcard),
             label: 'Fidélité',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.restaurant_menu),
-            label: 'Menu & Options',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.campaign),
-            label: 'Annonces',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.storefront),
-            label: 'Infos Pratiques',
           ),
         ],
         currentIndex: _selectedIndex,

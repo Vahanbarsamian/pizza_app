@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
-import 'admin_menu_tab.dart'; // Onglet 1
-import 'admin_announcements_tab.dart'; // Onglet 2
-import 'admin_info_tab.dart'; // Onglet 3
+import 'admin_menu_tab.dart';
+import 'admin_announcements_tab.dart';
+import 'admin_info_tab.dart';
+import 'admin_statistics_tab.dart'; // ✅ AJOUT
 
 class AdminMainScreen extends StatefulWidget {
   const AdminMainScreen({super.key});
@@ -14,15 +15,19 @@ class AdminMainScreen extends StatefulWidget {
 class _AdminMainScreenState extends State<AdminMainScreen> {
   int _selectedIndex = 0;
 
+  // ✅ AJOUT
   static const List<Widget> _widgetOptions = <Widget>[
     AdminMenuTab(),
     AdminAnnouncementsTab(),
+    AdminStatisticsTab(), // Onglet Statistiques
     AdminInfoTab(),
   ];
 
+  // ✅ AJOUT
   static const List<String> _titles = <String>[
     'Admin / Menu',
     'Admin / Annonces',
+    'Admin / Statistiques',
     'Admin / Infos',
   ];
 
@@ -39,6 +44,7 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
         title: Text(_titles.elementAt(_selectedIndex)),
       ),
       body: _widgetOptions.elementAt(_selectedIndex),
+      // ✅ AJOUT
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
@@ -50,12 +56,17 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
             label: 'Annonces',
           ),
           BottomNavigationBarItem(
+            icon: Icon(Icons.bar_chart), // Icône pour les stats
+            label: 'Stats',
+          ),
+          BottomNavigationBarItem(
             icon: Icon(Icons.business),
             label: 'Infos',
           ),
         ],
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
+        type: BottomNavigationBarType.fixed, // Important pour voir tous les labels
       ),
     );
   }

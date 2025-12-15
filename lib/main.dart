@@ -14,7 +14,8 @@ import 'services/review_service.dart';
 import 'services/public_review_service.dart';
 import 'services/preferences_service.dart';
 import 'services/loyalty_service.dart';
-import 'services/storage_service.dart'; // ✅ AJOUT
+import 'services/storage_service.dart';
+import 'services/statistics_service.dart'; // ✅ AJOUT
 
 import 'screens/pizza_splash_screen.dart';
 
@@ -44,7 +45,8 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         Provider<AppDatabase>.value(value: database),
-        Provider(create: (_) => StorageService()), // ✅ AJOUT
+        Provider(create: (_) => StorageService()),
+        Provider(create: (_) => StatisticsService()), // ✅ AJOUT
         ChangeNotifierProvider(create: (_) => AuthService()),
         ChangeNotifierProvider(create: (_) => PreferencesService()),
         ChangeNotifierProxyProvider<AppDatabase, CartService>(
@@ -60,7 +62,6 @@ class MyApp extends StatelessWidget {
         ProxyProvider<AppDatabase, LoyaltyService>(
           update: (_, db, __) => LoyaltyService(db: db),
         ),
-        // ✅ CORRIGÉ: OrderService n'a plus besoin de LoyaltyService
         ProxyProvider<AppDatabase, OrderService>(
           update: (context, db, previous) => OrderService(db: db),
         ),
