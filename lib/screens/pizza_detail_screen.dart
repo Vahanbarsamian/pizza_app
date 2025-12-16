@@ -85,7 +85,6 @@ class _PizzaDetailScreenState extends State<PizzaDetailScreen> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                // ✅ MODIFIÉ: Augmentation de la taille de la police pour la description principale
                 if (widget.product.description != null && widget.product.description!.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: 8.0, bottom: 16.0),
@@ -166,7 +165,8 @@ class _PizzaDetailScreenState extends State<PizzaDetailScreen> {
                       );
                       Navigator.of(context).pop();
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Pizza ajoutée au panier !'), duration: Duration(seconds: 2)),
+                        // ✅ CORRIGÉ: Ajout de la couleur de fond verte
+                        const SnackBar(content: Text('Pizza ajoutée au panier !'), backgroundColor: Colors.green, duration: Duration(seconds: 2)),
                       );
                     }
                   },
@@ -183,7 +183,7 @@ class _PizzaDetailScreenState extends State<PizzaDetailScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Composition de base modifiable', style: Theme.of(context).textTheme.titleLarge), // Titre modifié
+        Text('Composition de base modifiable', style: Theme.of(context).textTheme.titleLarge),
         Padding(
           padding: const EdgeInsets.only(top: 4, bottom: 8),
           child: Text(
