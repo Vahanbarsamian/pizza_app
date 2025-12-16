@@ -17,7 +17,6 @@ class AdminScreen extends StatefulWidget {
 class _AdminScreenState extends State<AdminScreen> {
   int _selectedIndex = 0;
 
-  // ✅ CORRIGÉ: Utilisation du bon nom de widget
   static final List<Widget> _widgetOptions = <Widget>[
     const AdminOrdersTab(),
     const AdminMainScreen(),
@@ -47,6 +46,7 @@ class _AdminScreenState extends State<AdminScreen> {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
+        // ✅ TITRE RESTAURÉ
         title: const Text('Panneau Administrateur'),
         actions: [
           PopupMenuButton<String>(

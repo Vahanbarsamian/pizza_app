@@ -10,14 +10,14 @@ import '../services/admin_service.dart';
 import '../services/notification_service.dart';
 import 'order_detail_screen.dart';
 
+enum ClosureMessageType { vacation, temporary, full, custom }
+
 class AdminOrdersTab extends StatefulWidget {
   const AdminOrdersTab({super.key});
 
   @override
   State<AdminOrdersTab> createState() => _AdminOrdersTabState();
 }
-
-enum ClosureMessageType { vacation, temporary, full, custom }
 
 class _AdminOrdersTabState extends State<AdminOrdersTab> with SingleTickerProviderStateMixin {
   RealtimeChannel? _ordersChannel;
@@ -151,34 +151,47 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> with SingleTickerProvid
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Theme.of(context).canvasColor,
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+        title: const Text('Admin / Commandes'),
+        centerTitle: true,
         automaticallyImplyLeading: false,
-        actions: const [],
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(icon: Icon(Icons.list_alt), text: 'Commandes'),
-            Tab(icon: Icon(Icons.inventory_2_outlined), text: 'Archives'),
-            Tab(icon: Icon(Icons.settings), text: 'Réglages'),
-          ],
-        ),
       ),
-      body: TabBarView(
-        controller: _tabController,
+      body: Column(
         children: [
-          OrdersList(startDate: _filterStartDate, endDate: _filterEndDate),
-          ArchivesTab(archiveStartDate: _archiveStartDate, archiveEndDate: _archiveEndDate, onArchiveDateChanged: (start, end) => setState(() => { _archiveStartDate = start, _archiveEndDate = end }), onArchivePressed: _archiveWork),
-          SettingsTab(
-            initialFilterStartDate: _filterStartDate, initialFilterEndDate: _filterEndDate,
-            areOrdersOpen: _areOrdersOpen, vacationStartDate: _vacationStartDate, vacationEndDate: _vacationEndDate,
-            tempClosureStartDate: _tempClosureStartDate, tempClosureEndDate: _tempClosureEndDate,
-            selectedClosureMessage: _selectedClosureMessage, customClosureMessageController: _customClosureMessageController,
-            onFilterDateChanged: (start, end) => setState(() => { _filterStartDate = start, _filterEndDate = end }),
-            onOrdersOpenChanged: (value) => setState(() => { _areOrdersOpen = value, if (value) _selectedClosureMessage = null }),
-            onVacationDateChanged: (start, end) => setState(() => { _vacationStartDate = start, _vacationEndDate = end }),
-            onTempClosureDateChanged: (start, end) => setState(() => { _tempClosureStartDate = start, _tempClosureEndDate = end }),
-            onClosureMessageChanged: (type) => setState(() => _selectedClosureMessage = type),
-            onSave: _saveSettings,
+          Container(
+            color: Theme.of(context).appBarTheme.backgroundColor,
+            child: TabBar(
+              controller: _tabController,
+              labelColor: Colors.white, // ✅ AJOUT
+              unselectedLabelColor: Colors.white70, // ✅ AJOUT
+              indicatorColor: Colors.orange, // ✅ AJOUT
+              tabs: const [
+                Tab(icon: Icon(Icons.list_alt), text: 'Commandes'),
+                Tab(icon: Icon(Icons.inventory_2_outlined), text: 'Archives'),
+                Tab(icon: Icon(Icons.settings), text: 'Réglages'),
+              ],
+            ),
+          ),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                OrdersList(startDate: _filterStartDate, endDate: _filterEndDate),
+                ArchivesTab(archiveStartDate: _archiveStartDate, archiveEndDate: _archiveEndDate, onArchiveDateChanged: (start, end) => setState(() => { _archiveStartDate = start, _archiveEndDate = end }), onArchivePressed: _archiveWork),
+                SettingsTab(
+                  initialFilterStartDate: _filterStartDate, initialFilterEndDate: _filterEndDate,
+                  areOrdersOpen: _areOrdersOpen, vacationStartDate: _vacationStartDate, vacationEndDate: _vacationEndDate,
+                  tempClosureStartDate: _tempClosureStartDate, tempClosureEndDate: _tempClosureEndDate,
+                  selectedClosureMessage: _selectedClosureMessage, customClosureMessageController: _customClosureMessageController,
+                  onFilterDateChanged: (start, end) => setState(() => { _filterStartDate = start, _filterEndDate = end }),
+                  onOrdersOpenChanged: (value) => setState(() => { _areOrdersOpen = value, if (value) _selectedClosureMessage = null }),
+                  onVacationDateChanged: (start, end) => setState(() => { _vacationStartDate = start, _vacationEndDate = end }),
+                  onTempClosureDateChanged: (start, end) => setState(() => { _tempClosureStartDate = start, _tempClosureEndDate = end }),
+                  onClosureMessageChanged: (type) => setState(() => _selectedClosureMessage = type),
+                  onSave: _saveSettings,
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -186,6 +199,7 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> with SingleTickerProvid
   }
 }
 
+// ... Le reste du code est inchangé ...
 class OrdersList extends StatelessWidget {
   final DateTime? startDate;
   final DateTime? endDate;

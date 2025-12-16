@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:drift/drift.dart' hide Column;
+import 'package:image_picker/image_picker.dart'; // ✅ AJOUT
 
 import '../database/app_database.dart';
 import '../services/admin_service.dart';
 import '../services/sync_service.dart';
 import '../services/preferences_service.dart';
-import '../services/notification_service.dart'; // ✅ AJOUTÉ
+import '../services/notification_service.dart';
+import '../services/storage_service.dart'; // ✅ AJOUT
 
 class AdminInfoTab extends StatefulWidget {
   const AdminInfoTab({super.key});
@@ -17,6 +19,7 @@ class AdminInfoTab extends StatefulWidget {
 
 class _AdminInfoTabState extends State<AdminInfoTab> {
   final _formKey = GlobalKey<FormState>();
+  bool _isUploading = false; // ✅ AJOUT
   
   final _nameController = TextEditingController();
   final _presentationController = TextEditingController();
@@ -106,11 +109,34 @@ class _AdminInfoTabState extends State<AdminInfoTab> {
     }
   }
 
+  // ✅ AJOUT: Logique pour choisir et uploader l'image
+  Future<void> _pickAndUploadImage() async {
+    final picker = ImagePicker();
+    final storageService = context.read<StorageService>();
+
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+
+    if (pickedFile != null) {
+      setState(() => _isUploading = true);
+      try {
+        final imageUrl = await storageService.uploadImage(pickedFile);
+        setState(() {
+          _logoUrlController.text = imageUrl;
+          _isUploading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Image uploadée avec succès !'), backgroundColor: Colors.green));
+      } catch (e) {
+        setState(() => _isUploading = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Erreur lors de l'upload de l'image: $e"), backgroundColor: Colors.red));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final db = context.read<AppDatabase>();
 
-    return StreamBuilder<CompanyInfoData?>( 
+    return StreamBuilder<CompanyInfoData?>(
       stream: db.watchCompanyInfo(),
       builder: (context, snapshot) {
         if (!snapshot.hasData && snapshot.connectionState == ConnectionState.waiting) {
@@ -142,6 +168,17 @@ class _AdminInfoTabState extends State<AdminInfoTab> {
             children: [
               TextFormField(controller: _nameController, decoration: const InputDecoration(labelText: "Nom de l'établissement")),
               TextFormField(controller: _logoUrlController, decoration: const InputDecoration(labelText: "URL du logo")),
+              // ✅ AJOUT: Bouton pour uploader l'image
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: _isUploading
+                  ? const Center(child: CircularProgressIndicator())
+                  : OutlinedButton.icon(
+                      icon: const Icon(Icons.upload_file),
+                      label: const Text('Uploader une image depuis l\'appareil'),
+                      onPressed: _pickAndUploadImage,
+                    ),
+              ),
               TextFormField(controller: _presentationController, decoration: const InputDecoration(labelText: "Texte de présentation"), maxLines: 3),
               TextFormField(controller: _addressController, decoration: const InputDecoration(labelText: 'Adresse')),
               TextFormField(controller: _phoneController, decoration: const InputDecoration(labelText: 'Téléphone')),
@@ -189,7 +226,6 @@ class _AdminInfoTabState extends State<AdminInfoTab> {
                 value: prefs.soundNotification,
                 onChanged: (value) => prefs.setSoundNotification(value),
               ),
-              // ✅ AJOUTÉ: Bouton de test
               Padding(
                 padding: const EdgeInsets.only(top: 8.0),
                 child: Center(

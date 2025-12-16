@@ -1,4 +1,4 @@
-import 'package:drift/drift.dart' show Value;
+import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -60,7 +60,7 @@ class _AdminLoyaltyTabState extends State<AdminLoyaltyTab> {
 
     try {
       await adminService.saveLoyaltySettings(newSettings);
-      await syncService.syncAll(); // Pour que les autres parties de l'app soient à jour
+      await syncService.syncAll();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Réglages sauvegardés avec succès.'), backgroundColor: Colors.green),
@@ -81,12 +81,26 @@ class _AdminLoyaltyTabState extends State<AdminLoyaltyTab> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Admin / Fidélité'), 
+          centerTitle: true, 
+          automaticallyImplyLeading: false,
+          backgroundColor: Theme.of(context).appBarTheme.backgroundColor, // ✅ CORRIGÉ
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
     }
 
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Admin / Fidélité'),
+          centerTitle: true,
+          automaticallyImplyLeading: false,
+          backgroundColor: Theme.of(context).appBarTheme.backgroundColor, // ✅ CORRIGÉ
+        ),
         body: ListView(
           padding: const EdgeInsets.all(16.0),
           children: [
@@ -175,4 +189,16 @@ class _AdminLoyaltyTabState extends State<AdminLoyaltyTab> {
       ),
     );
   }
+}
+
+extension on LoyaltySetting {
+    LoyaltySetting copyWith({bool? isEnabled, String? mode}) {
+        return LoyaltySetting(
+            id: id,
+            isEnabled: isEnabled ?? this.isEnabled,
+            mode: mode ?? this.mode,
+            threshold: threshold,
+            discountPercentage: discountPercentage,
+        );
+    }
 }
