@@ -6,6 +6,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../database/app_database.dart';
 import '../screens/admin_edit_product_screen.dart';
 import '../screens/pizza_detail_screen.dart';
+import '../screens/drink_detail_screen.dart'; // ✅ AJOUT
 
 class ProductDisplayCard extends StatelessWidget {
   final Product product;
@@ -27,7 +28,12 @@ class ProductDisplayCard extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         onTap: () {
-          if (!product.isDrink) {
+          // ✅ CORRIGÉ: Redirige vers l'écran de détail pour les boissons
+          if (product.isDrink) {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => DrinkDetailScreen(product: product)),
+            );
+          } else {
              Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (_) => PizzaDetailScreen(product: product, ordersEnabled: ordersEnabled),
@@ -130,7 +136,6 @@ class ProductDisplayCard extends StatelessWidget {
   Widget _buildPlaceholderIcon() {
     return Container(
       color: Colors.grey[200],
-      // ✅ MODIFIÉ: L'icône est maintenant dans un Center
       child: Center(
         child: FaIcon(
           product.isDrink ? FontAwesomeIcons.bottleWater : FontAwesomeIcons.pizzaSlice,
