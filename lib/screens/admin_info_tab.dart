@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:drift/drift.dart' hide Column;
-import 'package:image_picker/image_picker.dart'; // ✅ AJOUT
+import 'package:image_picker/image_picker.dart';
 
 import '../database/app_database.dart';
 import '../services/admin_service.dart';
 import '../services/sync_service.dart';
 import '../services/preferences_service.dart';
 import '../services/notification_service.dart';
-import '../services/storage_service.dart'; // ✅ AJOUT
+import '../services/storage_service.dart';
 
 class AdminInfoTab extends StatefulWidget {
   const AdminInfoTab({super.key});
@@ -19,7 +19,7 @@ class AdminInfoTab extends StatefulWidget {
 
 class _AdminInfoTabState extends State<AdminInfoTab> {
   final _formKey = GlobalKey<FormState>();
-  bool _isUploading = false; // ✅ AJOUT
+  bool _isUploading = false;
   
   final _nameController = TextEditingController();
   final _presentationController = TextEditingController();
@@ -109,7 +109,6 @@ class _AdminInfoTabState extends State<AdminInfoTab> {
     }
   }
 
-  // ✅ AJOUT: Logique pour choisir et uploader l'image
   Future<void> _pickAndUploadImage() async {
     final picker = ImagePicker();
     final storageService = context.read<StorageService>();
@@ -119,7 +118,8 @@ class _AdminInfoTabState extends State<AdminInfoTab> {
     if (pickedFile != null) {
       setState(() => _isUploading = true);
       try {
-        final imageUrl = await storageService.uploadImage(pickedFile);
+        // ✅ CORRIGÉ: Utilisation du bon nom de méthode
+        final imageUrl = await storageService.uploadProductImage(pickedFile);
         setState(() {
           _logoUrlController.text = imageUrl;
           _isUploading = false;
@@ -168,7 +168,6 @@ class _AdminInfoTabState extends State<AdminInfoTab> {
             children: [
               TextFormField(controller: _nameController, decoration: const InputDecoration(labelText: "Nom de l'établissement")),
               TextFormField(controller: _logoUrlController, decoration: const InputDecoration(labelText: "URL du logo")),
-              // ✅ AJOUT: Bouton pour uploader l'image
               Padding(
                 padding: const EdgeInsets.only(top: 8.0),
                 child: _isUploading
