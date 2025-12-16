@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart'; // ✅ AJOUT
 
 import '../database/app_database.dart';
 import '../services/cart_service.dart';
@@ -19,7 +20,7 @@ class DrinkSuggestionBottomSheet extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Désirez-vous rajouter une boisson ?', // ✅ TEXTE MODIFIÉ
+            'Désirez-vous rajouter une boisson ?',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
@@ -68,7 +69,8 @@ class DrinkSuggestionBottomSheet extends StatelessWidget {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.local_cafe_outlined, size: 40, color: isSelected ? Colors.orange : Colors.grey.shade700),
+                              // ✅ MODIFIÉ: Utilisation de la nouvelle icône
+                              FaIcon(FontAwesomeIcons.bottleWater, size: 40, color: isSelected ? Colors.orange : Colors.grey.shade700),
                               const SizedBox(height: 8),
                               Text(drink.name, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.bold)),
                               const SizedBox(height: 4),

@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart'; // ✅ AJOUT
 
 import '../database/app_database.dart';
 import '../services/auth_service.dart';
 import '../services/cart_service.dart';
-import '../widgets/drink_suggestion_bottom_sheet.dart'; // ✅ AJOUT
+import '../widgets/drink_suggestion_bottom_sheet.dart';
 import 'menu_screen.dart';
 import 'promotions_screen.dart';
 import 'about_us_screen.dart';
@@ -33,26 +34,16 @@ class _MainScreenState extends State<MainScreen> {
     AboutUsScreen(),
   ];
 
-  static const List<String> _appBarTitles = <String>[
-    'Menu',
-    'Nos Boissons',
-    'Promotions & Annonces',
-    'Avis des Clients',
-    'À Propos',
-  ];
-
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
     });
   }
 
-  // ✅ CORRIGÉ: Logique de suggestion de boissons
   void _handleCartPressed(BuildContext context) async {
     final cartService = context.read<CartService>();
     final navigator = Navigator.of(context);
 
-    // ✅ CORRIGÉ: Utilise .values.any sur la map
     final bool shouldSuggestDrinks = cartService.items.isEmpty || !cartService.items.values.any((item) => item.product.isDrink);
 
     if (shouldSuggestDrinks) {
@@ -86,7 +77,7 @@ class _MainScreenState extends State<MainScreen> {
           },
         ),
         leadingWidth: 150,
-        title: Text(_appBarTitles[_selectedIndex]),
+        title: null,
         centerTitle: true,
         actions: <Widget>[
           Badge(
@@ -148,7 +139,11 @@ class _MainScreenState extends State<MainScreen> {
         type: BottomNavigationBarType.fixed,
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(icon: Icon(Icons.local_pizza), label: 'Pizzas'),
-          BottomNavigationBarItem(icon: Icon(Icons.local_bar), label: 'Boissons'),
+          // ✅ MODIFIÉ: Utilisation d'une icône FontAwesome
+          BottomNavigationBarItem(
+            icon: FaIcon(FontAwesomeIcons.bottleWater),
+            label: 'Boissons',
+          ),
           BottomNavigationBarItem(icon: Icon(Icons.campaign), label: 'Promos'),
           BottomNavigationBarItem(icon: Icon(Icons.rate_review), label: 'Avis'),
           BottomNavigationBarItem(icon: Icon(Icons.info_outline), label: 'Info'),

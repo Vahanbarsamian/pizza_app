@@ -14,28 +14,33 @@ class PromotionsScreen extends StatelessWidget {
     final db = Provider.of<AppDatabase>(context);
     final authService = context.watch<AuthService>();
 
-    return StreamBuilder<List<Announcement>>(
-      stream: db.watchAllAnnouncements(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return const Center(child: Text("Il n'y a aucune promotion ou annonce pour le moment."));
-        }
+    // ✅ AJOUT: Scaffold avec AppBar locale
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Promotions & Annonces'),
+        centerTitle: true,
+        automaticallyImplyLeading: false,
+      ),
+      body: StreamBuilder<List<Announcement>>(
+        stream: db.watchAllAnnouncements(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(child: Text("Il n'y a aucune promotion ou annonce pour le moment."));
+          }
 
-        final allItems = snapshot.data!;
-        final promotions = allItems.where((item) => item.type == 'Promotion').toList();
-        final announcements = allItems.where((item) => item.type == 'Annonce').toList();
+          final allItems = snapshot.data!;
+          final promotions = allItems.where((item) => item.type == 'Promotion').toList();
+          final announcements = allItems.where((item) => item.type == 'Annonce').toList();
 
-        if (promotions.isEmpty && announcements.isEmpty) {
-          return const Center(child: Text("Il n'y a aucune promotion ou annonce pour le moment."));
-        }
+          if (promotions.isEmpty && announcements.isEmpty) {
+            return const Center(child: Text("Il n'y a aucune promotion ou annonce pour le moment."));
+          }
 
-        // ✅ CORRIGÉ: Remplacement du ListView par une Column pour un scrolling indépendant
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: Column(
+          return ListView(
+            padding: const EdgeInsets.all(16.0),
             children: [
               if (promotions.isNotEmpty)
                 _buildSection(context, 'Promotions', promotions, authService.isAdmin),
@@ -46,36 +51,32 @@ class PromotionsScreen extends StatelessWidget {
               if (announcements.isNotEmpty)
                 _buildSection(context, 'Annonces', announcements, authService.isAdmin),
             ],
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
   Widget _buildSection(BuildContext context, String title, List<Announcement> items, bool isAdmin) {
-    // ✅ CORRIGÉ: Le Column est maintenant dans un Expanded pour permettre aux ListViews de fonctionner
-    return Expanded(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8.0),
-            child: Text(
-              title,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: Text(
+            title,
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
           ),
-          // ✅ CORRIGÉ: Utilisation d'un ListView.builder pour la performance et le scrolling
-          Expanded(
-            child: ListView.builder(
-              itemCount: items.length,
-              itemBuilder: (context, index) {
-                return AnnouncementCard(announcement: items[index], isAdmin: isAdmin);
-              },
-            ),
-          ),
-        ],
-      ),
+        ),
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: items.length,
+          itemBuilder: (context, index) {
+            return AnnouncementCard(announcement: items[index], isAdmin: isAdmin);
+          },
+        ),
+      ],
     );
   }
 }
@@ -102,16 +103,8 @@ class AnnouncementCard extends StatelessWidget {
                   fit: BoxFit.cover,
                   width: double.infinity,
                   height: 180,
-                  placeholder: (context, url) => Container(
-                    height: 180,
-                    color: Colors.grey[300],
-                    child: const Center(child: CircularProgressIndicator()),
-                  ),
-                  errorWidget: (context, url, error) => Container(
-                    height: 180,
-                    color: Colors.grey[300],
-                    child: const Icon(Icons.error, color: Colors.red),
-                  ),
+                  placeholder: (context, url) => Container(height: 180, color: Colors.grey[300], child: const Center(child: CircularProgressIndicator())),
+                  errorWidget: (context, url, error) => Container(height: 180, color: Colors.grey[300], child: const Icon(Icons.error, color: Colors.red)),
                 ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 40, 16, 16),
@@ -120,20 +113,11 @@ class AnnouncementCard extends StatelessWidget {
                   children: [
                     Text(announcement.title, style: Theme.of(context).textTheme.titleLarge),
                     if (announcement.announcementText != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8.0),
-                        child: Text(announcement.announcementText!),
-                      ),
+                      Padding(padding: const EdgeInsets.only(top: 8.0), child: Text(announcement.announcementText!)),
                     if (announcement.description != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8.0),
-                        child: Text(announcement.description!, style: Theme.of(context).textTheme.bodySmall),
-                      ),
+                      Padding(padding: const EdgeInsets.only(top: 8.0), child: Text(announcement.description!, style: Theme.of(context).textTheme.bodySmall)),
                     if (announcement.conclusion != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 16.0),
-                        child: Text(announcement.conclusion!, style: const TextStyle(fontWeight: FontWeight.bold)),
-                      ),
+                      Padding(padding: const EdgeInsets.only(top: 16.0), child: Text(announcement.conclusion!, style: const TextStyle(fontWeight: FontWeight.bold))),
                   ],
                 ),
               ),
@@ -170,18 +154,9 @@ class AnnouncementCard extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
           color: backgroundColor,
-          borderRadius: const BorderRadius.only(
-            bottomLeft: Radius.circular(8),
-          ),
+          borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(8)),
         ),
-        child: Text(
-          text,
-          style: TextStyle(
-            color: textColor,
-            fontWeight: FontWeight.bold,
-            fontSize: 12,
-          ),
-        ),
+        child: Text(text, style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 12)),
       ),
     );
   }

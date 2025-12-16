@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../database/app_database.dart';
 import '../screens/admin_edit_product_screen.dart';
@@ -129,11 +130,13 @@ class ProductDisplayCard extends StatelessWidget {
   Widget _buildPlaceholderIcon() {
     return Container(
       color: Colors.grey[200],
-      child: Icon(
-        // ✅ ICÔNE MISE À JOUR
-        product.isDrink ? Icons.local_cafe_outlined : Icons.local_pizza_outlined,
-        size: 50,
-        color: Colors.grey,
+      // ✅ MODIFIÉ: L'icône est maintenant dans un Center
+      child: Center(
+        child: FaIcon(
+          product.isDrink ? FontAwesomeIcons.bottleWater : FontAwesomeIcons.pizzaSlice,
+          size: 50,
+          color: Colors.grey,
+        ),
       ),
     );
   }

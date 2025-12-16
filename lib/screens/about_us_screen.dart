@@ -42,55 +42,63 @@ class _AboutUsScreenState extends State<AboutUsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<CompanyInfoData?>(
-      stream: Provider.of<AppDatabase>(context).watchCompanyInfo(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        final info = snapshot.data;
-        if (info == null) {
-           return const Center(child: Text('Informations sur l\'établissement non disponibles.'));
-        }
+    // ✅ AJOUT: Scaffold avec AppBar locale
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('À Propos'),
+        centerTitle: true,
+        automaticallyImplyLeading: false,
+      ),
+      body: StreamBuilder<CompanyInfoData?>(
+        stream: Provider.of<AppDatabase>(context).watchCompanyInfo(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final info = snapshot.data;
+          if (info == null) {
+            return const Center(child: Text('Informations sur l\'établissement non disponibles.'));
+          }
 
-        return ListView(
-          padding: const EdgeInsets.all(16.0),
-          children: <Widget>[
-            Center(child: CircleAvatar(radius: 40, backgroundColor: Colors.blue.shade100, child: Icon(Icons.storefront, color: Colors.blue.shade800, size: 40))),
-            const SizedBox(height: 16),
-            Center(child: Text(info.name ?? 'Notre Pizzeria', style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold))),
-            const SizedBox(height: 16),
-            Center(child: Text(info.presentation ?? 'Bienvenue !', textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleMedium)),
-            const Divider(height: 32),
-            _buildSocialRow(info),
-            const Divider(height: 32),
-            ListTile(leading: const Icon(Icons.location_on, color: Colors.orange), title: const Text('Adresse'), subtitle: Text(info.address ?? 'Non renseignée')),
-            ListTile(leading: const Icon(Icons.phone, color: Colors.orange), title: const Text('Téléphone'), subtitle: Text(info.phone ?? 'Non renseigné')),
-            ListTile(leading: const Icon(Icons.email, color: Colors.orange), title: const Text('Email'), subtitle: Text(info.email ?? 'Non renseigné')),
-            const ListTile(leading: Icon(Icons.access_time, color: Colors.orange), title: Text('Horaires d\'ouverture'), subtitle: Text('Lundi - Vendredi: 11h30 - 22h00\nSamedi - Dimanche: 11h30 - 23h00')),
-            const SizedBox(height: 16),
-            Card(
-              clipBehavior: Clip.antiAlias,
-              elevation: 4,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              child: SizedBox(
-                height: 300,
-                child: _isLoadingMap
-                    ? const Center(child: CircularProgressIndicator())
-                    : _mapCenter == null
-                        ? const Center(child: Text('Coordonnées GPS non configurées.'))
-                        : FlutterMap(
-                            options: MapOptions(center: _mapCenter!, zoom: 16.0),
-                            children: [
-                              TileLayer(urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'),
-                              MarkerLayer(markers: [Marker(width: 80.0, height: 80.0, point: _mapCenter!, child: const Icon(Icons.location_pin, color: Colors.red, size: 40))]),
-                            ],
-                          ),
+          return ListView(
+            padding: const EdgeInsets.all(16.0),
+            children: <Widget>[
+              Center(child: CircleAvatar(radius: 40, backgroundColor: Colors.blue.shade100, child: Icon(Icons.storefront, color: Colors.blue.shade800, size: 40))),
+              const SizedBox(height: 16),
+              Center(child: Text(info.name ?? 'Notre Pizzeria', style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold))),
+              const SizedBox(height: 16),
+              Center(child: Text(info.presentation ?? 'Bienvenue !', textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleMedium)),
+              const Divider(height: 32),
+              _buildSocialRow(info),
+              const Divider(height: 32),
+              ListTile(leading: const Icon(Icons.location_on, color: Colors.orange), title: const Text('Adresse'), subtitle: Text(info.address ?? 'Non renseignée')),
+              ListTile(leading: const Icon(Icons.phone, color: Colors.orange), title: const Text('Téléphone'), subtitle: Text(info.phone ?? 'Non renseigné')),
+              ListTile(leading: const Icon(Icons.email, color: Colors.orange), title: const Text('Email'), subtitle: Text(info.email ?? 'Non renseigné')),
+              const ListTile(leading: Icon(Icons.access_time, color: Colors.orange), title: Text('Horaires d\'ouverture'), subtitle: Text('Lundi - Vendredi: 11h30 - 22h00\nSamedi - Dimanche: 11h30 - 23h00')),
+              const SizedBox(height: 16),
+              Card(
+                clipBehavior: Clip.antiAlias,
+                elevation: 4,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                child: SizedBox(
+                  height: 300,
+                  child: _isLoadingMap
+                      ? const Center(child: CircularProgressIndicator())
+                      : _mapCenter == null
+                          ? const Center(child: Text('Coordonnées GPS non configurées.'))
+                          : FlutterMap(
+                              options: MapOptions(center: _mapCenter!, zoom: 16.0),
+                              children: [
+                                TileLayer(urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'),
+                                MarkerLayer(markers: [Marker(width: 80.0, height: 80.0, point: _mapCenter!, child: const Icon(Icons.location_pin, color: Colors.red, size: 40))]),
+                              ],
+                            ),
+                ),
               ),
-            ),
-          ],
-        );
-      },
+            ],
+          );
+        },
+      ),
     );
   }
 

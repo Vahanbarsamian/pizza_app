@@ -16,25 +16,33 @@ class PublicReviewsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final reviewService = context.watch<PublicReviewService>();
 
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        children: [
-          _buildStatsHeader(context, reviewService),
-          _buildFilterChips(context, reviewService),
-          const Divider(),
-          Expanded(
-            child: reviewService.reviews.isEmpty
-                ? const Center(child: Text('Aucun avis pour cette période.'))
-                : ListView.builder(
-                    itemCount: reviewService.reviews.length,
-                    itemBuilder: (context, index) {
-                      final item = reviewService.reviews[index];
-                      return PublicReviewCard(reviewWithOrder: item);
-                    },
-                  ),
-          ),
-        ],
+    // ✅ AJOUT: Scaffold avec AppBar locale
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Avis des Clients'),
+        centerTitle: true,
+        automaticallyImplyLeading: false,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            _buildStatsHeader(context, reviewService),
+            _buildFilterChips(context, reviewService),
+            const Divider(),
+            Expanded(
+              child: reviewService.reviews.isEmpty
+                  ? const Center(child: Text('Aucun avis pour cette période.'))
+                  : ListView.builder(
+                      itemCount: reviewService.reviews.length,
+                      itemBuilder: (context, index) {
+                        final item = reviewService.reviews[index];
+                        return PublicReviewCard(reviewWithOrder: item);
+                      },
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }

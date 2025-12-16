@@ -7,7 +7,7 @@ import '../database/app_database.dart';
 import '../services/auth_service.dart';
 import '../services/sync_service.dart';
 import '../widgets/product_display_card.dart';
-import 'admin_orders_tab.dart'; // ✅ AJOUT DE L'IMPORT MANQUANT
+import 'admin_orders_tab.dart';
 
 class MenuScreen extends StatefulWidget {
   const MenuScreen({super.key});
@@ -98,41 +98,49 @@ class _MenuScreenState extends State<MenuScreen> {
     final db = context.watch<AppDatabase>();
     final authService = context.watch<AuthService>();
 
-    return RefreshIndicator(
-      onRefresh: _refreshData,
-      child: StreamBuilder<List<dynamic>>(
-        stream: db.watchProductsAndCompanyInfo(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(child: Text('Erreur: ${snapshot.error}'));
-          }
+    // ✅ MODIFIÉ: On réintroduit un Scaffold avec une AppBar simple
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Nos Pizzas'),
+        centerTitle: true,
+        automaticallyImplyLeading: false, // Pas de bouton retour
+      ),
+      body: RefreshIndicator(
+        onRefresh: _refreshData,
+        child: StreamBuilder<List<dynamic>>(
+          stream: db.watchProductsAndCompanyInfo(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              return Center(child: Text('Erreur: ${snapshot.error}'));
+            }
 
-          final data = snapshot.data ?? [];
-          final info = data.isNotEmpty ? data[0] as CompanyInfoData? : null;
-          final pizzas = data.isNotEmpty ? data[1] as List<Product> : [];
-          final ordersEnabled = info?.ordersEnabled ?? true;
+            final data = snapshot.data ?? [];
+            final info = data.isNotEmpty ? data[0] as CompanyInfoData? : null;
+            final pizzas = data.isNotEmpty ? data[1] as List<Product> : [];
+            final ordersEnabled = info?.ordersEnabled ?? true;
 
-          if (info != null && !ordersEnabled) {
-            _showClosureDialog(context, info);
-          }
+            if (info != null && !ordersEnabled) {
+              _showClosureDialog(context, info);
+            }
 
-          if (pizzas.isEmpty) {
-            return const Center(child: Text('Aucune pizza au menu pour le moment.'));
-          }
+            if (pizzas.isEmpty) {
+              return const Center(child: Text('Aucune pizza au menu pour le moment.'));
+            }
 
-          return GridView.builder(
-            padding: const EdgeInsets.all(16.0),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, childAspectRatio: 0.70),
-            itemCount: pizzas.length,
-            itemBuilder: (context, index) {
-              final pizza = pizzas[index];
-              return ProductDisplayCard(product: pizza, isAdmin: authService.isAdmin, ordersEnabled: ordersEnabled);
-            },
-          );
-        },
+            return GridView.builder(
+              padding: const EdgeInsets.all(16.0),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, childAspectRatio: 0.70),
+              itemCount: pizzas.length,
+              itemBuilder: (context, index) {
+                final pizza = pizzas[index];
+                return ProductDisplayCard(product: pizza, isAdmin: authService.isAdmin, ordersEnabled: ordersEnabled);
+              },
+            );
+          },
+        ),
       ),
     );
   }

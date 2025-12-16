@@ -6,7 +6,7 @@ import '../services/admin_service.dart';
 import '../services/sync_service.dart';
 import 'admin_edit_product_screen.dart';
 
-// On sort les méthodes logiques de la classe de widget
+// Fonctions utilitaires déplacées hors de la classe pour plus de clarté
 Future<void> _handleProductDelete(BuildContext context, Product product) async {
   final adminService = Provider.of<AdminService>(context, listen: false);
   final syncService = Provider.of<SyncService>(context, listen: false);
@@ -27,8 +27,10 @@ Future<void> _handleProductDelete(BuildContext context, Product product) async {
     try {
       await adminService.deleteProduct(product.id);
       await syncService.syncAll();
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Produit désactivé.'), backgroundColor: Colors.orange));
     } catch (e) {
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red));
     }
   }
@@ -41,12 +43,13 @@ Future<void> _handleProductReactivate(BuildContext context, Product product) asy
   try {
     await adminService.reactivateProduct(product.id);
     await syncService.syncAll();
+    if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Produit réactivé.'), backgroundColor: Colors.green));
   } catch (e) {
+    if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red));
   }
 }
-
 
 class AdminProductsTab extends StatelessWidget {
   const AdminProductsTab({super.key});
@@ -57,7 +60,6 @@ class AdminProductsTab extends StatelessWidget {
     
     return Scaffold(
       body: StreamBuilder<List<Product>>(
-        // ✅ MODIFIÉ: Utilise la nouvelle requête pour voir tous les produits
         stream: db.watchAllProductsForAdmin(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
@@ -69,18 +71,22 @@ class AdminProductsTab extends StatelessWidget {
             itemCount: products.length,
             itemBuilder: (context, index) {
               final product = products[index];
-              final bool isActive = product.isActive; // On récupère le statut
+              final bool isActive = product.isActive;
 
-              // ✅ MODIFIÉ: Change le style et les actions en fonction du statut
               return Card(
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                color: isActive ? null : Colors.grey.shade300, // Fond grisé si inactif
+                color: isActive ? null : Colors.grey.shade300,
                 child: Opacity(
-                  opacity: isActive ? 1.0 : 0.6, // Opacité réduite si inactif
+                  opacity: isActive ? 1.0 : 0.6,
                   child: ListTile(
-                    leading: product.image != null 
+                    leading: product.image != null && product.image!.isNotEmpty
                       ? SizedBox(width: 50, height: 50, child: ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.network(product.image!, fit: BoxFit.cover)))
-                      : const Icon(Icons.local_pizza, size: 40),
+                      // ✅ CORRIGÉ FINAL: Utilisation exclusive des icônes Material Design
+                      : Icon(
+                          product.isDrink ? Icons.local_drink_outlined : Icons.local_pizza_outlined,
+                          size: 36,
+                          color: Colors.grey.shade700,
+                        ),
                     title: Text(product.name, style: const TextStyle(fontWeight: FontWeight.bold)),
                     subtitle: Text('${product.basePrice.toStringAsFixed(2)} €'),
                     trailing: isActive
