@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart'; // ✅ AJOUT
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../database/app_database.dart';
 import '../services/auth_service.dart';
@@ -66,19 +67,29 @@ class _MainScreenState extends State<MainScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        leading: StreamBuilder<CompanyInfoData?>(
-          stream: db.watchCompanyInfo(),
-          builder: (context, snapshot) {
-            final companyName = snapshot.data?.name ?? 'Pizza App';
-            return Padding(
-              padding: const EdgeInsets.only(left: 16.0),
-              child: Center(child: Text(companyName, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
-            );
-          },
+        // ✅ CORRIGÉ: Le title est maintenant dans un Row pour l'aligner à gauche
+        title: Row(
+          children: [
+            StreamBuilder<CompanyInfoData?>(
+              stream: db.watchCompanyInfo(),
+              builder: (context, snapshot) {
+                final companyInfo = snapshot.data;
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(companyInfo?.name ?? 'Pizza App', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    if (companyInfo?.logoUrl != null && companyInfo!.logoUrl!.isNotEmpty)
+                      SizedBox(
+                        height: 35, // Hauteur ajustée
+                        child: CachedNetworkImage(imageUrl: companyInfo.logoUrl!, fit: BoxFit.contain),
+                      ),
+                  ],
+                );
+              },
+            ),
+          ],
         ),
-        leadingWidth: 150,
-        title: null,
-        centerTitle: true,
+        titleSpacing: 16.0,
         actions: <Widget>[
           Badge(
             label: Text(
@@ -139,7 +150,6 @@ class _MainScreenState extends State<MainScreen> {
         type: BottomNavigationBarType.fixed,
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(icon: Icon(Icons.local_pizza), label: 'Pizzas'),
-          // ✅ MODIFIÉ: Utilisation d'une icône FontAwesome
           BottomNavigationBarItem(
             icon: FaIcon(FontAwesomeIcons.bottleWater),
             label: 'Boissons',
