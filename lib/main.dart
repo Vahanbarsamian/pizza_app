@@ -1,8 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:flutter_stripe/flutter_stripe.dart'; // ✅ AJOUT
 
 import 'database/app_database.dart';
 import 'services/auth_service.dart';
@@ -15,7 +17,8 @@ import 'services/public_review_service.dart';
 import 'services/preferences_service.dart';
 import 'services/loyalty_service.dart';
 import 'services/storage_service.dart';
-import 'services/statistics_service.dart'; // ✅ AJOUT
+import 'services/statistics_service.dart';
+import 'services/payment_service.dart'; // ✅ AJOUT (à créer)
 
 import 'screens/pizza_splash_screen.dart';
 
@@ -25,6 +28,10 @@ Future<void> main() async {
   await initializeDateFormatting('fr_FR', null);
 
   await dotenv.load(fileName: ".env");
+
+  // ✅ INITIALISATION STRIPE
+  Stripe.publishableKey = dotenv.env['STRIPE_PUBLISHABLE_KEY'] ?? "";
+  await Stripe.instance.applySettings();
 
   await Supabase.initialize(
     url: dotenv.env['SUPABASE_URL']!,
@@ -46,7 +53,8 @@ class MyApp extends StatelessWidget {
       providers: [
         Provider<AppDatabase>.value(value: database),
         Provider(create: (_) => StorageService()),
-        Provider(create: (_) => StatisticsService()), // ✅ AJOUT
+        Provider(create: (_) => StatisticsService()),
+        Provider(create: (context) => PaymentService(db: context.read<AppDatabase>())), // ✅ AJOUT
         ChangeNotifierProvider(create: (_) => AuthService()),
         ChangeNotifierProvider(create: (_) => PreferencesService()),
         ChangeNotifierProxyProvider<AppDatabase, CartService>(

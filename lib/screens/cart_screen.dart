@@ -8,6 +8,7 @@ import '../services/auth_service.dart';
 import '../services/sync_service.dart';
 import 'login_screen.dart';
 import 'checkout_screen.dart';
+import 'payment_screen.dart'; // ✅ AJOUT
 
 String formatPrice(double price) {
   return '${price.toStringAsFixed(2)} € TTC';
@@ -44,7 +45,6 @@ class _CartScreenState extends State<CartScreen> {
     final cart = context.read<CartService>();
     final orderService = context.read<OrderService>();
     final authService = context.read<AuthService>();
-    final syncService = context.read<SyncService>();
     final user = authService.currentUser;
 
     try {
@@ -66,17 +66,27 @@ class _CartScreenState extends State<CartScreen> {
       final pickupTime = orderDetails['time']!;
       final paymentMethod = orderDetails['payment']!;
 
-      // ✅ CORRIGÉ: Appel mis à jour sans le service de fidélité
-      await orderService.createOrderFromCart(cart, user.id, referenceName, pickupTime, paymentMethod);
+      // 1. Créer la commande et récupérer son ID
+      final orderId = await orderService.createOrderFromCart(cart, user.id, referenceName, pickupTime, paymentMethod);
       
-      // La synchronisation est cruciale pour que le client voie sa commande et ses points à jour
-      await syncService.syncAll(); 
-      
-      cart.clearCart();
-
+      // 2. ✅ REDIRECTION VERS L'ÉCRAN DE PAIEMENT
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('✅ Commande pour $referenceName à $pickupTime enregistrée !'), backgroundColor: Colors.green));
-        Navigator.of(context).popUntil((route) => route.isFirst);
+        final paymentSuccess = await Navigator.of(context).push<bool>(
+          MaterialPageRoute(
+            builder: (_) => PaymentScreen(total: cart.totalPrice, orderId: orderId),
+          ),
+        );
+
+        if (paymentSuccess == true) {
+          // Si le paiement ou la garantie a réussi
+          cart.clearCart();
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('✅ Commande pour $referenceName à $pickupTime validée !'), backgroundColor: Colors.green)
+            );
+            Navigator.of(context).popUntil((route) => route.isFirst);
+          }
+        }
       }
     } catch (e) {
       if (context.mounted) {
@@ -149,7 +159,7 @@ class _CartScreenState extends State<CartScreen> {
                       },
                       child: _isCheckingOut
                           ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3))
-                          : Text(isLoggedIn ? 'Payer' : 'Connexion'),
+                          : Text(isLoggedIn ? 'Passer au paiement' : 'Connexion'),
                     ),
                   ),
                 ],

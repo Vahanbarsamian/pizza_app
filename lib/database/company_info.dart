@@ -24,9 +24,11 @@ class CompanyInfo extends Table {
   TextColumn get logoUrl => text().named('logo_url').nullable()();
   RealColumn get tvaRate => real().named('tva_rate').nullable()();
   
-  // ✅ NOUVEAUX CHAMPS
   TextColumn get googleUrl => text().named('google_url').nullable()();
   TextColumn get pagesJaunesUrl => text().named('pagesjaunes_url').nullable()();
+
+  // ✅ AJOUT: Toggle global pour le paiement en ligne
+  BoolColumn get isPaymentEnabled => boolean().named('is_payment_enabled').withDefault(const Constant(false))();
 
   @override
   Set<Column> get primaryKey => {id};

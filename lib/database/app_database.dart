@@ -7,6 +7,7 @@ import 'package:rxdart/rxdart.dart';
 
 import 'initial_data.dart';
 
+// ✅ 1. LES PARTS (Le .g.dart doit être là)
 part 'app_database.g.dart';
 part 'product.dart';
 part 'user.dart';
@@ -23,6 +24,7 @@ part 'daos/product_dao.dart';
 part 'option.dart';
 part 'product_option_link.dart';
 
+// ✅ 2. LES CLASSES DE DONNÉES
 class ReviewWithOrder {
   final Review review;
   final Order order;
@@ -35,6 +37,7 @@ class OrderWithStatus {
   OrderWithStatus({required this.order, required this.status});
 }
 
+// ✅ 3. LA BASE DE DONNÉES
 @DriftDatabase(tables: [
   Products, Users, Orders, OrderItems, Reviews, Ingredients, Admins,
   Announcements, CompanyInfo, ProductIngredientLinks, SavedCartItems, 
@@ -47,7 +50,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 33;
+  int get schemaVersion => 34;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -115,7 +118,6 @@ class AppDatabase extends _$AppDatabase {
   Future<void> clearSavedCart() => delete(savedCartItems).go();
 
   Stream<List<ReviewWithOrder>> watchUserReviews(String userId) {
-    // ✅ CORRIGÉ : Double point au lieu de triple point
     final query = select(reviews).join([innerJoin(orders, orders.id.equalsExp(reviews.orderId))])..where(reviews.userId.equals(userId))..orderBy([OrderingTerm(expression: reviews.createdAt, mode: OrderingMode.desc)]);
     return query.watch().map((rows) => rows.map((row) => ReviewWithOrder(review: row.readTable(reviews),order: row.readTable(orders))).toList());
   }

@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:drift/drift.dart';
 
 import '../database/app_database.dart';
 import 'cart_service.dart';
@@ -9,8 +10,8 @@ class OrderService {
 
   OrderService({required AppDatabase db}) : _db = db;
 
-  // ✅ LOGIQUE ENTIÈREMENT DÉPLACÉE CÔTÉ SERVEUR VIA UNE FONCTION RPC
-  Future<void> createOrderFromCart(
+  // ✅ LOGIQUE DE CRÉATION
+  Future<int> createOrderFromCart(
     CartService cart,
     String userId,
     String referenceName,
@@ -22,7 +23,6 @@ class OrderService {
     }
 
     try {
-      // 1. Prépare la liste des articles pour la fonction RPC
       final orderItemsForRpc = cart.items.values.map((cartItem) {
         return {
           'product_id': cartItem.product.id,
@@ -32,8 +32,8 @@ class OrderService {
         };
       }).toList();
 
-      // 2. Appelle la fonction Supabase qui s'occupe de tout
-      await _supabase.rpc(
+      // On appelle la fonction RPC qui crée la commande et nous renvoie son ID
+      final response = await _supabase.rpc(
         'create_order_with_loyalty',
         params: {
           'p_user_id': userId,
@@ -44,14 +44,35 @@ class OrderService {
         },
       );
 
-      print('✅ [OrderService] Appel RPC à create_order_with_loyalty réussi.');
+      // On suppose que la fonction RPC renvoie l'ID de la commande créée
+      final orderId = response as int;
+      print('✅ [OrderService] Commande #$orderId créée.');
+      return orderId;
 
     } on PostgrestException catch (e) {
-      print('❌ [OrderService] Erreur Postgrest lors de la création de la commande: ${e.message}');
-      print('Détails: ${e.details}');
+      print('❌ [OrderService] Erreur Postgrest: ${e.message}');
       rethrow;
     } catch (e) {
-      print('❌ [OrderService] Erreur inattendue: $e');
+      print('❌ [OrderService] Erreur: $e');
+      rethrow;
+    }
+  }
+
+  // ✅ NOUVEAU: Mettre à jour le statut du paiement (paid, guaranteed, pending)
+  Future<void> updatePaymentStatus(int orderId, String status) async {
+    try {
+      await _supabase
+          .from('orders')
+          .update({'payment_status': status})
+          .eq('id', orderId);
+      
+      // Mise à jour locale
+      await (_db.update(_db.orders)..where((o) => o.id.equals(orderId)))
+          .write(OrdersCompanion(paymentStatus: Value(status)));
+          
+      print('✅ [OrderService] Statut paiement mis à jour : $status');
+    } catch (e) {
+      print('❌ [OrderService] Erreur mise à jour statut paiement: $e');
       rethrow;
     }
   }

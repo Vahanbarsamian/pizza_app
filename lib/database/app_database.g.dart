@@ -636,9 +636,15 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
       type: DriftSqlType.dateTime,
       requiredDuringInsert: false,
       defaultValue: currentDateAndTime);
+  static const VerificationMeta _stripeCustomerIdMeta =
+      const VerificationMeta('stripeCustomerId');
+  @override
+  late final GeneratedColumn<String> stripeCustomerId = GeneratedColumn<String>(
+      'stripe_customer_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns =>
-      [id, name, email, postalCode, createdAt];
+      [id, name, email, postalCode, createdAt, stripeCustomerId];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -674,6 +680,12 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
     }
+    if (data.containsKey('stripe_customer_id')) {
+      context.handle(
+          _stripeCustomerIdMeta,
+          stripeCustomerId.isAcceptableOrUnknown(
+              data['stripe_customer_id']!, _stripeCustomerIdMeta));
+    }
     return context;
   }
 
@@ -693,6 +705,8 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
           .read(DriftSqlType.string, data['${effectivePrefix}postal_code']),
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+      stripeCustomerId: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}stripe_customer_id']),
     );
   }
 
@@ -708,12 +722,14 @@ class User extends DataClass implements Insertable<User> {
   final String email;
   final String? postalCode;
   final DateTime createdAt;
+  final String? stripeCustomerId;
   const User(
       {required this.id,
       this.name,
       required this.email,
       this.postalCode,
-      required this.createdAt});
+      required this.createdAt,
+      this.stripeCustomerId});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -726,6 +742,9 @@ class User extends DataClass implements Insertable<User> {
       map['postal_code'] = Variable<String>(postalCode);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || stripeCustomerId != null) {
+      map['stripe_customer_id'] = Variable<String>(stripeCustomerId);
+    }
     return map;
   }
 
@@ -738,6 +757,9 @@ class User extends DataClass implements Insertable<User> {
           ? const Value.absent()
           : Value(postalCode),
       createdAt: Value(createdAt),
+      stripeCustomerId: stripeCustomerId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(stripeCustomerId),
     );
   }
 
@@ -750,6 +772,7 @@ class User extends DataClass implements Insertable<User> {
       email: serializer.fromJson<String>(json['email']),
       postalCode: serializer.fromJson<String?>(json['postalCode']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      stripeCustomerId: serializer.fromJson<String?>(json['stripeCustomerId']),
     );
   }
   @override
@@ -761,6 +784,7 @@ class User extends DataClass implements Insertable<User> {
       'email': serializer.toJson<String>(email),
       'postalCode': serializer.toJson<String?>(postalCode),
       'createdAt': serializer.toJson<DateTime>(createdAt),
+      'stripeCustomerId': serializer.toJson<String?>(stripeCustomerId),
     };
   }
 
@@ -769,13 +793,17 @@ class User extends DataClass implements Insertable<User> {
           Value<String?> name = const Value.absent(),
           String? email,
           Value<String?> postalCode = const Value.absent(),
-          DateTime? createdAt}) =>
+          DateTime? createdAt,
+          Value<String?> stripeCustomerId = const Value.absent()}) =>
       User(
         id: id ?? this.id,
         name: name.present ? name.value : this.name,
         email: email ?? this.email,
         postalCode: postalCode.present ? postalCode.value : this.postalCode,
         createdAt: createdAt ?? this.createdAt,
+        stripeCustomerId: stripeCustomerId.present
+            ? stripeCustomerId.value
+            : this.stripeCustomerId,
       );
   User copyWithCompanion(UsersCompanion data) {
     return User(
@@ -785,6 +813,9 @@ class User extends DataClass implements Insertable<User> {
       postalCode:
           data.postalCode.present ? data.postalCode.value : this.postalCode,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      stripeCustomerId: data.stripeCustomerId.present
+          ? data.stripeCustomerId.value
+          : this.stripeCustomerId,
     );
   }
 
@@ -795,13 +826,15 @@ class User extends DataClass implements Insertable<User> {
           ..write('name: $name, ')
           ..write('email: $email, ')
           ..write('postalCode: $postalCode, ')
-          ..write('createdAt: $createdAt')
+          ..write('createdAt: $createdAt, ')
+          ..write('stripeCustomerId: $stripeCustomerId')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, name, email, postalCode, createdAt);
+  int get hashCode =>
+      Object.hash(id, name, email, postalCode, createdAt, stripeCustomerId);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -810,7 +843,8 @@ class User extends DataClass implements Insertable<User> {
           other.name == this.name &&
           other.email == this.email &&
           other.postalCode == this.postalCode &&
-          other.createdAt == this.createdAt);
+          other.createdAt == this.createdAt &&
+          other.stripeCustomerId == this.stripeCustomerId);
 }
 
 class UsersCompanion extends UpdateCompanion<User> {
@@ -819,6 +853,7 @@ class UsersCompanion extends UpdateCompanion<User> {
   final Value<String> email;
   final Value<String?> postalCode;
   final Value<DateTime> createdAt;
+  final Value<String?> stripeCustomerId;
   final Value<int> rowid;
   const UsersCompanion({
     this.id = const Value.absent(),
@@ -826,6 +861,7 @@ class UsersCompanion extends UpdateCompanion<User> {
     this.email = const Value.absent(),
     this.postalCode = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.stripeCustomerId = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   UsersCompanion.insert({
@@ -834,6 +870,7 @@ class UsersCompanion extends UpdateCompanion<User> {
     required String email,
     this.postalCode = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.stripeCustomerId = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : id = Value(id),
         email = Value(email);
@@ -843,6 +880,7 @@ class UsersCompanion extends UpdateCompanion<User> {
     Expression<String>? email,
     Expression<String>? postalCode,
     Expression<DateTime>? createdAt,
+    Expression<String>? stripeCustomerId,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -851,6 +889,7 @@ class UsersCompanion extends UpdateCompanion<User> {
       if (email != null) 'email': email,
       if (postalCode != null) 'postal_code': postalCode,
       if (createdAt != null) 'created_at': createdAt,
+      if (stripeCustomerId != null) 'stripe_customer_id': stripeCustomerId,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -861,6 +900,7 @@ class UsersCompanion extends UpdateCompanion<User> {
       Value<String>? email,
       Value<String?>? postalCode,
       Value<DateTime>? createdAt,
+      Value<String?>? stripeCustomerId,
       Value<int>? rowid}) {
     return UsersCompanion(
       id: id ?? this.id,
@@ -868,6 +908,7 @@ class UsersCompanion extends UpdateCompanion<User> {
       email: email ?? this.email,
       postalCode: postalCode ?? this.postalCode,
       createdAt: createdAt ?? this.createdAt,
+      stripeCustomerId: stripeCustomerId ?? this.stripeCustomerId,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -890,6 +931,9 @@ class UsersCompanion extends UpdateCompanion<User> {
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
+    if (stripeCustomerId.present) {
+      map['stripe_customer_id'] = Variable<String>(stripeCustomerId.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -904,6 +948,7 @@ class UsersCompanion extends UpdateCompanion<User> {
           ..write('email: $email, ')
           ..write('postalCode: $postalCode, ')
           ..write('createdAt: $createdAt, ')
+          ..write('stripeCustomerId: $stripeCustomerId, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -973,6 +1018,14 @@ class $OrdersTable extends Orders with TableInfo<$OrdersTable, Order> {
       requiredDuringInsert: false,
       defaultConstraints: GeneratedColumn.constraintIsAlways(
           'CHECK ("is_archived" IN (0, 1))'));
+  static const VerificationMeta _paymentStatusMeta =
+      const VerificationMeta('paymentStatus');
+  @override
+  late final GeneratedColumn<String> paymentStatus = GeneratedColumn<String>(
+      'payment_status', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('pending'));
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -983,7 +1036,8 @@ class $OrdersTable extends Orders with TableInfo<$OrdersTable, Order> {
         total,
         createdAt,
         updatedAt,
-        isArchived
+        isArchived,
+        paymentStatus
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1044,6 +1098,12 @@ class $OrdersTable extends Orders with TableInfo<$OrdersTable, Order> {
           isArchived.isAcceptableOrUnknown(
               data['is_archived']!, _isArchivedMeta));
     }
+    if (data.containsKey('payment_status')) {
+      context.handle(
+          _paymentStatusMeta,
+          paymentStatus.isAcceptableOrUnknown(
+              data['payment_status']!, _paymentStatusMeta));
+    }
     return context;
   }
 
@@ -1071,6 +1131,8 @@ class $OrdersTable extends Orders with TableInfo<$OrdersTable, Order> {
           .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at']),
       isArchived: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}is_archived']),
+      paymentStatus: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}payment_status'])!,
     );
   }
 
@@ -1090,6 +1152,7 @@ class Order extends DataClass implements Insertable<Order> {
   final DateTime createdAt;
   final DateTime? updatedAt;
   final bool? isArchived;
+  final String paymentStatus;
   const Order(
       {required this.id,
       required this.userId,
@@ -1099,7 +1162,8 @@ class Order extends DataClass implements Insertable<Order> {
       required this.total,
       required this.createdAt,
       this.updatedAt,
-      this.isArchived});
+      this.isArchived,
+      required this.paymentStatus});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -1122,6 +1186,7 @@ class Order extends DataClass implements Insertable<Order> {
     if (!nullToAbsent || isArchived != null) {
       map['is_archived'] = Variable<bool>(isArchived);
     }
+    map['payment_status'] = Variable<String>(paymentStatus);
     return map;
   }
 
@@ -1146,6 +1211,7 @@ class Order extends DataClass implements Insertable<Order> {
       isArchived: isArchived == null && nullToAbsent
           ? const Value.absent()
           : Value(isArchived),
+      paymentStatus: Value(paymentStatus),
     );
   }
 
@@ -1162,6 +1228,7 @@ class Order extends DataClass implements Insertable<Order> {
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
       isArchived: serializer.fromJson<bool?>(json['isArchived']),
+      paymentStatus: serializer.fromJson<String>(json['paymentStatus']),
     );
   }
   @override
@@ -1177,6 +1244,7 @@ class Order extends DataClass implements Insertable<Order> {
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime?>(updatedAt),
       'isArchived': serializer.toJson<bool?>(isArchived),
+      'paymentStatus': serializer.toJson<String>(paymentStatus),
     };
   }
 
@@ -1189,7 +1257,8 @@ class Order extends DataClass implements Insertable<Order> {
           double? total,
           DateTime? createdAt,
           Value<DateTime?> updatedAt = const Value.absent(),
-          Value<bool?> isArchived = const Value.absent()}) =>
+          Value<bool?> isArchived = const Value.absent(),
+          String? paymentStatus}) =>
       Order(
         id: id ?? this.id,
         userId: userId ?? this.userId,
@@ -1202,6 +1271,7 @@ class Order extends DataClass implements Insertable<Order> {
         createdAt: createdAt ?? this.createdAt,
         updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
         isArchived: isArchived.present ? isArchived.value : this.isArchived,
+        paymentStatus: paymentStatus ?? this.paymentStatus,
       );
   Order copyWithCompanion(OrdersCompanion data) {
     return Order(
@@ -1220,6 +1290,9 @@ class Order extends DataClass implements Insertable<Order> {
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       isArchived:
           data.isArchived.present ? data.isArchived.value : this.isArchived,
+      paymentStatus: data.paymentStatus.present
+          ? data.paymentStatus.value
+          : this.paymentStatus,
     );
   }
 
@@ -1234,14 +1307,15 @@ class Order extends DataClass implements Insertable<Order> {
           ..write('total: $total, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
-          ..write('isArchived: $isArchived')
+          ..write('isArchived: $isArchived, ')
+          ..write('paymentStatus: $paymentStatus')
           ..write(')'))
         .toString();
   }
 
   @override
   int get hashCode => Object.hash(id, userId, referenceName, pickupTime,
-      paymentMethod, total, createdAt, updatedAt, isArchived);
+      paymentMethod, total, createdAt, updatedAt, isArchived, paymentStatus);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1254,7 +1328,8 @@ class Order extends DataClass implements Insertable<Order> {
           other.total == this.total &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
-          other.isArchived == this.isArchived);
+          other.isArchived == this.isArchived &&
+          other.paymentStatus == this.paymentStatus);
 }
 
 class OrdersCompanion extends UpdateCompanion<Order> {
@@ -1267,6 +1342,7 @@ class OrdersCompanion extends UpdateCompanion<Order> {
   final Value<DateTime> createdAt;
   final Value<DateTime?> updatedAt;
   final Value<bool?> isArchived;
+  final Value<String> paymentStatus;
   const OrdersCompanion({
     this.id = const Value.absent(),
     this.userId = const Value.absent(),
@@ -1277,6 +1353,7 @@ class OrdersCompanion extends UpdateCompanion<Order> {
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.isArchived = const Value.absent(),
+    this.paymentStatus = const Value.absent(),
   });
   OrdersCompanion.insert({
     this.id = const Value.absent(),
@@ -1288,6 +1365,7 @@ class OrdersCompanion extends UpdateCompanion<Order> {
     required DateTime createdAt,
     this.updatedAt = const Value.absent(),
     this.isArchived = const Value.absent(),
+    this.paymentStatus = const Value.absent(),
   })  : userId = Value(userId),
         total = Value(total),
         createdAt = Value(createdAt);
@@ -1301,6 +1379,7 @@ class OrdersCompanion extends UpdateCompanion<Order> {
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<bool>? isArchived,
+    Expression<String>? paymentStatus,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1312,6 +1391,7 @@ class OrdersCompanion extends UpdateCompanion<Order> {
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (isArchived != null) 'is_archived': isArchived,
+      if (paymentStatus != null) 'payment_status': paymentStatus,
     });
   }
 
@@ -1324,7 +1404,8 @@ class OrdersCompanion extends UpdateCompanion<Order> {
       Value<double>? total,
       Value<DateTime>? createdAt,
       Value<DateTime?>? updatedAt,
-      Value<bool?>? isArchived}) {
+      Value<bool?>? isArchived,
+      Value<String>? paymentStatus}) {
     return OrdersCompanion(
       id: id ?? this.id,
       userId: userId ?? this.userId,
@@ -1335,6 +1416,7 @@ class OrdersCompanion extends UpdateCompanion<Order> {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       isArchived: isArchived ?? this.isArchived,
+      paymentStatus: paymentStatus ?? this.paymentStatus,
     );
   }
 
@@ -1368,6 +1450,9 @@ class OrdersCompanion extends UpdateCompanion<Order> {
     if (isArchived.present) {
       map['is_archived'] = Variable<bool>(isArchived.value);
     }
+    if (paymentStatus.present) {
+      map['payment_status'] = Variable<String>(paymentStatus.value);
+    }
     return map;
   }
 
@@ -1382,7 +1467,8 @@ class OrdersCompanion extends UpdateCompanion<Order> {
           ..write('total: $total, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
-          ..write('isArchived: $isArchived')
+          ..write('isArchived: $isArchived, ')
+          ..write('paymentStatus: $paymentStatus')
           ..write(')'))
         .toString();
   }
@@ -3328,6 +3414,16 @@ class $CompanyInfoTable extends CompanyInfo
   late final GeneratedColumn<String> pagesJaunesUrl = GeneratedColumn<String>(
       'pagesjaunes_url', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _isPaymentEnabledMeta =
+      const VerificationMeta('isPaymentEnabled');
+  @override
+  late final GeneratedColumn<bool> isPaymentEnabled = GeneratedColumn<bool>(
+      'is_payment_enabled', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("is_payment_enabled" IN (0, 1))'),
+      defaultValue: const Constant(false));
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -3350,7 +3446,8 @@ class $CompanyInfoTable extends CompanyInfo
         logoUrl,
         tvaRate,
         googleUrl,
-        pagesJaunesUrl
+        pagesJaunesUrl,
+        isPaymentEnabled
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -3465,6 +3562,12 @@ class $CompanyInfoTable extends CompanyInfo
           pagesJaunesUrl.isAcceptableOrUnknown(
               data['pagesjaunes_url']!, _pagesJaunesUrlMeta));
     }
+    if (data.containsKey('is_payment_enabled')) {
+      context.handle(
+          _isPaymentEnabledMeta,
+          isPaymentEnabled.isAcceptableOrUnknown(
+              data['is_payment_enabled']!, _isPaymentEnabledMeta));
+    }
     return context;
   }
 
@@ -3517,6 +3620,8 @@ class $CompanyInfoTable extends CompanyInfo
           .read(DriftSqlType.string, data['${effectivePrefix}google_url']),
       pagesJaunesUrl: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}pagesjaunes_url']),
+      isPaymentEnabled: attachedDatabase.typeMapping.read(
+          DriftSqlType.bool, data['${effectivePrefix}is_payment_enabled'])!,
     );
   }
 
@@ -3548,6 +3653,7 @@ class CompanyInfoData extends DataClass implements Insertable<CompanyInfoData> {
   final double? tvaRate;
   final String? googleUrl;
   final String? pagesJaunesUrl;
+  final bool isPaymentEnabled;
   const CompanyInfoData(
       {required this.id,
       this.name,
@@ -3569,7 +3675,8 @@ class CompanyInfoData extends DataClass implements Insertable<CompanyInfoData> {
       this.logoUrl,
       this.tvaRate,
       this.googleUrl,
-      this.pagesJaunesUrl});
+      this.pagesJaunesUrl,
+      required this.isPaymentEnabled});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -3632,6 +3739,7 @@ class CompanyInfoData extends DataClass implements Insertable<CompanyInfoData> {
     if (!nullToAbsent || pagesJaunesUrl != null) {
       map['pagesjaunes_url'] = Variable<String>(pagesJaunesUrl);
     }
+    map['is_payment_enabled'] = Variable<bool>(isPaymentEnabled);
     return map;
   }
 
@@ -3690,6 +3798,7 @@ class CompanyInfoData extends DataClass implements Insertable<CompanyInfoData> {
       pagesJaunesUrl: pagesJaunesUrl == null && nullToAbsent
           ? const Value.absent()
           : Value(pagesJaunesUrl),
+      isPaymentEnabled: Value(isPaymentEnabled),
     );
   }
 
@@ -3721,6 +3830,7 @@ class CompanyInfoData extends DataClass implements Insertable<CompanyInfoData> {
       tvaRate: serializer.fromJson<double?>(json['tvaRate']),
       googleUrl: serializer.fromJson<String?>(json['googleUrl']),
       pagesJaunesUrl: serializer.fromJson<String?>(json['pagesJaunesUrl']),
+      isPaymentEnabled: serializer.fromJson<bool>(json['isPaymentEnabled']),
     );
   }
   @override
@@ -3748,6 +3858,7 @@ class CompanyInfoData extends DataClass implements Insertable<CompanyInfoData> {
       'tvaRate': serializer.toJson<double?>(tvaRate),
       'googleUrl': serializer.toJson<String?>(googleUrl),
       'pagesJaunesUrl': serializer.toJson<String?>(pagesJaunesUrl),
+      'isPaymentEnabled': serializer.toJson<bool>(isPaymentEnabled),
     };
   }
 
@@ -3772,7 +3883,8 @@ class CompanyInfoData extends DataClass implements Insertable<CompanyInfoData> {
           Value<String?> logoUrl = const Value.absent(),
           Value<double?> tvaRate = const Value.absent(),
           Value<String?> googleUrl = const Value.absent(),
-          Value<String?> pagesJaunesUrl = const Value.absent()}) =>
+          Value<String?> pagesJaunesUrl = const Value.absent(),
+          bool? isPaymentEnabled}) =>
       CompanyInfoData(
         id: id ?? this.id,
         name: name.present ? name.value : this.name,
@@ -3806,6 +3918,7 @@ class CompanyInfoData extends DataClass implements Insertable<CompanyInfoData> {
         googleUrl: googleUrl.present ? googleUrl.value : this.googleUrl,
         pagesJaunesUrl:
             pagesJaunesUrl.present ? pagesJaunesUrl.value : this.pagesJaunesUrl,
+        isPaymentEnabled: isPaymentEnabled ?? this.isPaymentEnabled,
       );
   CompanyInfoData copyWithCompanion(CompanyInfoCompanion data) {
     return CompanyInfoData(
@@ -3849,6 +3962,9 @@ class CompanyInfoData extends DataClass implements Insertable<CompanyInfoData> {
       pagesJaunesUrl: data.pagesJaunesUrl.present
           ? data.pagesJaunesUrl.value
           : this.pagesJaunesUrl,
+      isPaymentEnabled: data.isPaymentEnabled.present
+          ? data.isPaymentEnabled.value
+          : this.isPaymentEnabled,
     );
   }
 
@@ -3875,7 +3991,8 @@ class CompanyInfoData extends DataClass implements Insertable<CompanyInfoData> {
           ..write('logoUrl: $logoUrl, ')
           ..write('tvaRate: $tvaRate, ')
           ..write('googleUrl: $googleUrl, ')
-          ..write('pagesJaunesUrl: $pagesJaunesUrl')
+          ..write('pagesJaunesUrl: $pagesJaunesUrl, ')
+          ..write('isPaymentEnabled: $isPaymentEnabled')
           ..write(')'))
         .toString();
   }
@@ -3902,7 +4019,8 @@ class CompanyInfoData extends DataClass implements Insertable<CompanyInfoData> {
         logoUrl,
         tvaRate,
         googleUrl,
-        pagesJaunesUrl
+        pagesJaunesUrl,
+        isPaymentEnabled
       ]);
   @override
   bool operator ==(Object other) =>
@@ -3928,7 +4046,8 @@ class CompanyInfoData extends DataClass implements Insertable<CompanyInfoData> {
           other.logoUrl == this.logoUrl &&
           other.tvaRate == this.tvaRate &&
           other.googleUrl == this.googleUrl &&
-          other.pagesJaunesUrl == this.pagesJaunesUrl);
+          other.pagesJaunesUrl == this.pagesJaunesUrl &&
+          other.isPaymentEnabled == this.isPaymentEnabled);
 }
 
 class CompanyInfoCompanion extends UpdateCompanion<CompanyInfoData> {
@@ -3953,6 +4072,7 @@ class CompanyInfoCompanion extends UpdateCompanion<CompanyInfoData> {
   final Value<double?> tvaRate;
   final Value<String?> googleUrl;
   final Value<String?> pagesJaunesUrl;
+  final Value<bool> isPaymentEnabled;
   const CompanyInfoCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
@@ -3975,6 +4095,7 @@ class CompanyInfoCompanion extends UpdateCompanion<CompanyInfoData> {
     this.tvaRate = const Value.absent(),
     this.googleUrl = const Value.absent(),
     this.pagesJaunesUrl = const Value.absent(),
+    this.isPaymentEnabled = const Value.absent(),
   });
   CompanyInfoCompanion.insert({
     this.id = const Value.absent(),
@@ -3998,6 +4119,7 @@ class CompanyInfoCompanion extends UpdateCompanion<CompanyInfoData> {
     this.tvaRate = const Value.absent(),
     this.googleUrl = const Value.absent(),
     this.pagesJaunesUrl = const Value.absent(),
+    this.isPaymentEnabled = const Value.absent(),
   });
   static Insertable<CompanyInfoData> custom({
     Expression<int>? id,
@@ -4021,6 +4143,7 @@ class CompanyInfoCompanion extends UpdateCompanion<CompanyInfoData> {
     Expression<double>? tvaRate,
     Expression<String>? googleUrl,
     Expression<String>? pagesJaunesUrl,
+    Expression<bool>? isPaymentEnabled,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -4046,6 +4169,7 @@ class CompanyInfoCompanion extends UpdateCompanion<CompanyInfoData> {
       if (tvaRate != null) 'tva_rate': tvaRate,
       if (googleUrl != null) 'google_url': googleUrl,
       if (pagesJaunesUrl != null) 'pagesjaunes_url': pagesJaunesUrl,
+      if (isPaymentEnabled != null) 'is_payment_enabled': isPaymentEnabled,
     });
   }
 
@@ -4070,7 +4194,8 @@ class CompanyInfoCompanion extends UpdateCompanion<CompanyInfoData> {
       Value<String?>? logoUrl,
       Value<double?>? tvaRate,
       Value<String?>? googleUrl,
-      Value<String?>? pagesJaunesUrl}) {
+      Value<String?>? pagesJaunesUrl,
+      Value<bool>? isPaymentEnabled}) {
     return CompanyInfoCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
@@ -4093,6 +4218,7 @@ class CompanyInfoCompanion extends UpdateCompanion<CompanyInfoData> {
       tvaRate: tvaRate ?? this.tvaRate,
       googleUrl: googleUrl ?? this.googleUrl,
       pagesJaunesUrl: pagesJaunesUrl ?? this.pagesJaunesUrl,
+      isPaymentEnabled: isPaymentEnabled ?? this.isPaymentEnabled,
     );
   }
 
@@ -4163,6 +4289,9 @@ class CompanyInfoCompanion extends UpdateCompanion<CompanyInfoData> {
     if (pagesJaunesUrl.present) {
       map['pagesjaunes_url'] = Variable<String>(pagesJaunesUrl.value);
     }
+    if (isPaymentEnabled.present) {
+      map['is_payment_enabled'] = Variable<bool>(isPaymentEnabled.value);
+    }
     return map;
   }
 
@@ -4189,7 +4318,8 @@ class CompanyInfoCompanion extends UpdateCompanion<CompanyInfoData> {
           ..write('logoUrl: $logoUrl, ')
           ..write('tvaRate: $tvaRate, ')
           ..write('googleUrl: $googleUrl, ')
-          ..write('pagesJaunesUrl: $pagesJaunesUrl')
+          ..write('pagesJaunesUrl: $pagesJaunesUrl, ')
+          ..write('isPaymentEnabled: $isPaymentEnabled')
           ..write(')'))
         .toString();
   }
@@ -6682,6 +6812,7 @@ typedef $$UsersTableCreateCompanionBuilder = UsersCompanion Function({
   required String email,
   Value<String?> postalCode,
   Value<DateTime> createdAt,
+  Value<String?> stripeCustomerId,
   Value<int> rowid,
 });
 typedef $$UsersTableUpdateCompanionBuilder = UsersCompanion Function({
@@ -6690,6 +6821,7 @@ typedef $$UsersTableUpdateCompanionBuilder = UsersCompanion Function({
   Value<String> email,
   Value<String?> postalCode,
   Value<DateTime> createdAt,
+  Value<String?> stripeCustomerId,
   Value<int> rowid,
 });
 
@@ -6749,6 +6881,10 @@ class $$UsersTableFilterComposer extends Composer<_$AppDatabase, $UsersTable> {
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get stripeCustomerId => $composableBuilder(
+      column: $table.stripeCustomerId,
+      builder: (column) => ColumnFilters(column));
 
   Expression<bool> reviewsRefs(
       Expression<bool> Function($$ReviewsTableFilterComposer f) f) {
@@ -6816,6 +6952,10 @@ class $$UsersTableOrderingComposer
 
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get stripeCustomerId => $composableBuilder(
+      column: $table.stripeCustomerId,
+      builder: (column) => ColumnOrderings(column));
 }
 
 class $$UsersTableAnnotationComposer
@@ -6841,6 +6981,9 @@ class $$UsersTableAnnotationComposer
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<String> get stripeCustomerId => $composableBuilder(
+      column: $table.stripeCustomerId, builder: (column) => column);
 
   Expression<T> reviewsRefs<T extends Object>(
       Expression<T> Function($$ReviewsTableAnnotationComposer a) f) {
@@ -6913,6 +7056,7 @@ class $$UsersTableTableManager extends RootTableManager<
             Value<String> email = const Value.absent(),
             Value<String?> postalCode = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
+            Value<String?> stripeCustomerId = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               UsersCompanion(
@@ -6921,6 +7065,7 @@ class $$UsersTableTableManager extends RootTableManager<
             email: email,
             postalCode: postalCode,
             createdAt: createdAt,
+            stripeCustomerId: stripeCustomerId,
             rowid: rowid,
           ),
           createCompanionCallback: ({
@@ -6929,6 +7074,7 @@ class $$UsersTableTableManager extends RootTableManager<
             required String email,
             Value<String?> postalCode = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
+            Value<String?> stripeCustomerId = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               UsersCompanion.insert(
@@ -6937,6 +7083,7 @@ class $$UsersTableTableManager extends RootTableManager<
             email: email,
             postalCode: postalCode,
             createdAt: createdAt,
+            stripeCustomerId: stripeCustomerId,
             rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0
@@ -7006,6 +7153,7 @@ typedef $$OrdersTableCreateCompanionBuilder = OrdersCompanion Function({
   required DateTime createdAt,
   Value<DateTime?> updatedAt,
   Value<bool?> isArchived,
+  Value<String> paymentStatus,
 });
 typedef $$OrdersTableUpdateCompanionBuilder = OrdersCompanion Function({
   Value<int> id,
@@ -7017,6 +7165,7 @@ typedef $$OrdersTableUpdateCompanionBuilder = OrdersCompanion Function({
   Value<DateTime> createdAt,
   Value<DateTime?> updatedAt,
   Value<bool?> isArchived,
+  Value<String> paymentStatus,
 });
 
 final class $$OrdersTableReferences
@@ -7106,6 +7255,9 @@ class $$OrdersTableFilterComposer
 
   ColumnFilters<bool> get isArchived => $composableBuilder(
       column: $table.isArchived, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get paymentStatus => $composableBuilder(
+      column: $table.paymentStatus, builder: (column) => ColumnFilters(column));
 
   Expression<bool> orderItemsRefs(
       Expression<bool> Function($$OrderItemsTableFilterComposer f) f) {
@@ -7209,6 +7361,10 @@ class $$OrdersTableOrderingComposer
 
   ColumnOrderings<bool> get isArchived => $composableBuilder(
       column: $table.isArchived, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get paymentStatus => $composableBuilder(
+      column: $table.paymentStatus,
+      builder: (column) => ColumnOrderings(column));
 }
 
 class $$OrdersTableAnnotationComposer
@@ -7246,6 +7402,9 @@ class $$OrdersTableAnnotationComposer
 
   GeneratedColumn<bool> get isArchived => $composableBuilder(
       column: $table.isArchived, builder: (column) => column);
+
+  GeneratedColumn<String> get paymentStatus => $composableBuilder(
+      column: $table.paymentStatus, builder: (column) => column);
 
   Expression<T> orderItemsRefs<T extends Object>(
       Expression<T> Function($$OrderItemsTableAnnotationComposer a) f) {
@@ -7348,6 +7507,7 @@ class $$OrdersTableTableManager extends RootTableManager<
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime?> updatedAt = const Value.absent(),
             Value<bool?> isArchived = const Value.absent(),
+            Value<String> paymentStatus = const Value.absent(),
           }) =>
               OrdersCompanion(
             id: id,
@@ -7359,6 +7519,7 @@ class $$OrdersTableTableManager extends RootTableManager<
             createdAt: createdAt,
             updatedAt: updatedAt,
             isArchived: isArchived,
+            paymentStatus: paymentStatus,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -7370,6 +7531,7 @@ class $$OrdersTableTableManager extends RootTableManager<
             required DateTime createdAt,
             Value<DateTime?> updatedAt = const Value.absent(),
             Value<bool?> isArchived = const Value.absent(),
+            Value<String> paymentStatus = const Value.absent(),
           }) =>
               OrdersCompanion.insert(
             id: id,
@@ -7381,6 +7543,7 @@ class $$OrdersTableTableManager extends RootTableManager<
             createdAt: createdAt,
             updatedAt: updatedAt,
             isArchived: isArchived,
+            paymentStatus: paymentStatus,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) =>
@@ -8784,6 +8947,7 @@ typedef $$CompanyInfoTableCreateCompanionBuilder = CompanyInfoCompanion
   Value<double?> tvaRate,
   Value<String?> googleUrl,
   Value<String?> pagesJaunesUrl,
+  Value<bool> isPaymentEnabled,
 });
 typedef $$CompanyInfoTableUpdateCompanionBuilder = CompanyInfoCompanion
     Function({
@@ -8808,6 +8972,7 @@ typedef $$CompanyInfoTableUpdateCompanionBuilder = CompanyInfoCompanion
   Value<double?> tvaRate,
   Value<String?> googleUrl,
   Value<String?> pagesJaunesUrl,
+  Value<bool> isPaymentEnabled,
 });
 
 class $$CompanyInfoTableFilterComposer
@@ -8885,6 +9050,10 @@ class $$CompanyInfoTableFilterComposer
 
   ColumnFilters<String> get pagesJaunesUrl => $composableBuilder(
       column: $table.pagesJaunesUrl,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isPaymentEnabled => $composableBuilder(
+      column: $table.isPaymentEnabled,
       builder: (column) => ColumnFilters(column));
 }
 
@@ -8968,6 +9137,10 @@ class $$CompanyInfoTableOrderingComposer
   ColumnOrderings<String> get pagesJaunesUrl => $composableBuilder(
       column: $table.pagesJaunesUrl,
       builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get isPaymentEnabled => $composableBuilder(
+      column: $table.isPaymentEnabled,
+      builder: (column) => ColumnOrderings(column));
 }
 
 class $$CompanyInfoTableAnnotationComposer
@@ -9041,6 +9214,9 @@ class $$CompanyInfoTableAnnotationComposer
 
   GeneratedColumn<String> get pagesJaunesUrl => $composableBuilder(
       column: $table.pagesJaunesUrl, builder: (column) => column);
+
+  GeneratedColumn<bool> get isPaymentEnabled => $composableBuilder(
+      column: $table.isPaymentEnabled, builder: (column) => column);
 }
 
 class $$CompanyInfoTableTableManager extends RootTableManager<
@@ -9090,6 +9266,7 @@ class $$CompanyInfoTableTableManager extends RootTableManager<
             Value<double?> tvaRate = const Value.absent(),
             Value<String?> googleUrl = const Value.absent(),
             Value<String?> pagesJaunesUrl = const Value.absent(),
+            Value<bool> isPaymentEnabled = const Value.absent(),
           }) =>
               CompanyInfoCompanion(
             id: id,
@@ -9113,6 +9290,7 @@ class $$CompanyInfoTableTableManager extends RootTableManager<
             tvaRate: tvaRate,
             googleUrl: googleUrl,
             pagesJaunesUrl: pagesJaunesUrl,
+            isPaymentEnabled: isPaymentEnabled,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -9136,6 +9314,7 @@ class $$CompanyInfoTableTableManager extends RootTableManager<
             Value<double?> tvaRate = const Value.absent(),
             Value<String?> googleUrl = const Value.absent(),
             Value<String?> pagesJaunesUrl = const Value.absent(),
+            Value<bool> isPaymentEnabled = const Value.absent(),
           }) =>
               CompanyInfoCompanion.insert(
             id: id,
@@ -9159,6 +9338,7 @@ class $$CompanyInfoTableTableManager extends RootTableManager<
             tvaRate: tvaRate,
             googleUrl: googleUrl,
             pagesJaunesUrl: pagesJaunesUrl,
+            isPaymentEnabled: isPaymentEnabled,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

@@ -162,9 +162,9 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> with SingleTickerProvid
             color: Theme.of(context).appBarTheme.backgroundColor,
             child: TabBar(
               controller: _tabController,
-              labelColor: Colors.white, // ✅ AJOUT
-              unselectedLabelColor: Colors.white70, // ✅ AJOUT
-              indicatorColor: Colors.orange, // ✅ AJOUT
+              labelColor: Colors.white,
+              unselectedLabelColor: Colors.white70,
+              indicatorColor: Colors.orange,
               tabs: const [
                 Tab(icon: Icon(Icons.list_alt), text: 'Commandes'),
                 Tab(icon: Icon(Icons.inventory_2_outlined), text: 'Archives'),
@@ -199,7 +199,6 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> with SingleTickerProvid
   }
 }
 
-// ... Le reste du code est inchangé ...
 class OrdersList extends StatelessWidget {
   final DateTime? startDate;
   final DateTime? endDate;
@@ -217,21 +216,6 @@ class OrdersList extends StatelessWidget {
     }
   }
 
-  Future<bool> _confirmDelete(BuildContext context, Order order) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Confirmer la suppression'),
-        content: Text('Êtes-vous sûr de vouloir supprimer définitivement la commande de ${order.referenceName} ?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Annuler')),
-          TextButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('SUPPRIMER', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold))),
-        ],
-      ),
-    );
-    return confirmed ?? false;
-  }
-
   @override
   Widget build(BuildContext context) {
     final db = Provider.of<AppDatabase>(context);
@@ -245,6 +229,7 @@ class OrdersList extends StatelessWidget {
         var allOrders = snapshot.data ?? [];
         allOrders = allOrders.where((o) => o.order.isArchived != true).toList();
 
+        // ... Tris et filtres ...
         if (startDate != null) {
           final startOfDay = DateTime(startDate!.year, startDate!.month, startDate!.day);
           allOrders = allOrders.where((o) => o.order.createdAt.isAfter(startOfDay)).toList();
@@ -259,24 +244,20 @@ class OrdersList extends StatelessWidget {
           final dateB = DateTime(b.order.createdAt.year, b.order.createdAt.month, b.order.createdAt.day);
           int dateComparison = dateB.compareTo(dateA);
           if (dateComparison != 0) return dateComparison;
-
           final timeA = _parsePickupTime(a.order.pickupTime ?? '');
           final timeB = _parsePickupTime(b.order.pickupTime ?? '');
-          final timeAValue = timeA.hour * 60 + timeA.minute;
-          final timeBValue = timeB.hour * 60 + timeB.minute;
-          return timeAValue.compareTo(timeBValue);
+          return (timeA.hour * 60 + timeA.minute).compareTo(timeB.hour * 60 + timeB.minute);
         });
 
-        if (allOrders.isEmpty) {
-          return const Center(child: Text('Aucune commande à afficher pour cette période.'));
-        }
+        if (allOrders.isEmpty) return const Center(child: Text('Aucune commande.'));
+        
         final toDoOrders = allOrders.where((o) => o.status == 'À faire').toList();
         final readyOrders = allOrders.where((o) => o.status == 'Prête').toList();
+
         return ListView(
-          padding: const EdgeInsets.only(top: 8),
           children: [
             _buildSection(context, 'À PRÉPARER', toDoOrders, adminService, syncService),
-            const Divider(height: 32, thickness: 1.5, indent: 16, endIndent: 16),
+            const Divider(height: 32),
             _buildSection(context, 'PRÊTES', readyOrders, adminService, syncService),
           ],
         );
@@ -288,46 +269,52 @@ class OrdersList extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(padding: const EdgeInsets.fromLTRB(16, 16, 16, 8), child: Row(children: [Text(title, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)), const SizedBox(width: 8), CircleAvatar(radius: 12, child: Text(orders.length.toString()))])),
-        if (orders.isEmpty)
-          const Padding(padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0), child: Text('Aucune commande dans cette section.'))
-        else
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: orders.length,
-            itemBuilder: (context, index) {
-              final orderWithStatus = orders[index];
-              final order = orderWithStatus.order;
-              return Dismissible(
-                key: ValueKey(order.id),
-                direction: DismissDirection.endToStart,
-                confirmDismiss: (direction) => _confirmDelete(context, order),
-                onDismissed: (direction) async {
-                  try {
-                    await adminService.deleteOrder(order.id);
-                    await syncService.syncAll();
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Commande supprimée.'), backgroundColor: Colors.orange));
-                  } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur lors de la suppression: $e'), backgroundColor: Colors.red));
-                  }
-                },
-                background: Container(
-                  color: Colors.red,
-                  alignment: Alignment.centerRight,
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: const Row(mainAxisSize: MainAxisSize.min, children: [Text('Supprimer', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)), SizedBox(width: 8), Icon(Icons.delete_sweep, color: Colors.white)]),
-                ),
-                child: Card(margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4), child: ListTile(title: Text('Commande de ${order.referenceName ?? 'N/A'}'), subtitle: Text('Pour ${order.pickupTime ?? 'N/A'}'), trailing: Text.rich(TextSpan(style: const TextStyle(fontSize: 16), children: [TextSpan(text: order.total.toStringAsFixed(2), style: const TextStyle(fontWeight: FontWeight.bold)), const TextSpan(text: ' € TTC', style: TextStyle(fontSize: 10, color: Colors.grey))])), onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (context) => OrderDetailScreen(order: order, status: orderWithStatus.status))))),
-              );
-            },
-          ),
+        Padding(padding: const EdgeInsets.all(16), child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18))),
+        ...orders.map((o) => OrderCard(orderWithStatus: o, adminService: adminService, syncService: syncService)),
       ],
     );
   }
 }
 
+class OrderCard extends StatelessWidget {
+  final OrderWithStatus orderWithStatus;
+  final AdminService adminService;
+  final SyncService syncService;
+
+  const OrderCard({super.key, required this.orderWithStatus, required this.adminService, required this.syncService});
+
+  @override
+  Widget build(BuildContext context) {
+    final order = orderWithStatus.order;
+    final isPaid = order.paymentStatus == 'paid';
+    
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: ListTile(
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => OrderDetailScreen(order: order, status: orderWithStatus.status))),
+        title: Text('Commande #${order.id} - ${order.referenceName}'),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Heure: ${order.pickupTime}'),
+            // ✅ AJOUT: Affichage du statut de paiement
+            Text(
+              isPaid ? 'PAYÉE' : 'À PAYER SUR PLACE (Garanti par carte)',
+              style: TextStyle(
+                color: isPaid ? Colors.green : Colors.red,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        trailing: Text('${order.total.toStringAsFixed(2)} €'),
+      ),
+    );
+  }
+}
+
 class SettingsTab extends StatelessWidget {
+  // ... Le reste du code reste inchangé ...
   final DateTime? initialFilterStartDate, initialFilterEndDate, vacationStartDate, vacationEndDate, tempClosureStartDate, tempClosureEndDate;
   final bool areOrdersOpen;
   final ClosureMessageType? selectedClosureMessage;

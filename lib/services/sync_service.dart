@@ -22,9 +22,96 @@ class SyncService {
     await _syncReviews();
     await _syncLoyaltySettings();
     await _syncUserLoyalty();
+    await _syncUsers(); // ✅ AJOUT: Synchronisation des profils utilisateurs
     print('✅ [SyncService] Synchronisation complète terminée.');
   }
 
+  Future<void> _syncUsers() async {
+    try {
+      final response = await _supabase.from('users').select();
+      final usersToSync = response.map((item) => UsersCompanion(
+        id: Value(item['id'] as String),
+        name: Value(item['name'] as String?),
+        email: Value(item['email'] as String),
+        postalCode: Value(item['postal_code'] as String?),
+        stripeCustomerId: Value(item['stripe_customer_id'] as String?), // ✅ NOUVEAU
+      )).toList();
+      await db.transaction(() async {
+        await db.delete(db.users).go();
+        await db.batch((batch) => batch.insertAll(db.users, usersToSync));
+      });
+    } catch (e) {
+      print('❌ Erreur de synchronisation (Users): $e');
+    }
+  }
+
+  Future<void> _syncOrders() async {
+    try {
+      final response = await _supabase.from('orders').select();
+      final ordersToSync = response.map((item) {
+        return OrdersCompanion(
+          id: Value(item['id'] as int),
+          userId: Value(item['user_id'] as String),
+          total: Value((item['total'] as num? ?? 0).toDouble()),
+          referenceName: Value(item['reference_name'] as String?),
+          pickupTime: Value(item['pickup_time'] as String?),
+          paymentMethod: Value(item['payment_method'] as String?),
+          paymentStatus: Value(item['payment_status'] as String? ?? 'pending'), // ✅ NOUVEAU
+          isArchived: Value(item['is_archived'] as bool? ?? false),
+          createdAt: Value(DateTime.parse(item['created_at'] as String? ?? '2023-01-01T00:00:00Z')),
+          updatedAt: item['updated_at'] != null ? Value(DateTime.parse(item['updated_at'])) : const Value.absent(),
+        );
+      }).toList();
+      await db.transaction(() async {
+        await db.delete(db.orders).go();
+        await db.batch((batch) => batch.insertAll(db.orders, ordersToSync));
+      });
+    } catch (e) {
+      print('❌ Erreur de synchronisation (Orders): $e');
+    }
+  }
+
+  Future<void> _syncCompanyInfo() async {
+    try {
+      final response = await _supabase.from('company_info').select().limit(1);
+
+      if (response.isNotEmpty) {
+        final info = response.first;
+        final infoToSync = CompanyInfoCompanion(
+          id: Value(info['id'] as int),
+          name: Value(info['name'] as String?),
+          presentation: Value(info['presentation'] as String?),
+          address: Value(info['address'] as String?),
+          phone: Value(info['phone'] as String?),
+          email: Value(info['email'] as String?),
+          facebookUrl: Value(info['facebook_url'] as String?),
+          instagramUrl: Value(info['instagram_url'] as String?),
+          xUrl: Value(info['x_url'] as String?),
+          whatsappPhone: Value(info['whatsapp_phone'] as String?),
+          latitude: Value(info['latitude'] as double?),
+          longitude: Value(info['longitude'] as double?),
+          ordersEnabled: Value((info['orders_enabled'] as bool?) ?? true),
+          closureMessageType: Value(info['closure_message_type'] as String?),
+          closureStartDate: info['closure_start_date'] != null ? Value(DateTime.parse(info['closure_start_date'])) : const Value.absent(),
+          closureEndDate: info['closure_end_date'] != null ? Value(DateTime.parse(info['closure_end_date'])) : const Value.absent(),
+          closureCustomMessage: Value(info['closure_custom_message'] as String?),
+          logoUrl: Value(info['logo_url'] as String?),
+          tvaRate: Value((info['tva_rate'] as num?)?.toDouble()),
+          googleUrl: Value(info['google_url'] as String?),
+          pagesJaunesUrl: Value(info['pagesjaunes_url'] as String?),
+          isPaymentEnabled: Value(info['is_payment_enabled'] as bool? ?? false), // ✅ NOUVEAU
+        );
+        await db.transaction(() async {
+          await db.delete(db.companyInfo).go();
+          await db.into(db.companyInfo).insert(infoToSync);
+        });
+      }
+    } catch (e) {
+      print('❌ Erreur de synchronisation (CompanyInfo): $e');
+    }
+  }
+
+  // Les autres méthodes (_syncProducts, _syncIngredients, etc.) restent inchangées...
   Future<void> _syncLoyaltySettings() async {
     try {
       final response = await _supabase.from('loyalty_settings').select();
@@ -80,31 +167,6 @@ class SyncService {
     }
   }
 
-  Future<void> _syncOrders() async {
-    try {
-      final response = await _supabase.from('orders').select();
-      final ordersToSync = response.map((item) {
-        return OrdersCompanion(
-          id: Value(item['id'] as int),
-          userId: Value(item['user_id'] as String),
-          total: Value((item['total'] as num? ?? 0).toDouble()),
-          referenceName: Value(item['reference_name'] as String?),
-          pickupTime: Value(item['pickup_time'] as String?),
-          paymentMethod: Value(item['payment_method'] as String?),
-          isArchived: Value(item['is_archived'] as bool? ?? false),
-          createdAt: Value(DateTime.parse(item['created_at'] as String? ?? '2023-01-01T00:00:00Z')),
-          updatedAt: item['updated_at'] != null ? Value(DateTime.parse(item['updated_at'])) : const Value.absent(),
-        );
-      }).toList();
-      await db.transaction(() async {
-        await db.delete(db.orders).go();
-        await db.batch((batch) => batch.insertAll(db.orders, ordersToSync));
-      });
-    } catch (e) {
-      print('❌ Erreur de synchronisation (Orders): $e');
-    }
-  }
-  
   Future<void> _syncOrderStatusHistories() async {
     try {
       final response = await _supabase.from('order_status_histories').select();
@@ -214,10 +276,6 @@ class SyncService {
     }
   }
 
-  Future<void> _syncOrderOptions() async {
-     // Optionnel si utilisé
-  }
-
   Future<void> _syncAnnouncements() async {
     try {
       final response = await _supabase.from('announcements').select();
@@ -239,46 +297,6 @@ class SyncService {
       });
     } catch (e) {
       print('❌ Erreur de synchronisation (Announcements): $e');
-    }
-  }
-
-  Future<void> _syncCompanyInfo() async {
-    try {
-      final response = await _supabase.from('company_info').select().limit(1);
-
-      if (response.isNotEmpty) {
-        final info = response.first;
-        final infoToSync = CompanyInfoCompanion(
-          id: Value(info['id'] as int),
-          name: Value(info['name'] as String?),
-          presentation: Value(info['presentation'] as String?),
-          address: Value(info['address'] as String?),
-          phone: Value(info['phone'] as String?),
-          email: Value(info['email'] as String?),
-          facebookUrl: Value(info['facebook_url'] as String?),
-          instagramUrl: Value(info['instagram_url'] as String?),
-          xUrl: Value(info['x_url'] as String?),
-          whatsappPhone: Value(info['whatsapp_phone'] as String?),
-          latitude: Value(info['latitude'] as double?),
-          longitude: Value(info['longitude'] as double?),
-          ordersEnabled: Value((info['orders_enabled'] as bool?) ?? true),
-          closureMessageType: Value(info['closure_message_type'] as String?),
-          closureStartDate: info['closure_start_date'] != null ? Value(DateTime.parse(info['closure_start_date'])) : const Value.absent(),
-          closureEndDate: info['closure_end_date'] != null ? Value(DateTime.parse(info['closure_end_date'])) : const Value.absent(),
-          closureCustomMessage: Value(info['closure_custom_message'] as String?),
-          logoUrl: Value(info['logo_url'] as String?),
-          tvaRate: Value((info['tva_rate'] as num?)?.toDouble()),
-          // ✅ AJOUT DES NOUVEAUX CHAMPS
-          googleUrl: Value(info['google_url'] as String?),
-          pagesJaunesUrl: Value(info['pagesjaunes_url'] as String?),
-        );
-        await db.transaction(() async {
-          await db.delete(db.companyInfo).go();
-          await db.into(db.companyInfo).insert(infoToSync);
-        });
-      }
-    } catch (e) {
-      print('❌ Erreur de synchronisation (CompanyInfo): $e');
     }
   }
 }

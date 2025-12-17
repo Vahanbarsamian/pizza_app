@@ -1,45 +1,183 @@
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:drift/drift.dart';
+
+import '../database/app_database.dart';
 
 class PaymentService {
-  static Future<Map<String, dynamic>> createPaymentIntent(double amount, String orderId) async {
-    // IMPORTANT: L'URL ici doit pointer vers votre propre backend qui communique avec Stripe.
-    // C'est une mesure de sécurité pour ne pas exposer votre clé secrète Stripe dans l'application.
-    // final response = await http.post(
-    //   Uri.parse('https://votre-backend.com/create-payment-intent'), 
-    //   headers: {'Content-Type': 'application/json'},
-    //   body: jsonEncode({
-    //     'orderId': orderId,
-    //     'amount': (amount * 100).toInt(), // Stripe travaille en centimes
-    //     'paymentMethod': 'stripe'
-    //   }),
-    // );
-    // if (response.statusCode == 200) {
-    //   return jsonDecode(response.body);
-    // } else {
-    //   throw Exception('Failed to create payment intent.');
-    // }
+  final AppDatabase db;
+  final SupabaseClient _supabase = Supabase.instance.client;
 
-    // Pour le test, on retourne une valeur factice. NE PAS UTILISER EN PRODUCTION.
-    print('ATTENTION: Utilisation d\'une client secret Stripe factice.');
-    await Future.delayed(const Duration(seconds: 1)); 
-    // Remplacez par une vraie client secret de test pour tester le flux.
-    return {'clientSecret': 'sk_test_..._secret_...'}; 
+  PaymentService({required this.db});
+
+  // --- LOGIQUE DE CRÉATION DE CLIENT ---
+
+  Future<String?> getOrCreateStripeCustomer() async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) return null;
+
+    final localUser = await (db.select(db.users)..where((u) => u.id.equals(user.id))).getSingleOrNull();
+    if (localUser?.stripeCustomerId != null) {
+      return localUser!.stripeCustomerId;
+    }
+
+    try {
+      final response = await http.post(
+        Uri.parse('https://api.stripe.com/v1/customers'),
+        headers: {
+          'Authorization': 'Bearer ${dotenv.env['STRIPE_SECRET_KEY']}',
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: {
+          'email': user.email,
+          'metadata[user_id]': user.id,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final stripeId = data['id'] as String;
+
+        await _supabase.from('users').update({'stripe_customer_id': stripeId}).eq('id', user.id);
+        await (db.update(db.users)..where((u) => u.id.equals(user.id))).write(UsersCompanion(stripeCustomerId: Value(stripeId)));
+
+        return stripeId;
+      }
+    } catch (e) {
+      print('❌ Erreur création client Stripe: $e');
+    }
+    return null;
   }
 
-  static Future<void> initPaymentSheet(String clientSecret) async {
-    await Stripe.instance.initPaymentSheet(
-      paymentSheetParameters: SetupPaymentSheetParameters(
-        paymentIntentClientSecret: clientSecret,
-        merchantDisplayName: 'Pizza App',
-        testEnv: true, // Mettre à false en production
-        merchantCountryCode: 'FR',
-      ),
+  // ✅ NOUVEAU: Récupérer les détails de la carte enregistrée
+  Future<Map<String, String>?> getSavedCardDetails(String customerId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('https://api.stripe.com/v1/customers/$customerId/payment_methods?type=card'),
+        headers: {
+          'Authorization': 'Bearer ${dotenv.env['STRIPE_SECRET_KEY']}',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final methods = data['data'] as List;
+        if (methods.isNotEmpty) {
+          final card = methods[0]['card'];
+          return {
+            'brand': card['brand'].toString().toUpperCase(),
+            'last4': card['last4'].toString(),
+          };
+        }
+      }
+    } catch (e) {
+      print('❌ Erreur récupération carte: $e');
+    }
+    return null;
+  }
+
+  // --- LOGIQUE DE PAIEMENT RÉEL ---
+
+  Future<void> initPaymentSheet({
+    required double amount,
+    required bool saveCard,
+  }) async {
+    try {
+      final customerId = await getOrCreateStripeCustomer();
+      
+      final response = await http.post(
+        Uri.parse('https://api.stripe.com/v1/payment_intents'),
+        headers: {
+          'Authorization': 'Bearer ${dotenv.env['STRIPE_SECRET_KEY']}',
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: {
+          'amount': (amount * 100).toInt().toString(),
+          'currency': 'eur',
+          'customer': customerId,
+          'setup_future_usage': saveCard ? 'off_session' : '',
+        },
+      );
+
+      final data = json.decode(response.body);
+
+      await Stripe.instance.initPaymentSheet(
+        paymentSheetParameters: SetupPaymentSheetParameters(
+          paymentIntentClientSecret: data['client_secret'],
+          merchantDisplayName: 'Pizza Mania',
+          customerId: customerId,
+          customerEphemeralKeySecret: await _getEphemeralKey(customerId!),
+          style: ThemeMode.light,
+        ),
+      );
+    } catch (e) {
+      print('❌ Erreur initialisation PaymentSheet: $e');
+      rethrow;
+    }
+  }
+
+  // --- LOGIQUE D'EMPREINTE (GARANTIE) ---
+
+  Future<void> initSetupIntent() async {
+    try {
+      final customerId = await getOrCreateStripeCustomer();
+
+      final response = await http.post(
+        Uri.parse('https://api.stripe.com/v1/setup_intents'),
+        headers: {
+          'Authorization': 'Bearer ${dotenv.env['STRIPE_SECRET_KEY']}',
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: {
+          'customer': customerId,
+          'usage': 'off_session',
+        },
+      );
+
+      final data = json.decode(response.body);
+
+      await Stripe.instance.initPaymentSheet(
+        paymentSheetParameters: SetupPaymentSheetParameters(
+          setupIntentClientSecret: data['client_secret'],
+          merchantDisplayName: 'Pizza Mania (Garantie)',
+          customerId: customerId,
+          customerEphemeralKeySecret: await _getEphemeralKey(customerId!),
+        ),
+      );
+    } catch (e) {
+      print('❌ Erreur initialisation Garantie: $e');
+      rethrow;
+    }
+  }
+
+  Future<String> _getEphemeralKey(String customerId) async {
+    final response = await http.post(
+      Uri.parse('https://api.stripe.com/v1/ephemeral_keys'),
+      headers: {
+        'Authorization': 'Bearer ${dotenv.env['STRIPE_SECRET_KEY']}',
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Stripe-Version': '2023-10-16',
+      },
+      body: {
+        'customer': customerId,
+      },
     );
+    return json.decode(response.body)['secret'];
   }
 
-  static Future<void> presentPaymentSheet() async {
-    await Stripe.instance.presentPaymentSheet();
+  Future<bool> presentAndConfirm() async {
+    try {
+      await Stripe.instance.presentPaymentSheet();
+      return true;
+    } catch (e) {
+      if (e is StripeException) {
+        print('❌ Erreur Stripe: ${e.error.localizedMessage}');
+      }
+      return false;
+    }
   }
 }

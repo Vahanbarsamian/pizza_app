@@ -14,8 +14,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _timeController;
-  String _paymentMethod = 'Carte Bleue';
-  bool _isLoading = false; // ✅ AJOUTÉ: État de chargement
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -41,10 +40,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       cart.temporaryPickupTime = _timeController.text;
 
       // On retourne les informations à l'écran précédent
+      // On met "À définir" pour le paiement, car Stripe s'en occupera à l'étape suivante
       Navigator.of(context).pop({
         'name': _nameController.text,
         'time': _timeController.text,
-        'payment': _paymentMethod,
+        'payment': 'En attente', 
       });
     }
   }
@@ -53,42 +53,51 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Finaliser la commande'),
+        title: const Text('Infos de retrait'),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(24.0),
         child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Veuillez compléter ces informations pour finaliser votre commande.', style: Theme.of(context).textTheme.bodyLarge),
+              const Center(
+                child: Icon(Icons.timer_outlined, size: 64, color: Colors.orange),
+              ),
               const SizedBox(height: 24),
+              Text(
+                'Quand souhaitez-vous récupérer votre commande ?',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 32),
               TextFormField(
                 controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Nom pour la commande', hintText: 'Ex: Paul', border: OutlineInputBorder()),
+                decoration: const InputDecoration(
+                  labelText: 'Nom pour la commande',
+                  hintText: 'Ex: Paul',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.person_outline),
+                ),
                 autofocus: true,
                 validator: (value) => value == null || value.isEmpty ? 'Veuillez entrer un nom' : null,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
               TextFormField(
                 controller: _timeController,
-                decoration: const InputDecoration(labelText: 'Heure de retrait souhaitée', hintText: 'Ex: 19h30', border: OutlineInputBorder()),
+                decoration: const InputDecoration(
+                  labelText: 'Heure de retrait souhaitée',
+                  hintText: 'Ex: 19h30',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.access_time),
+                ),
                 validator: (value) => value == null || value.isEmpty ? 'Veuillez entrer une heure' : null,
               ),
-              const SizedBox(height: 24),
-              Text('Mode de paiement:', style: Theme.of(context).textTheme.titleMedium),
-              RadioListTile<String>(
-                title: const Text('Carte Bleue'),
-                value: 'Carte Bleue',
-                groupValue: _paymentMethod,
-                onChanged: (value) => setState(() => _paymentMethod = value!),
-              ),
-              RadioListTile<String>(
-                title: const Text('Paypal'),
-                value: 'Paypal',
-                groupValue: _paymentMethod,
-                onChanged: (value) => setState(() => _paymentMethod = value!),
+              const SizedBox(height: 40),
+              const Text(
+                'Note : Le règlement s\'effectuera à l\'étape suivante.',
+                style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
               ),
             ],
           ),
@@ -96,18 +105,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       ),
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.all(16.0),
-        // ✅ MODIFIÉ: Bouton stylisé avec indicateur de chargement
-        child: ElevatedButton.icon(
-          icon: _isLoading ? const SizedBox.shrink() : const Icon(Icons.check_circle_outline),
-          label: _isLoading 
-              ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3)) 
-              : const Text('Valider les informations'),
+        child: ElevatedButton(
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.green,
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
           onPressed: _isLoading ? null : _submit,
+          child: _isLoading 
+              ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3)) 
+              : const Text('Passer au règlement', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         ),
       ),
     );

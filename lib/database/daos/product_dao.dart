@@ -15,12 +15,12 @@ class ProductDao extends DatabaseAccessor<AppDatabase> with _$ProductDaoMixin {
   }
 
   Future<double?> getAveragePrice() {
-    final avgPrice = products.basePrice.avg(); // Corrected from products.price
+    final avgPrice = products.basePrice.avg();
     final query = selectOnly(products)..addColumns([avgPrice]);
     return query.map((row) => row.read(avgPrice)).getSingle();
   }
 
-  Future<void> applyGlobalDiscount(double percentage, bool apply) async {
+  Future<void> updateGlobalDiscount(bool apply, double percentage) async {
     await (update(products)).write(
       ProductsCompanion(hasGlobalDiscount: Value(apply), discountPercentage: Value(percentage)),
     );

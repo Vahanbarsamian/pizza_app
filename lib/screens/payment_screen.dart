@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:provider/provider.dart';
 import '../services/payment_service.dart';
+import '../database/app_database.dart';
+import '../services/order_service.dart';
+import '../services/sync_service.dart';
 
 class PaymentScreen extends StatefulWidget {
   final double total;
-  final String orderId;
+  final int orderId; // Changé en int pour correspondre à la DB
 
   const PaymentScreen({super.key, required this.total, required this.orderId});
 
@@ -13,78 +16,153 @@ class PaymentScreen extends StatefulWidget {
 }
 
 class _PaymentScreenState extends State<PaymentScreen> {
-  bool isProcessing = false;
+  bool _isProcessing = false;
+  bool _saveCard = false;
 
-  Future<void> processStripePayment() async {
-    setState(() => isProcessing = true);
-
+  // --- LOGIQUE PAIEMENT IMMÉDIAT ---
+  Future<void> _handleOnlinePayment(PaymentService paymentService) async {
+    setState(() => _isProcessing = true);
     try {
-      final data = await PaymentService.createPaymentIntent(widget.total, widget.orderId);
-      await PaymentService.initPaymentSheet(data['clientSecret']);
-      await PaymentService.presentPaymentSheet();
+      // 1. Préparer le formulaire Stripe
+      await paymentService.initPaymentSheet(
+        amount: widget.total,
+        saveCard: _saveCard,
+      );
 
-      // Confirmation automatique côté serveur
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('✅ Commande confirmée !'))
-      );
-      Navigator.pop(context);
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur de paiement: $e')),
-      );
-    } finally {
-      if (mounted) {
-        setState(() => isProcessing = false);
+      // 2. Afficher le formulaire et attendre confirmation
+      final success = await paymentService.presentAndConfirm();
+
+      if (success && mounted) {
+        await _finalizeOrder(context, 'paid');
       }
+    } catch (e) {
+      _showError('Erreur d\'initialisation : $e');
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
     }
+  }
+
+  // --- LOGIQUE GARANTIE (SUR PLACE) ---
+  Future<void> _handlePlaceGuarantee(PaymentService paymentService) async {
+    setState(() => _isProcessing = true);
+    try {
+      // 1. Préparer une empreinte de carte (sans débit)
+      await paymentService.initSetupIntent();
+
+      // 2. Afficher le formulaire
+      final success = await paymentService.presentAndConfirm();
+
+      if (success && mounted) {
+        await _finalizeOrder(context, 'guaranteed');
+      }
+    } catch (e) {
+      _showError('Erreur garantie : $e');
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
+    }
+  }
+
+  Future<void> _finalizeOrder(BuildContext context, String paymentStatus) async {
+    final orderService = context.read<OrderService>();
+    final syncService = context.read<SyncService>();
+
+    // Mettre à jour le statut dans Supabase
+    await orderService.updatePaymentStatus(widget.orderId, paymentStatus);
+    await syncService.syncAll();
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(paymentStatus == 'paid' ? '✅ Paiement réussi !' : '✅ Empreinte carte validée !'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      Navigator.pop(context, true);
+    }
+  }
+
+  void _showError(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.red));
   }
 
   @override
   Widget build(BuildContext context) {
+    final paymentService = context.read<PaymentService>();
+    final db = context.watch<AppDatabase>();
+
     return Scaffold(
-      appBar: AppBar(title: Text('Paiement ${widget.total.toStringAsFixed(2)} € TTC')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            ElevatedButton.icon(
-              onPressed: isProcessing ? null : processStripePayment,
-              icon: const Icon(Icons.payment),
-              label: const Text('Carte bancaire'),
-              style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 12)),
-            ),
-            const SizedBox(height: 12),
-            ElevatedButton.icon(
-              onPressed: () => launchUrl(Uri.parse('paypal://pay?token=xxx')), // NOTE: URL d'exemple
-              icon: const Icon(Icons.account_balance_wallet),
-              label: const Text('PayPal'),
-              style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 12)),
-            ),
-            const SizedBox(height: 12),
-            ElevatedButton.icon(
-              onPressed: () {
-                // Paiement sur place
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    // ✅ CORRIGÉ: Utilisation de guillemets doubles pour l'apostrophe
-                    content: Text("💰 À payer ${widget.total.toStringAsFixed(2)} € TTC à l'accueil"),
-                    backgroundColor: Colors.orange,
-                    duration: const Duration(seconds: 3),
+      appBar: AppBar(title: Text('Règlement ${widget.total.toStringAsFixed(2)} € TTC')),
+      body: StreamBuilder<CompanyInfoData?>(
+        stream: db.watchCompanyInfo(),
+        builder: (context, snapshot) {
+          final isRealPaymentEnabled = snapshot.data?.isPaymentEnabled ?? false;
+
+          return Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Icon(Icons.shield_outlined, size: 64, color: Colors.blueGrey),
+                const SizedBox(height: 16),
+                const Text(
+                  'Sélectionnez votre mode de règlement',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 32),
+
+                // SECTION PAIEMENT CARTE
+                if (isRealPaymentEnabled) ...[
+                  ElevatedButton.icon(
+                    onPressed: _isProcessing ? null : () => _handleOnlinePayment(paymentService),
+                    icon: const Icon(Icons.credit_card),
+                    label: const Text('Payer maintenant par Carte'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      backgroundColor: Colors.blue.shade800,
+                      foregroundColor: Colors.white,
+                    ),
                   ),
-                );
-                Navigator.pop(context);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12)
-              ),
-              icon: const Icon(Icons.store),
-              label: const Text('Sur place'),
+                  const SizedBox(height: 12),
+                  CheckboxListTile(
+                    title: const Text('Enregistrer cette carte pour mes prochains achats', style: TextStyle(fontSize: 13)),
+                    value: _saveCard,
+                    onChanged: (val) => setState(() => _saveCard = val ?? false),
+                    controlAffinity: ListTileControlAffinity.leading,
+                  ),
+                  const Divider(height: 48),
+                ],
+
+                // SECTION SUR PLACE (AVEC OU SANS GARANTIE)
+                ElevatedButton.icon(
+                  onPressed: _isProcessing 
+                    ? null 
+                    : () => isRealPaymentEnabled ? _handlePlaceGuarantee(paymentService) : _finalizeOrder(context, 'pending'),
+                  icon: const Icon(Icons.store),
+                  label: Text(isRealPaymentEnabled ? 'Payer sur place (Garantie carte)' : 'Payer sur place'),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    backgroundColor: Colors.green.shade700,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+                
+                if (isRealPaymentEnabled)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 8.0),
+                    child: Text(
+                      'Une empreinte de carte sera demandée pour garantir votre commande.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic),
+                    ),
+                  ),
+
+                const Spacer(),
+                if (_isProcessing) const Center(child: CircularProgressIndicator()),
+              ],
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
