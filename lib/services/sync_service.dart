@@ -49,7 +49,6 @@ class SyncService {
       final response = await _supabase.from('user_loyalty').select();
       final loyaltyDataToSync = response.map((item) => UserLoyaltiesCompanion(
         userId: Value(item['user_id'] as String),
-        // ✅ CORRECTION FINALE: Lecture de la colonne 'pizza_count' depuis Supabase
         pizzaCount: Value(item['pizza_count'] as int? ?? 0),
       )).toList();
       await db.transaction(() async {
@@ -215,6 +214,10 @@ class SyncService {
     }
   }
 
+  Future<void> _syncOrderOptions() async {
+     // Optionnel si utilisé
+  }
+
   Future<void> _syncAnnouncements() async {
     try {
       final response = await _supabase.from('announcements').select();
@@ -265,6 +268,9 @@ class SyncService {
           closureCustomMessage: Value(info['closure_custom_message'] as String?),
           logoUrl: Value(info['logo_url'] as String?),
           tvaRate: Value((info['tva_rate'] as num?)?.toDouble()),
+          // ✅ AJOUT DES NOUVEAUX CHAMPS
+          googleUrl: Value(info['google_url'] as String?),
+          pagesJaunesUrl: Value(info['pagesjaunes_url'] as String?),
         );
         await db.transaction(() async {
           await db.delete(db.companyInfo).go();

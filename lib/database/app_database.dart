@@ -5,8 +5,9 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:rxdart/rxdart.dart';
 
-import 'initial_data.dart'; // ✅ AJOUT: Import des données initiales
+import 'initial_data.dart';
 
+part 'app_database.g.dart';
 part 'product.dart';
 part 'user.dart';
 part 'order.dart';
@@ -19,8 +20,8 @@ part 'product_ingredient_link.dart';
 part 'saved_cart_item.dart';
 part 'loyalty_setting.dart';
 part 'daos/product_dao.dart';
-
-part 'app_database.g.dart';
+part 'option.dart';
+part 'product_option_link.dart';
 
 class ReviewWithOrder {
   final Review review;
@@ -38,6 +39,7 @@ class OrderWithStatus {
   Products, Users, Orders, OrderItems, Reviews, Ingredients, Admins,
   Announcements, CompanyInfo, ProductIngredientLinks, SavedCartItems, 
   OrderStatusHistories, LoyaltySettings, UserLoyalties,
+  ProductOptions, ProductOptionLinks,
 ], daos: [
   ProductDao
 ])
@@ -45,24 +47,21 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 32;
+  int get schemaVersion => 33;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (m) async {
           await m.createAll();
-          // ✅ AJOUT: Peuplement de la base de données avec les produits initiaux
           await batch((batch) {
             batch.insertAll(products, initialProducts);
           });
         },
         onUpgrade: (m, from, to) async {
-          // Simplicité pour le développement: tout supprimer et tout recréer
           for (final table in allTables) {
             await m.deleteTable(table.actualTableName);
           }
           await m.createAll();
-          // ✅ AJOUT: Repeuplement après la mise à jour
            await batch((batch) {
             batch.insertAll(products, initialProducts);
           });
@@ -70,7 +69,7 @@ class AppDatabase extends _$AppDatabase {
       );
       
   Stream<List<OrderWithStatus>> _watchOrdersWithStatus(String? userId) {
-    final baseSql = '''
+    const baseSql = '''
       SELECT o.*, COALESCE(latest.status, \'À faire\') as status
       FROM orders o
       LEFT JOIN (
@@ -101,17 +100,12 @@ class AppDatabase extends _$AppDatabase {
 
   Future<List<Order>> getArchivedOrders(DateTime? start, DateTime? end) {
     var query = select(orders)..where((o) => o.isArchived.equals(true));
-
-    if (start != null) {
-      query.where((o) => o.createdAt.isBiggerOrEqualValue(start));
-    }
+    if (start != null) query.where((o) => o.createdAt.isBiggerOrEqualValue(start));
     if (end != null) {
       final endOfDay = DateTime(end.year, end.month, end.day + 1);
       query.where((o) => o.createdAt.isSmallerThanValue(endOfDay));
     }
-
     query.orderBy([(o) => OrderingTerm(expression: o.createdAt, mode: OrderingMode.desc)]);
-
     return query.get();
   }
 
@@ -121,6 +115,7 @@ class AppDatabase extends _$AppDatabase {
   Future<void> clearSavedCart() => delete(savedCartItems).go();
 
   Stream<List<ReviewWithOrder>> watchUserReviews(String userId) {
+    // ✅ CORRIGÉ : Double point au lieu de triple point
     final query = select(reviews).join([innerJoin(orders, orders.id.equalsExp(reviews.orderId))])..where(reviews.userId.equals(userId))..orderBy([OrderingTerm(expression: reviews.createdAt, mode: OrderingMode.desc)]);
     return query.watch().map((rows) => rows.map((row) => ReviewWithOrder(review: row.readTable(reviews),order: row.readTable(orders))).toList());
   }
@@ -136,7 +131,6 @@ class AppDatabase extends _$AppDatabase {
   
   Stream<List<Product>> watchAllProductsForAdmin() => (select(products)..orderBy([(p) => OrderingTerm(expression: p.createdAt, mode: OrderingMode.desc)])).watch();
   Stream<List<Product>> watchAllProducts() => (select(products)..where((p) => p.isActive.equals(true) & p.isDrink.equals(false))..orderBy([(p) => OrderingTerm(expression: p.createdAt, mode: OrderingMode.desc)])).watch();
-  // ✅ AJOUT: Requête pour récupérer uniquement les boissons
   Stream<List<Product>> watchAllDrinks() => (select(products)..where((p) => p.isActive.equals(true) & p.isDrink.equals(true))..orderBy([(p) => OrderingTerm(expression: p.name)])).watch();
   
   Stream<List<Ingredient>> watchAllIngredients() => select(ingredients).watch();
@@ -144,41 +138,25 @@ class AppDatabase extends _$AppDatabase {
   Stream<Map<String, List<Ingredient>>> watchIngredientsForProductSeparated(int productId) {
     final linkedIngredientsQuery = select(productIngredientLinks).join([
       innerJoin(ingredients, ingredients.id.equalsExp(productIngredientLinks.ingredientId))
-    ])
-      ..where(productIngredientLinks.productId.equals(productId));
-
+    ])..where(productIngredientLinks.productId.equals(productId));
     final globalIngredientsQuery = select(ingredients)..where((i) => i.isGlobal.equals(true));
-
     final linkedStream = linkedIngredientsQuery.watch().map((rows) {
       final base = <Ingredient>[];
       final supplements = <Ingredient>[];
       for (final row in rows) {
         final link = row.readTable(productIngredientLinks);
         final ingredient = row.readTable(ingredients);
-        if (link.isBaseIngredient) {
-          base.add(ingredient);
-        } else {
-          supplements.add(ingredient);
-        }
+        if (link.isBaseIngredient) base.add(ingredient); else supplements.add(ingredient);
       }
       return {'base': base, 'supplements': supplements};
     });
-
     final globalStream = globalIngredientsQuery.watch();
-
     return Rx.combineLatest2(linkedStream, globalStream, (linked, globals) {
       final baseIngredients = linked['base']!;
-      final specificSupplements = linked['supplements']!;
-      
-      final allSupplements = {...specificSupplements, ...globals}.toList();
-
+      final allSupplements = {...linked['supplements']!, ...globals}.toList();
       baseIngredients.sort((a,b) => a.name.compareTo(b.name));
       allSupplements.sort((a,b) => a.name.compareTo(b.name));
-
-      return {
-        'base': baseIngredients,
-        'supplements': allSupplements,
-      };
+      return {'base': baseIngredients, 'supplements': allSupplements};
     });
   }
 
@@ -218,6 +196,6 @@ LazyDatabase _openConnection() {
   return LazyDatabase(() async {
     final dbFolder = await getApplicationDocumentsDirectory();
     final file = File(p.join(dbFolder.path, 'pizza_app.db'));
-    return NativeDatabase(file, logStatements: true);
+    return NativeDatabase(file);
   });
 }

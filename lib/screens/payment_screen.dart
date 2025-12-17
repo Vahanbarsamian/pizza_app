@@ -67,7 +67,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 // Paiement sur place
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('💰 À payer ${widget.total.toStringAsFixed(2)} € TTC à l'accueil'),
+                    // ✅ CORRIGÉ: Utilisation de guillemets doubles pour l'apostrophe
+                    content: Text("💰 À payer ${widget.total.toStringAsFixed(2)} € TTC à l'accueil"),
                     backgroundColor: Colors.orange,
                     duration: const Duration(seconds: 3),
                   ),

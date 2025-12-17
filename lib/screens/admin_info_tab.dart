@@ -34,6 +34,8 @@ class _AdminInfoTabState extends State<AdminInfoTab> {
   final _longitudeController = TextEditingController();
   final _logoUrlController = TextEditingController();
   final _tvaRateController = TextEditingController();
+  final _googleUrlController = TextEditingController();
+  final _pagesJaunesUrlController = TextEditingController();
 
   @override
   void dispose() {
@@ -50,6 +52,8 @@ class _AdminInfoTabState extends State<AdminInfoTab> {
     _longitudeController.dispose();
     _logoUrlController.dispose();
     _tvaRateController.dispose();
+    _googleUrlController.dispose();
+    _pagesJaunesUrlController.dispose();
     super.dispose();
   }
 
@@ -68,6 +72,8 @@ class _AdminInfoTabState extends State<AdminInfoTab> {
     _longitudeController.text = data.longitude?.toString() ?? '';
     _logoUrlController.text = data.logoUrl ?? '';
     _tvaRateController.text = data.tvaRate != null ? (data.tvaRate! * 100).toString() : '';
+    _googleUrlController.text = data.googleUrl ?? '';
+    _pagesJaunesUrlController.text = data.pagesJaunesUrl ?? '';
   }
 
   Future<void> _saveChanges() async {
@@ -93,6 +99,8 @@ class _AdminInfoTabState extends State<AdminInfoTab> {
         longitude: Value(double.tryParse(_longitudeController.text)),
         logoUrl: Value(_logoUrlController.text),
         tvaRate: Value(tvaRateForDb),
+        googleUrl: Value(_googleUrlController.text),
+        pagesJaunesUrl: Value(_pagesJaunesUrlController.text),
       );
 
       try {
@@ -118,7 +126,6 @@ class _AdminInfoTabState extends State<AdminInfoTab> {
     if (pickedFile != null) {
       setState(() => _isUploading = true);
       try {
-        // ✅ CORRIGÉ: Utilisation du bon nom de méthode
         final imageUrl = await storageService.uploadProductImage(pickedFile);
         setState(() {
           _logoUrlController.text = imageUrl;
@@ -194,6 +201,8 @@ class _AdminInfoTabState extends State<AdminInfoTab> {
               TextFormField(controller: _instagramController, decoration: const InputDecoration(labelText: 'Lien Instagram')),
               TextFormField(controller: _xController, decoration: const InputDecoration(labelText: 'Lien X (Twitter)')),
               TextFormField(controller: _whatsappController, decoration: const InputDecoration(labelText: 'Numéro WhatsApp')),
+              TextFormField(controller: _googleUrlController, decoration: const InputDecoration(labelText: 'Lien Google')),
+              TextFormField(controller: _pagesJaunesUrlController, decoration: const InputDecoration(labelText: 'Lien Pages Jaunes')),
             ]
           ),
           const SizedBox(height: 16),

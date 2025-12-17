@@ -3,7 +3,7 @@ import 'package:drift/drift.dart';
 import 'package:intl/intl.dart';
 
 import '../database/app_database.dart';
-import '../screens/admin_orders_tab.dart';
+import '../screens/admin_orders_tab.dart'; // ✅ IMPORT POUR CLOSUREMESSAGETYPE
 
 class AdminService {
   final SupabaseClient _supabase = Supabase.instance.client;
@@ -87,7 +87,6 @@ class AdminService {
     await _supabase.from('company_info').update(dataToSave).eq('id', 1);
   }
 
-  // ✅ MODIFIÉ: Ajout de 'isDrink'
   Future<Map<String, dynamic>> saveProduct({
     int? id,
     required String name,
@@ -181,6 +180,10 @@ class AdminService {
     if (info.longitude.present) data['longitude'] = info.longitude.value;
     if (info.logoUrl.present) data['logo_url'] = info.logoUrl.value;
     if (info.tvaRate.present) data['tva_rate'] = info.tvaRate.value;
+    
+    // ✅ AJOUT DES CHAMPS GOOGLE ET PAGES JAUNES
+    if (info.googleUrl.present) data['google_url'] = info.googleUrl.value;
+    if (info.pagesJaunesUrl.present) data['pagesjaunes_url'] = info.pagesJaunesUrl.value;
 
     await _supabase.from('company_info').upsert(data);
   }

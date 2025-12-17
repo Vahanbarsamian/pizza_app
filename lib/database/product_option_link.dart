@@ -1,6 +1,4 @@
-import 'package:drift/drift.dart';
-import 'product.dart';
-import 'option.dart';
+part of 'app_database.dart';
 
 @DataClassName('ProductOptionLink')
 class ProductOptionLinks extends Table {

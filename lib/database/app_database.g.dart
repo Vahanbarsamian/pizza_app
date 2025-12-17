@@ -3316,6 +3316,18 @@ class $CompanyInfoTable extends CompanyInfo
   late final GeneratedColumn<double> tvaRate = GeneratedColumn<double>(
       'tva_rate', aliasedName, true,
       type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _googleUrlMeta =
+      const VerificationMeta('googleUrl');
+  @override
+  late final GeneratedColumn<String> googleUrl = GeneratedColumn<String>(
+      'google_url', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _pagesJaunesUrlMeta =
+      const VerificationMeta('pagesJaunesUrl');
+  @override
+  late final GeneratedColumn<String> pagesJaunesUrl = GeneratedColumn<String>(
+      'pagesjaunes_url', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -3336,7 +3348,9 @@ class $CompanyInfoTable extends CompanyInfo
         closureEndDate,
         closureCustomMessage,
         logoUrl,
-        tvaRate
+        tvaRate,
+        googleUrl,
+        pagesJaunesUrl
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -3441,6 +3455,16 @@ class $CompanyInfoTable extends CompanyInfo
       context.handle(_tvaRateMeta,
           tvaRate.isAcceptableOrUnknown(data['tva_rate']!, _tvaRateMeta));
     }
+    if (data.containsKey('google_url')) {
+      context.handle(_googleUrlMeta,
+          googleUrl.isAcceptableOrUnknown(data['google_url']!, _googleUrlMeta));
+    }
+    if (data.containsKey('pagesjaunes_url')) {
+      context.handle(
+          _pagesJaunesUrlMeta,
+          pagesJaunesUrl.isAcceptableOrUnknown(
+              data['pagesjaunes_url']!, _pagesJaunesUrlMeta));
+    }
     return context;
   }
 
@@ -3489,6 +3513,10 @@ class $CompanyInfoTable extends CompanyInfo
           .read(DriftSqlType.string, data['${effectivePrefix}logo_url']),
       tvaRate: attachedDatabase.typeMapping
           .read(DriftSqlType.double, data['${effectivePrefix}tva_rate']),
+      googleUrl: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}google_url']),
+      pagesJaunesUrl: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}pagesjaunes_url']),
     );
   }
 
@@ -3518,6 +3546,8 @@ class CompanyInfoData extends DataClass implements Insertable<CompanyInfoData> {
   final String? closureCustomMessage;
   final String? logoUrl;
   final double? tvaRate;
+  final String? googleUrl;
+  final String? pagesJaunesUrl;
   const CompanyInfoData(
       {required this.id,
       this.name,
@@ -3537,7 +3567,9 @@ class CompanyInfoData extends DataClass implements Insertable<CompanyInfoData> {
       this.closureEndDate,
       this.closureCustomMessage,
       this.logoUrl,
-      this.tvaRate});
+      this.tvaRate,
+      this.googleUrl,
+      this.pagesJaunesUrl});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -3594,6 +3626,12 @@ class CompanyInfoData extends DataClass implements Insertable<CompanyInfoData> {
     if (!nullToAbsent || tvaRate != null) {
       map['tva_rate'] = Variable<double>(tvaRate);
     }
+    if (!nullToAbsent || googleUrl != null) {
+      map['google_url'] = Variable<String>(googleUrl);
+    }
+    if (!nullToAbsent || pagesJaunesUrl != null) {
+      map['pagesjaunes_url'] = Variable<String>(pagesJaunesUrl);
+    }
     return map;
   }
 
@@ -3646,6 +3684,12 @@ class CompanyInfoData extends DataClass implements Insertable<CompanyInfoData> {
       tvaRate: tvaRate == null && nullToAbsent
           ? const Value.absent()
           : Value(tvaRate),
+      googleUrl: googleUrl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(googleUrl),
+      pagesJaunesUrl: pagesJaunesUrl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(pagesJaunesUrl),
     );
   }
 
@@ -3675,6 +3719,8 @@ class CompanyInfoData extends DataClass implements Insertable<CompanyInfoData> {
           serializer.fromJson<String?>(json['closureCustomMessage']),
       logoUrl: serializer.fromJson<String?>(json['logoUrl']),
       tvaRate: serializer.fromJson<double?>(json['tvaRate']),
+      googleUrl: serializer.fromJson<String?>(json['googleUrl']),
+      pagesJaunesUrl: serializer.fromJson<String?>(json['pagesJaunesUrl']),
     );
   }
   @override
@@ -3700,6 +3746,8 @@ class CompanyInfoData extends DataClass implements Insertable<CompanyInfoData> {
       'closureCustomMessage': serializer.toJson<String?>(closureCustomMessage),
       'logoUrl': serializer.toJson<String?>(logoUrl),
       'tvaRate': serializer.toJson<double?>(tvaRate),
+      'googleUrl': serializer.toJson<String?>(googleUrl),
+      'pagesJaunesUrl': serializer.toJson<String?>(pagesJaunesUrl),
     };
   }
 
@@ -3722,7 +3770,9 @@ class CompanyInfoData extends DataClass implements Insertable<CompanyInfoData> {
           Value<DateTime?> closureEndDate = const Value.absent(),
           Value<String?> closureCustomMessage = const Value.absent(),
           Value<String?> logoUrl = const Value.absent(),
-          Value<double?> tvaRate = const Value.absent()}) =>
+          Value<double?> tvaRate = const Value.absent(),
+          Value<String?> googleUrl = const Value.absent(),
+          Value<String?> pagesJaunesUrl = const Value.absent()}) =>
       CompanyInfoData(
         id: id ?? this.id,
         name: name.present ? name.value : this.name,
@@ -3753,6 +3803,9 @@ class CompanyInfoData extends DataClass implements Insertable<CompanyInfoData> {
             : this.closureCustomMessage,
         logoUrl: logoUrl.present ? logoUrl.value : this.logoUrl,
         tvaRate: tvaRate.present ? tvaRate.value : this.tvaRate,
+        googleUrl: googleUrl.present ? googleUrl.value : this.googleUrl,
+        pagesJaunesUrl:
+            pagesJaunesUrl.present ? pagesJaunesUrl.value : this.pagesJaunesUrl,
       );
   CompanyInfoData copyWithCompanion(CompanyInfoCompanion data) {
     return CompanyInfoData(
@@ -3792,6 +3845,10 @@ class CompanyInfoData extends DataClass implements Insertable<CompanyInfoData> {
           : this.closureCustomMessage,
       logoUrl: data.logoUrl.present ? data.logoUrl.value : this.logoUrl,
       tvaRate: data.tvaRate.present ? data.tvaRate.value : this.tvaRate,
+      googleUrl: data.googleUrl.present ? data.googleUrl.value : this.googleUrl,
+      pagesJaunesUrl: data.pagesJaunesUrl.present
+          ? data.pagesJaunesUrl.value
+          : this.pagesJaunesUrl,
     );
   }
 
@@ -3816,32 +3873,37 @@ class CompanyInfoData extends DataClass implements Insertable<CompanyInfoData> {
           ..write('closureEndDate: $closureEndDate, ')
           ..write('closureCustomMessage: $closureCustomMessage, ')
           ..write('logoUrl: $logoUrl, ')
-          ..write('tvaRate: $tvaRate')
+          ..write('tvaRate: $tvaRate, ')
+          ..write('googleUrl: $googleUrl, ')
+          ..write('pagesJaunesUrl: $pagesJaunesUrl')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(
-      id,
-      name,
-      presentation,
-      address,
-      phone,
-      email,
-      facebookUrl,
-      instagramUrl,
-      xUrl,
-      whatsappPhone,
-      latitude,
-      longitude,
-      ordersEnabled,
-      closureMessageType,
-      closureStartDate,
-      closureEndDate,
-      closureCustomMessage,
-      logoUrl,
-      tvaRate);
+  int get hashCode => Object.hashAll([
+        id,
+        name,
+        presentation,
+        address,
+        phone,
+        email,
+        facebookUrl,
+        instagramUrl,
+        xUrl,
+        whatsappPhone,
+        latitude,
+        longitude,
+        ordersEnabled,
+        closureMessageType,
+        closureStartDate,
+        closureEndDate,
+        closureCustomMessage,
+        logoUrl,
+        tvaRate,
+        googleUrl,
+        pagesJaunesUrl
+      ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -3864,7 +3926,9 @@ class CompanyInfoData extends DataClass implements Insertable<CompanyInfoData> {
           other.closureEndDate == this.closureEndDate &&
           other.closureCustomMessage == this.closureCustomMessage &&
           other.logoUrl == this.logoUrl &&
-          other.tvaRate == this.tvaRate);
+          other.tvaRate == this.tvaRate &&
+          other.googleUrl == this.googleUrl &&
+          other.pagesJaunesUrl == this.pagesJaunesUrl);
 }
 
 class CompanyInfoCompanion extends UpdateCompanion<CompanyInfoData> {
@@ -3887,6 +3951,8 @@ class CompanyInfoCompanion extends UpdateCompanion<CompanyInfoData> {
   final Value<String?> closureCustomMessage;
   final Value<String?> logoUrl;
   final Value<double?> tvaRate;
+  final Value<String?> googleUrl;
+  final Value<String?> pagesJaunesUrl;
   const CompanyInfoCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
@@ -3907,6 +3973,8 @@ class CompanyInfoCompanion extends UpdateCompanion<CompanyInfoData> {
     this.closureCustomMessage = const Value.absent(),
     this.logoUrl = const Value.absent(),
     this.tvaRate = const Value.absent(),
+    this.googleUrl = const Value.absent(),
+    this.pagesJaunesUrl = const Value.absent(),
   });
   CompanyInfoCompanion.insert({
     this.id = const Value.absent(),
@@ -3928,6 +3996,8 @@ class CompanyInfoCompanion extends UpdateCompanion<CompanyInfoData> {
     this.closureCustomMessage = const Value.absent(),
     this.logoUrl = const Value.absent(),
     this.tvaRate = const Value.absent(),
+    this.googleUrl = const Value.absent(),
+    this.pagesJaunesUrl = const Value.absent(),
   });
   static Insertable<CompanyInfoData> custom({
     Expression<int>? id,
@@ -3949,6 +4019,8 @@ class CompanyInfoCompanion extends UpdateCompanion<CompanyInfoData> {
     Expression<String>? closureCustomMessage,
     Expression<String>? logoUrl,
     Expression<double>? tvaRate,
+    Expression<String>? googleUrl,
+    Expression<String>? pagesJaunesUrl,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -3972,6 +4044,8 @@ class CompanyInfoCompanion extends UpdateCompanion<CompanyInfoData> {
         'closure_custom_message': closureCustomMessage,
       if (logoUrl != null) 'logo_url': logoUrl,
       if (tvaRate != null) 'tva_rate': tvaRate,
+      if (googleUrl != null) 'google_url': googleUrl,
+      if (pagesJaunesUrl != null) 'pagesjaunes_url': pagesJaunesUrl,
     });
   }
 
@@ -3994,7 +4068,9 @@ class CompanyInfoCompanion extends UpdateCompanion<CompanyInfoData> {
       Value<DateTime?>? closureEndDate,
       Value<String?>? closureCustomMessage,
       Value<String?>? logoUrl,
-      Value<double?>? tvaRate}) {
+      Value<double?>? tvaRate,
+      Value<String?>? googleUrl,
+      Value<String?>? pagesJaunesUrl}) {
     return CompanyInfoCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
@@ -4015,6 +4091,8 @@ class CompanyInfoCompanion extends UpdateCompanion<CompanyInfoData> {
       closureCustomMessage: closureCustomMessage ?? this.closureCustomMessage,
       logoUrl: logoUrl ?? this.logoUrl,
       tvaRate: tvaRate ?? this.tvaRate,
+      googleUrl: googleUrl ?? this.googleUrl,
+      pagesJaunesUrl: pagesJaunesUrl ?? this.pagesJaunesUrl,
     );
   }
 
@@ -4079,6 +4157,12 @@ class CompanyInfoCompanion extends UpdateCompanion<CompanyInfoData> {
     if (tvaRate.present) {
       map['tva_rate'] = Variable<double>(tvaRate.value);
     }
+    if (googleUrl.present) {
+      map['google_url'] = Variable<String>(googleUrl.value);
+    }
+    if (pagesJaunesUrl.present) {
+      map['pagesjaunes_url'] = Variable<String>(pagesJaunesUrl.value);
+    }
     return map;
   }
 
@@ -4103,7 +4187,9 @@ class CompanyInfoCompanion extends UpdateCompanion<CompanyInfoData> {
           ..write('closureEndDate: $closureEndDate, ')
           ..write('closureCustomMessage: $closureCustomMessage, ')
           ..write('logoUrl: $logoUrl, ')
-          ..write('tvaRate: $tvaRate')
+          ..write('tvaRate: $tvaRate, ')
+          ..write('googleUrl: $googleUrl, ')
+          ..write('pagesJaunesUrl: $pagesJaunesUrl')
           ..write(')'))
         .toString();
   }
@@ -5481,6 +5567,547 @@ class UserLoyaltiesCompanion extends UpdateCompanion<UserLoyalty> {
   }
 }
 
+class $ProductOptionsTable extends ProductOptions
+    with TableInfo<$ProductOptionsTable, ProductOption> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ProductOptionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _productIdMeta =
+      const VerificationMeta('productId');
+  @override
+  late final GeneratedColumn<int> productId = GeneratedColumn<int>(
+      'product_id', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES products (id)'));
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+      'name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _priceMeta = const VerificationMeta('price');
+  @override
+  late final GeneratedColumn<double> price = GeneratedColumn<double>(
+      'price', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _isGlobalMeta =
+      const VerificationMeta('isGlobal');
+  @override
+  late final GeneratedColumn<bool> isGlobal = GeneratedColumn<bool>(
+      'is_global', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_global" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _categoryMeta =
+      const VerificationMeta('category');
+  @override
+  late final GeneratedColumn<String> category = GeneratedColumn<String>(
+      'category', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [id, productId, name, price, isGlobal, category];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'product_options';
+  @override
+  VerificationContext validateIntegrity(Insertable<ProductOption> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('product_id')) {
+      context.handle(_productIdMeta,
+          productId.isAcceptableOrUnknown(data['product_id']!, _productIdMeta));
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('price')) {
+      context.handle(
+          _priceMeta, price.isAcceptableOrUnknown(data['price']!, _priceMeta));
+    } else if (isInserting) {
+      context.missing(_priceMeta);
+    }
+    if (data.containsKey('is_global')) {
+      context.handle(_isGlobalMeta,
+          isGlobal.isAcceptableOrUnknown(data['is_global']!, _isGlobalMeta));
+    }
+    if (data.containsKey('category')) {
+      context.handle(_categoryMeta,
+          category.isAcceptableOrUnknown(data['category']!, _categoryMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ProductOption map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ProductOption(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      productId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}product_id']),
+      name: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      price: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}price'])!,
+      isGlobal: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_global'])!,
+      category: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}category']),
+    );
+  }
+
+  @override
+  $ProductOptionsTable createAlias(String alias) {
+    return $ProductOptionsTable(attachedDatabase, alias);
+  }
+}
+
+class ProductOption extends DataClass implements Insertable<ProductOption> {
+  final int id;
+  final int? productId;
+  final String name;
+  final double price;
+  final bool isGlobal;
+  final String? category;
+  const ProductOption(
+      {required this.id,
+      this.productId,
+      required this.name,
+      required this.price,
+      required this.isGlobal,
+      this.category});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    if (!nullToAbsent || productId != null) {
+      map['product_id'] = Variable<int>(productId);
+    }
+    map['name'] = Variable<String>(name);
+    map['price'] = Variable<double>(price);
+    map['is_global'] = Variable<bool>(isGlobal);
+    if (!nullToAbsent || category != null) {
+      map['category'] = Variable<String>(category);
+    }
+    return map;
+  }
+
+  ProductOptionsCompanion toCompanion(bool nullToAbsent) {
+    return ProductOptionsCompanion(
+      id: Value(id),
+      productId: productId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(productId),
+      name: Value(name),
+      price: Value(price),
+      isGlobal: Value(isGlobal),
+      category: category == null && nullToAbsent
+          ? const Value.absent()
+          : Value(category),
+    );
+  }
+
+  factory ProductOption.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ProductOption(
+      id: serializer.fromJson<int>(json['id']),
+      productId: serializer.fromJson<int?>(json['productId']),
+      name: serializer.fromJson<String>(json['name']),
+      price: serializer.fromJson<double>(json['price']),
+      isGlobal: serializer.fromJson<bool>(json['isGlobal']),
+      category: serializer.fromJson<String?>(json['category']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'productId': serializer.toJson<int?>(productId),
+      'name': serializer.toJson<String>(name),
+      'price': serializer.toJson<double>(price),
+      'isGlobal': serializer.toJson<bool>(isGlobal),
+      'category': serializer.toJson<String?>(category),
+    };
+  }
+
+  ProductOption copyWith(
+          {int? id,
+          Value<int?> productId = const Value.absent(),
+          String? name,
+          double? price,
+          bool? isGlobal,
+          Value<String?> category = const Value.absent()}) =>
+      ProductOption(
+        id: id ?? this.id,
+        productId: productId.present ? productId.value : this.productId,
+        name: name ?? this.name,
+        price: price ?? this.price,
+        isGlobal: isGlobal ?? this.isGlobal,
+        category: category.present ? category.value : this.category,
+      );
+  ProductOption copyWithCompanion(ProductOptionsCompanion data) {
+    return ProductOption(
+      id: data.id.present ? data.id.value : this.id,
+      productId: data.productId.present ? data.productId.value : this.productId,
+      name: data.name.present ? data.name.value : this.name,
+      price: data.price.present ? data.price.value : this.price,
+      isGlobal: data.isGlobal.present ? data.isGlobal.value : this.isGlobal,
+      category: data.category.present ? data.category.value : this.category,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProductOption(')
+          ..write('id: $id, ')
+          ..write('productId: $productId, ')
+          ..write('name: $name, ')
+          ..write('price: $price, ')
+          ..write('isGlobal: $isGlobal, ')
+          ..write('category: $category')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, productId, name, price, isGlobal, category);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ProductOption &&
+          other.id == this.id &&
+          other.productId == this.productId &&
+          other.name == this.name &&
+          other.price == this.price &&
+          other.isGlobal == this.isGlobal &&
+          other.category == this.category);
+}
+
+class ProductOptionsCompanion extends UpdateCompanion<ProductOption> {
+  final Value<int> id;
+  final Value<int?> productId;
+  final Value<String> name;
+  final Value<double> price;
+  final Value<bool> isGlobal;
+  final Value<String?> category;
+  const ProductOptionsCompanion({
+    this.id = const Value.absent(),
+    this.productId = const Value.absent(),
+    this.name = const Value.absent(),
+    this.price = const Value.absent(),
+    this.isGlobal = const Value.absent(),
+    this.category = const Value.absent(),
+  });
+  ProductOptionsCompanion.insert({
+    this.id = const Value.absent(),
+    this.productId = const Value.absent(),
+    required String name,
+    required double price,
+    this.isGlobal = const Value.absent(),
+    this.category = const Value.absent(),
+  })  : name = Value(name),
+        price = Value(price);
+  static Insertable<ProductOption> custom({
+    Expression<int>? id,
+    Expression<int>? productId,
+    Expression<String>? name,
+    Expression<double>? price,
+    Expression<bool>? isGlobal,
+    Expression<String>? category,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (productId != null) 'product_id': productId,
+      if (name != null) 'name': name,
+      if (price != null) 'price': price,
+      if (isGlobal != null) 'is_global': isGlobal,
+      if (category != null) 'category': category,
+    });
+  }
+
+  ProductOptionsCompanion copyWith(
+      {Value<int>? id,
+      Value<int?>? productId,
+      Value<String>? name,
+      Value<double>? price,
+      Value<bool>? isGlobal,
+      Value<String?>? category}) {
+    return ProductOptionsCompanion(
+      id: id ?? this.id,
+      productId: productId ?? this.productId,
+      name: name ?? this.name,
+      price: price ?? this.price,
+      isGlobal: isGlobal ?? this.isGlobal,
+      category: category ?? this.category,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (productId.present) {
+      map['product_id'] = Variable<int>(productId.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (price.present) {
+      map['price'] = Variable<double>(price.value);
+    }
+    if (isGlobal.present) {
+      map['is_global'] = Variable<bool>(isGlobal.value);
+    }
+    if (category.present) {
+      map['category'] = Variable<String>(category.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProductOptionsCompanion(')
+          ..write('id: $id, ')
+          ..write('productId: $productId, ')
+          ..write('name: $name, ')
+          ..write('price: $price, ')
+          ..write('isGlobal: $isGlobal, ')
+          ..write('category: $category')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ProductOptionLinksTable extends ProductOptionLinks
+    with TableInfo<$ProductOptionLinksTable, ProductOptionLink> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ProductOptionLinksTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _productIdMeta =
+      const VerificationMeta('productId');
+  @override
+  late final GeneratedColumn<int> productId = GeneratedColumn<int>(
+      'product_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES products (id)'));
+  static const VerificationMeta _optionIdMeta =
+      const VerificationMeta('optionId');
+  @override
+  late final GeneratedColumn<int> optionId = GeneratedColumn<int>(
+      'option_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES product_options (id)'));
+  @override
+  List<GeneratedColumn> get $columns => [productId, optionId];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'product_option_links';
+  @override
+  VerificationContext validateIntegrity(Insertable<ProductOptionLink> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('product_id')) {
+      context.handle(_productIdMeta,
+          productId.isAcceptableOrUnknown(data['product_id']!, _productIdMeta));
+    } else if (isInserting) {
+      context.missing(_productIdMeta);
+    }
+    if (data.containsKey('option_id')) {
+      context.handle(_optionIdMeta,
+          optionId.isAcceptableOrUnknown(data['option_id']!, _optionIdMeta));
+    } else if (isInserting) {
+      context.missing(_optionIdMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {productId, optionId};
+  @override
+  ProductOptionLink map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ProductOptionLink(
+      productId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}product_id'])!,
+      optionId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}option_id'])!,
+    );
+  }
+
+  @override
+  $ProductOptionLinksTable createAlias(String alias) {
+    return $ProductOptionLinksTable(attachedDatabase, alias);
+  }
+}
+
+class ProductOptionLink extends DataClass
+    implements Insertable<ProductOptionLink> {
+  final int productId;
+  final int optionId;
+  const ProductOptionLink({required this.productId, required this.optionId});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['product_id'] = Variable<int>(productId);
+    map['option_id'] = Variable<int>(optionId);
+    return map;
+  }
+
+  ProductOptionLinksCompanion toCompanion(bool nullToAbsent) {
+    return ProductOptionLinksCompanion(
+      productId: Value(productId),
+      optionId: Value(optionId),
+    );
+  }
+
+  factory ProductOptionLink.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ProductOptionLink(
+      productId: serializer.fromJson<int>(json['productId']),
+      optionId: serializer.fromJson<int>(json['optionId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'productId': serializer.toJson<int>(productId),
+      'optionId': serializer.toJson<int>(optionId),
+    };
+  }
+
+  ProductOptionLink copyWith({int? productId, int? optionId}) =>
+      ProductOptionLink(
+        productId: productId ?? this.productId,
+        optionId: optionId ?? this.optionId,
+      );
+  ProductOptionLink copyWithCompanion(ProductOptionLinksCompanion data) {
+    return ProductOptionLink(
+      productId: data.productId.present ? data.productId.value : this.productId,
+      optionId: data.optionId.present ? data.optionId.value : this.optionId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProductOptionLink(')
+          ..write('productId: $productId, ')
+          ..write('optionId: $optionId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(productId, optionId);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ProductOptionLink &&
+          other.productId == this.productId &&
+          other.optionId == this.optionId);
+}
+
+class ProductOptionLinksCompanion extends UpdateCompanion<ProductOptionLink> {
+  final Value<int> productId;
+  final Value<int> optionId;
+  final Value<int> rowid;
+  const ProductOptionLinksCompanion({
+    this.productId = const Value.absent(),
+    this.optionId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ProductOptionLinksCompanion.insert({
+    required int productId,
+    required int optionId,
+    this.rowid = const Value.absent(),
+  })  : productId = Value(productId),
+        optionId = Value(optionId);
+  static Insertable<ProductOptionLink> custom({
+    Expression<int>? productId,
+    Expression<int>? optionId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (productId != null) 'product_id': productId,
+      if (optionId != null) 'option_id': optionId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ProductOptionLinksCompanion copyWith(
+      {Value<int>? productId, Value<int>? optionId, Value<int>? rowid}) {
+    return ProductOptionLinksCompanion(
+      productId: productId ?? this.productId,
+      optionId: optionId ?? this.optionId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (productId.present) {
+      map['product_id'] = Variable<int>(productId.value);
+    }
+    if (optionId.present) {
+      map['option_id'] = Variable<int>(optionId.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProductOptionLinksCompanion(')
+          ..write('productId: $productId, ')
+          ..write('optionId: $optionId, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -5501,6 +6128,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $LoyaltySettingsTable loyaltySettings =
       $LoyaltySettingsTable(this);
   late final $UserLoyaltiesTable userLoyalties = $UserLoyaltiesTable(this);
+  late final $ProductOptionsTable productOptions = $ProductOptionsTable(this);
+  late final $ProductOptionLinksTable productOptionLinks =
+      $ProductOptionLinksTable(this);
   late final ProductDao productDao = ProductDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
@@ -5520,7 +6150,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         savedCartItems,
         orderStatusHistories,
         loyaltySettings,
-        userLoyalties
+        userLoyalties,
+        productOptions,
+        productOptionLinks
       ];
 }
 
@@ -5572,6 +6204,38 @@ final class $$ProductsTableReferences
 
     final cache =
         $_typedResult.readTableOrNull(_productIngredientLinksRefsTable($_db));
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: cache));
+  }
+
+  static MultiTypedResultKey<$ProductOptionsTable, List<ProductOption>>
+      _productOptionsRefsTable(_$AppDatabase db) =>
+          MultiTypedResultKey.fromTable(db.productOptions,
+              aliasName: $_aliasNameGenerator(
+                  db.products.id, db.productOptions.productId));
+
+  $$ProductOptionsTableProcessedTableManager get productOptionsRefs {
+    final manager = $$ProductOptionsTableTableManager($_db, $_db.productOptions)
+        .filter((f) => f.productId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_productOptionsRefsTable($_db));
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: cache));
+  }
+
+  static MultiTypedResultKey<$ProductOptionLinksTable, List<ProductOptionLink>>
+      _productOptionLinksRefsTable(_$AppDatabase db) =>
+          MultiTypedResultKey.fromTable(db.productOptionLinks,
+              aliasName: $_aliasNameGenerator(
+                  db.products.id, db.productOptionLinks.productId));
+
+  $$ProductOptionLinksTableProcessedTableManager get productOptionLinksRefs {
+    final manager =
+        $$ProductOptionLinksTableTableManager($_db, $_db.productOptionLinks)
+            .filter((f) => f.productId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache =
+        $_typedResult.readTableOrNull(_productOptionLinksRefsTable($_db));
     return ProcessedTableManager(
         manager.$state.copyWith(prefetchedData: cache));
   }
@@ -5645,6 +6309,48 @@ class $$ProductsTableFilterComposer
                   $removeJoinBuilderFromRootComposer:
                       $removeJoinBuilderFromRootComposer,
                 ));
+    return f(composer);
+  }
+
+  Expression<bool> productOptionsRefs(
+      Expression<bool> Function($$ProductOptionsTableFilterComposer f) f) {
+    final $$ProductOptionsTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $db.productOptions,
+        getReferencedColumn: (t) => t.productId,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ProductOptionsTableFilterComposer(
+              $db: $db,
+              $table: $db.productOptions,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return f(composer);
+  }
+
+  Expression<bool> productOptionLinksRefs(
+      Expression<bool> Function($$ProductOptionLinksTableFilterComposer f) f) {
+    final $$ProductOptionLinksTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $db.productOptionLinks,
+        getReferencedColumn: (t) => t.productId,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ProductOptionLinksTableFilterComposer(
+              $db: $db,
+              $table: $db.productOptionLinks,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
     return f(composer);
   }
 }
@@ -5765,6 +6471,49 @@ class $$ProductsTableAnnotationComposer
                 ));
     return f(composer);
   }
+
+  Expression<T> productOptionsRefs<T extends Object>(
+      Expression<T> Function($$ProductOptionsTableAnnotationComposer a) f) {
+    final $$ProductOptionsTableAnnotationComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $db.productOptions,
+        getReferencedColumn: (t) => t.productId,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ProductOptionsTableAnnotationComposer(
+              $db: $db,
+              $table: $db.productOptions,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return f(composer);
+  }
+
+  Expression<T> productOptionLinksRefs<T extends Object>(
+      Expression<T> Function($$ProductOptionLinksTableAnnotationComposer a) f) {
+    final $$ProductOptionLinksTableAnnotationComposer composer =
+        $composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $db.productOptionLinks,
+            getReferencedColumn: (t) => t.productId,
+            builder: (joinBuilder,
+                    {$addJoinBuilderToRootComposer,
+                    $removeJoinBuilderFromRootComposer}) =>
+                $$ProductOptionLinksTableAnnotationComposer(
+                  $db: $db,
+                  $table: $db.productOptionLinks,
+                  $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                  joinBuilder: joinBuilder,
+                  $removeJoinBuilderFromRootComposer:
+                      $removeJoinBuilderFromRootComposer,
+                ));
+    return f(composer);
+  }
 }
 
 class $$ProductsTableTableManager extends RootTableManager<
@@ -5778,7 +6527,10 @@ class $$ProductsTableTableManager extends RootTableManager<
     $$ProductsTableUpdateCompanionBuilder,
     (Product, $$ProductsTableReferences),
     Product,
-    PrefetchHooks Function({bool productIngredientLinksRefs})> {
+    PrefetchHooks Function(
+        {bool productIngredientLinksRefs,
+        bool productOptionsRefs,
+        bool productOptionLinksRefs})> {
   $$ProductsTableTableManager(_$AppDatabase db, $ProductsTable table)
       : super(TableManagerState(
           db: db,
@@ -5849,11 +6601,16 @@ class $$ProductsTableTableManager extends RootTableManager<
               .map((e) =>
                   (e.readTable(table), $$ProductsTableReferences(db, table, e)))
               .toList(),
-          prefetchHooksCallback: ({productIngredientLinksRefs = false}) {
+          prefetchHooksCallback: (
+              {productIngredientLinksRefs = false,
+              productOptionsRefs = false,
+              productOptionLinksRefs = false}) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [
-                if (productIngredientLinksRefs) db.productIngredientLinks
+                if (productIngredientLinksRefs) db.productIngredientLinks,
+                if (productOptionsRefs) db.productOptions,
+                if (productOptionLinksRefs) db.productOptionLinks
               ],
               addJoins: null,
               getPrefetchedDataCallback: (items) async {
@@ -5867,6 +6624,32 @@ class $$ProductsTableTableManager extends RootTableManager<
                         managerFromTypedResult: (p0) =>
                             $$ProductsTableReferences(db, table, p0)
                                 .productIngredientLinksRefs,
+                        referencedItemsForCurrentItem:
+                            (item, referencedItems) => referencedItems
+                                .where((e) => e.productId == item.id),
+                        typedResults: items),
+                  if (productOptionsRefs)
+                    await $_getPrefetchedData<Product, $ProductsTable,
+                            ProductOption>(
+                        currentTable: table,
+                        referencedTable: $$ProductsTableReferences
+                            ._productOptionsRefsTable(db),
+                        managerFromTypedResult: (p0) =>
+                            $$ProductsTableReferences(db, table, p0)
+                                .productOptionsRefs,
+                        referencedItemsForCurrentItem:
+                            (item, referencedItems) => referencedItems
+                                .where((e) => e.productId == item.id),
+                        typedResults: items),
+                  if (productOptionLinksRefs)
+                    await $_getPrefetchedData<Product, $ProductsTable,
+                            ProductOptionLink>(
+                        currentTable: table,
+                        referencedTable: $$ProductsTableReferences
+                            ._productOptionLinksRefsTable(db),
+                        managerFromTypedResult: (p0) =>
+                            $$ProductsTableReferences(db, table, p0)
+                                .productOptionLinksRefs,
                         referencedItemsForCurrentItem:
                             (item, referencedItems) => referencedItems
                                 .where((e) => e.productId == item.id),
@@ -5889,7 +6672,10 @@ typedef $$ProductsTableProcessedTableManager = ProcessedTableManager<
     $$ProductsTableUpdateCompanionBuilder,
     (Product, $$ProductsTableReferences),
     Product,
-    PrefetchHooks Function({bool productIngredientLinksRefs})>;
+    PrefetchHooks Function(
+        {bool productIngredientLinksRefs,
+        bool productOptionsRefs,
+        bool productOptionLinksRefs})>;
 typedef $$UsersTableCreateCompanionBuilder = UsersCompanion Function({
   required String id,
   Value<String?> name,
@@ -7996,6 +8782,8 @@ typedef $$CompanyInfoTableCreateCompanionBuilder = CompanyInfoCompanion
   Value<String?> closureCustomMessage,
   Value<String?> logoUrl,
   Value<double?> tvaRate,
+  Value<String?> googleUrl,
+  Value<String?> pagesJaunesUrl,
 });
 typedef $$CompanyInfoTableUpdateCompanionBuilder = CompanyInfoCompanion
     Function({
@@ -8018,6 +8806,8 @@ typedef $$CompanyInfoTableUpdateCompanionBuilder = CompanyInfoCompanion
   Value<String?> closureCustomMessage,
   Value<String?> logoUrl,
   Value<double?> tvaRate,
+  Value<String?> googleUrl,
+  Value<String?> pagesJaunesUrl,
 });
 
 class $$CompanyInfoTableFilterComposer
@@ -8089,6 +8879,13 @@ class $$CompanyInfoTableFilterComposer
 
   ColumnFilters<double> get tvaRate => $composableBuilder(
       column: $table.tvaRate, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get googleUrl => $composableBuilder(
+      column: $table.googleUrl, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get pagesJaunesUrl => $composableBuilder(
+      column: $table.pagesJaunesUrl,
+      builder: (column) => ColumnFilters(column));
 }
 
 class $$CompanyInfoTableOrderingComposer
@@ -8164,6 +8961,13 @@ class $$CompanyInfoTableOrderingComposer
 
   ColumnOrderings<double> get tvaRate => $composableBuilder(
       column: $table.tvaRate, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get googleUrl => $composableBuilder(
+      column: $table.googleUrl, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get pagesJaunesUrl => $composableBuilder(
+      column: $table.pagesJaunesUrl,
+      builder: (column) => ColumnOrderings(column));
 }
 
 class $$CompanyInfoTableAnnotationComposer
@@ -8231,6 +9035,12 @@ class $$CompanyInfoTableAnnotationComposer
 
   GeneratedColumn<double> get tvaRate =>
       $composableBuilder(column: $table.tvaRate, builder: (column) => column);
+
+  GeneratedColumn<String> get googleUrl =>
+      $composableBuilder(column: $table.googleUrl, builder: (column) => column);
+
+  GeneratedColumn<String> get pagesJaunesUrl => $composableBuilder(
+      column: $table.pagesJaunesUrl, builder: (column) => column);
 }
 
 class $$CompanyInfoTableTableManager extends RootTableManager<
@@ -8278,6 +9088,8 @@ class $$CompanyInfoTableTableManager extends RootTableManager<
             Value<String?> closureCustomMessage = const Value.absent(),
             Value<String?> logoUrl = const Value.absent(),
             Value<double?> tvaRate = const Value.absent(),
+            Value<String?> googleUrl = const Value.absent(),
+            Value<String?> pagesJaunesUrl = const Value.absent(),
           }) =>
               CompanyInfoCompanion(
             id: id,
@@ -8299,6 +9111,8 @@ class $$CompanyInfoTableTableManager extends RootTableManager<
             closureCustomMessage: closureCustomMessage,
             logoUrl: logoUrl,
             tvaRate: tvaRate,
+            googleUrl: googleUrl,
+            pagesJaunesUrl: pagesJaunesUrl,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -8320,6 +9134,8 @@ class $$CompanyInfoTableTableManager extends RootTableManager<
             Value<String?> closureCustomMessage = const Value.absent(),
             Value<String?> logoUrl = const Value.absent(),
             Value<double?> tvaRate = const Value.absent(),
+            Value<String?> googleUrl = const Value.absent(),
+            Value<String?> pagesJaunesUrl = const Value.absent(),
           }) =>
               CompanyInfoCompanion.insert(
             id: id,
@@ -8341,6 +9157,8 @@ class $$CompanyInfoTableTableManager extends RootTableManager<
             closureCustomMessage: closureCustomMessage,
             logoUrl: logoUrl,
             tvaRate: tvaRate,
+            googleUrl: googleUrl,
+            pagesJaunesUrl: pagesJaunesUrl,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
@@ -9547,6 +10365,680 @@ typedef $$UserLoyaltiesTableProcessedTableManager = ProcessedTableManager<
     (UserLoyalty, $$UserLoyaltiesTableReferences),
     UserLoyalty,
     PrefetchHooks Function({bool userId})>;
+typedef $$ProductOptionsTableCreateCompanionBuilder = ProductOptionsCompanion
+    Function({
+  Value<int> id,
+  Value<int?> productId,
+  required String name,
+  required double price,
+  Value<bool> isGlobal,
+  Value<String?> category,
+});
+typedef $$ProductOptionsTableUpdateCompanionBuilder = ProductOptionsCompanion
+    Function({
+  Value<int> id,
+  Value<int?> productId,
+  Value<String> name,
+  Value<double> price,
+  Value<bool> isGlobal,
+  Value<String?> category,
+});
+
+final class $$ProductOptionsTableReferences
+    extends BaseReferences<_$AppDatabase, $ProductOptionsTable, ProductOption> {
+  $$ProductOptionsTableReferences(
+      super.$_db, super.$_table, super.$_typedResult);
+
+  static $ProductsTable _productIdTable(_$AppDatabase db) =>
+      db.products.createAlias(
+          $_aliasNameGenerator(db.productOptions.productId, db.products.id));
+
+  $$ProductsTableProcessedTableManager? get productId {
+    final $_column = $_itemColumn<int>('product_id');
+    if ($_column == null) return null;
+    final manager = $$ProductsTableTableManager($_db, $_db.products)
+        .filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_productIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: [item]));
+  }
+
+  static MultiTypedResultKey<$ProductOptionLinksTable, List<ProductOptionLink>>
+      _productOptionLinksRefsTable(_$AppDatabase db) =>
+          MultiTypedResultKey.fromTable(db.productOptionLinks,
+              aliasName: $_aliasNameGenerator(
+                  db.productOptions.id, db.productOptionLinks.optionId));
+
+  $$ProductOptionLinksTableProcessedTableManager get productOptionLinksRefs {
+    final manager =
+        $$ProductOptionLinksTableTableManager($_db, $_db.productOptionLinks)
+            .filter((f) => f.optionId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache =
+        $_typedResult.readTableOrNull(_productOptionLinksRefsTable($_db));
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: cache));
+  }
+}
+
+class $$ProductOptionsTableFilterComposer
+    extends Composer<_$AppDatabase, $ProductOptionsTable> {
+  $$ProductOptionsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get price => $composableBuilder(
+      column: $table.price, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isGlobal => $composableBuilder(
+      column: $table.isGlobal, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get category => $composableBuilder(
+      column: $table.category, builder: (column) => ColumnFilters(column));
+
+  $$ProductsTableFilterComposer get productId {
+    final $$ProductsTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.productId,
+        referencedTable: $db.products,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ProductsTableFilterComposer(
+              $db: $db,
+              $table: $db.products,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+
+  Expression<bool> productOptionLinksRefs(
+      Expression<bool> Function($$ProductOptionLinksTableFilterComposer f) f) {
+    final $$ProductOptionLinksTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $db.productOptionLinks,
+        getReferencedColumn: (t) => t.optionId,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ProductOptionLinksTableFilterComposer(
+              $db: $db,
+              $table: $db.productOptionLinks,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return f(composer);
+  }
+}
+
+class $$ProductOptionsTableOrderingComposer
+    extends Composer<_$AppDatabase, $ProductOptionsTable> {
+  $$ProductOptionsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get price => $composableBuilder(
+      column: $table.price, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get isGlobal => $composableBuilder(
+      column: $table.isGlobal, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get category => $composableBuilder(
+      column: $table.category, builder: (column) => ColumnOrderings(column));
+
+  $$ProductsTableOrderingComposer get productId {
+    final $$ProductsTableOrderingComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.productId,
+        referencedTable: $db.products,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ProductsTableOrderingComposer(
+              $db: $db,
+              $table: $db.products,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+}
+
+class $$ProductOptionsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ProductOptionsTable> {
+  $$ProductOptionsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<double> get price =>
+      $composableBuilder(column: $table.price, builder: (column) => column);
+
+  GeneratedColumn<bool> get isGlobal =>
+      $composableBuilder(column: $table.isGlobal, builder: (column) => column);
+
+  GeneratedColumn<String> get category =>
+      $composableBuilder(column: $table.category, builder: (column) => column);
+
+  $$ProductsTableAnnotationComposer get productId {
+    final $$ProductsTableAnnotationComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.productId,
+        referencedTable: $db.products,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ProductsTableAnnotationComposer(
+              $db: $db,
+              $table: $db.products,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+
+  Expression<T> productOptionLinksRefs<T extends Object>(
+      Expression<T> Function($$ProductOptionLinksTableAnnotationComposer a) f) {
+    final $$ProductOptionLinksTableAnnotationComposer composer =
+        $composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $db.productOptionLinks,
+            getReferencedColumn: (t) => t.optionId,
+            builder: (joinBuilder,
+                    {$addJoinBuilderToRootComposer,
+                    $removeJoinBuilderFromRootComposer}) =>
+                $$ProductOptionLinksTableAnnotationComposer(
+                  $db: $db,
+                  $table: $db.productOptionLinks,
+                  $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                  joinBuilder: joinBuilder,
+                  $removeJoinBuilderFromRootComposer:
+                      $removeJoinBuilderFromRootComposer,
+                ));
+    return f(composer);
+  }
+}
+
+class $$ProductOptionsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $ProductOptionsTable,
+    ProductOption,
+    $$ProductOptionsTableFilterComposer,
+    $$ProductOptionsTableOrderingComposer,
+    $$ProductOptionsTableAnnotationComposer,
+    $$ProductOptionsTableCreateCompanionBuilder,
+    $$ProductOptionsTableUpdateCompanionBuilder,
+    (ProductOption, $$ProductOptionsTableReferences),
+    ProductOption,
+    PrefetchHooks Function({bool productId, bool productOptionLinksRefs})> {
+  $$ProductOptionsTableTableManager(
+      _$AppDatabase db, $ProductOptionsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ProductOptionsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ProductOptionsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ProductOptionsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int?> productId = const Value.absent(),
+            Value<String> name = const Value.absent(),
+            Value<double> price = const Value.absent(),
+            Value<bool> isGlobal = const Value.absent(),
+            Value<String?> category = const Value.absent(),
+          }) =>
+              ProductOptionsCompanion(
+            id: id,
+            productId: productId,
+            name: name,
+            price: price,
+            isGlobal: isGlobal,
+            category: category,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int?> productId = const Value.absent(),
+            required String name,
+            required double price,
+            Value<bool> isGlobal = const Value.absent(),
+            Value<String?> category = const Value.absent(),
+          }) =>
+              ProductOptionsCompanion.insert(
+            id: id,
+            productId: productId,
+            name: name,
+            price: price,
+            isGlobal: isGlobal,
+            category: category,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (
+                    e.readTable(table),
+                    $$ProductOptionsTableReferences(db, table, e)
+                  ))
+              .toList(),
+          prefetchHooksCallback: (
+              {productId = false, productOptionLinksRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [
+                if (productOptionLinksRefs) db.productOptionLinks
+              ],
+              addJoins: <
+                  T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic>>(state) {
+                if (productId) {
+                  state = state.withJoin(
+                    currentTable: table,
+                    currentColumn: table.productId,
+                    referencedTable:
+                        $$ProductOptionsTableReferences._productIdTable(db),
+                    referencedColumn:
+                        $$ProductOptionsTableReferences._productIdTable(db).id,
+                  ) as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (productOptionLinksRefs)
+                    await $_getPrefetchedData<ProductOption,
+                            $ProductOptionsTable, ProductOptionLink>(
+                        currentTable: table,
+                        referencedTable: $$ProductOptionsTableReferences
+                            ._productOptionLinksRefsTable(db),
+                        managerFromTypedResult: (p0) =>
+                            $$ProductOptionsTableReferences(db, table, p0)
+                                .productOptionLinksRefs,
+                        referencedItemsForCurrentItem: (item,
+                                referencedItems) =>
+                            referencedItems.where((e) => e.optionId == item.id),
+                        typedResults: items)
+                ];
+              },
+            );
+          },
+        ));
+}
+
+typedef $$ProductOptionsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $ProductOptionsTable,
+    ProductOption,
+    $$ProductOptionsTableFilterComposer,
+    $$ProductOptionsTableOrderingComposer,
+    $$ProductOptionsTableAnnotationComposer,
+    $$ProductOptionsTableCreateCompanionBuilder,
+    $$ProductOptionsTableUpdateCompanionBuilder,
+    (ProductOption, $$ProductOptionsTableReferences),
+    ProductOption,
+    PrefetchHooks Function({bool productId, bool productOptionLinksRefs})>;
+typedef $$ProductOptionLinksTableCreateCompanionBuilder
+    = ProductOptionLinksCompanion Function({
+  required int productId,
+  required int optionId,
+  Value<int> rowid,
+});
+typedef $$ProductOptionLinksTableUpdateCompanionBuilder
+    = ProductOptionLinksCompanion Function({
+  Value<int> productId,
+  Value<int> optionId,
+  Value<int> rowid,
+});
+
+final class $$ProductOptionLinksTableReferences extends BaseReferences<
+    _$AppDatabase, $ProductOptionLinksTable, ProductOptionLink> {
+  $$ProductOptionLinksTableReferences(
+      super.$_db, super.$_table, super.$_typedResult);
+
+  static $ProductsTable _productIdTable(_$AppDatabase db) =>
+      db.products.createAlias($_aliasNameGenerator(
+          db.productOptionLinks.productId, db.products.id));
+
+  $$ProductsTableProcessedTableManager get productId {
+    final $_column = $_itemColumn<int>('product_id')!;
+
+    final manager = $$ProductsTableTableManager($_db, $_db.products)
+        .filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_productIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: [item]));
+  }
+
+  static $ProductOptionsTable _optionIdTable(_$AppDatabase db) =>
+      db.productOptions.createAlias($_aliasNameGenerator(
+          db.productOptionLinks.optionId, db.productOptions.id));
+
+  $$ProductOptionsTableProcessedTableManager get optionId {
+    final $_column = $_itemColumn<int>('option_id')!;
+
+    final manager = $$ProductOptionsTableTableManager($_db, $_db.productOptions)
+        .filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_optionIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: [item]));
+  }
+}
+
+class $$ProductOptionLinksTableFilterComposer
+    extends Composer<_$AppDatabase, $ProductOptionLinksTable> {
+  $$ProductOptionLinksTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$ProductsTableFilterComposer get productId {
+    final $$ProductsTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.productId,
+        referencedTable: $db.products,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ProductsTableFilterComposer(
+              $db: $db,
+              $table: $db.products,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+
+  $$ProductOptionsTableFilterComposer get optionId {
+    final $$ProductOptionsTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.optionId,
+        referencedTable: $db.productOptions,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ProductOptionsTableFilterComposer(
+              $db: $db,
+              $table: $db.productOptions,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+}
+
+class $$ProductOptionLinksTableOrderingComposer
+    extends Composer<_$AppDatabase, $ProductOptionLinksTable> {
+  $$ProductOptionLinksTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$ProductsTableOrderingComposer get productId {
+    final $$ProductsTableOrderingComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.productId,
+        referencedTable: $db.products,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ProductsTableOrderingComposer(
+              $db: $db,
+              $table: $db.products,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+
+  $$ProductOptionsTableOrderingComposer get optionId {
+    final $$ProductOptionsTableOrderingComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.optionId,
+        referencedTable: $db.productOptions,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ProductOptionsTableOrderingComposer(
+              $db: $db,
+              $table: $db.productOptions,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+}
+
+class $$ProductOptionLinksTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ProductOptionLinksTable> {
+  $$ProductOptionLinksTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$ProductsTableAnnotationComposer get productId {
+    final $$ProductsTableAnnotationComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.productId,
+        referencedTable: $db.products,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ProductsTableAnnotationComposer(
+              $db: $db,
+              $table: $db.products,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+
+  $$ProductOptionsTableAnnotationComposer get optionId {
+    final $$ProductOptionsTableAnnotationComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.optionId,
+        referencedTable: $db.productOptions,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ProductOptionsTableAnnotationComposer(
+              $db: $db,
+              $table: $db.productOptions,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+}
+
+class $$ProductOptionLinksTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $ProductOptionLinksTable,
+    ProductOptionLink,
+    $$ProductOptionLinksTableFilterComposer,
+    $$ProductOptionLinksTableOrderingComposer,
+    $$ProductOptionLinksTableAnnotationComposer,
+    $$ProductOptionLinksTableCreateCompanionBuilder,
+    $$ProductOptionLinksTableUpdateCompanionBuilder,
+    (ProductOptionLink, $$ProductOptionLinksTableReferences),
+    ProductOptionLink,
+    PrefetchHooks Function({bool productId, bool optionId})> {
+  $$ProductOptionLinksTableTableManager(
+      _$AppDatabase db, $ProductOptionLinksTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ProductOptionLinksTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ProductOptionLinksTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ProductOptionLinksTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> productId = const Value.absent(),
+            Value<int> optionId = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              ProductOptionLinksCompanion(
+            productId: productId,
+            optionId: optionId,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required int productId,
+            required int optionId,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              ProductOptionLinksCompanion.insert(
+            productId: productId,
+            optionId: optionId,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (
+                    e.readTable(table),
+                    $$ProductOptionLinksTableReferences(db, table, e)
+                  ))
+              .toList(),
+          prefetchHooksCallback: ({productId = false, optionId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                  T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic>>(state) {
+                if (productId) {
+                  state = state.withJoin(
+                    currentTable: table,
+                    currentColumn: table.productId,
+                    referencedTable:
+                        $$ProductOptionLinksTableReferences._productIdTable(db),
+                    referencedColumn: $$ProductOptionLinksTableReferences
+                        ._productIdTable(db)
+                        .id,
+                  ) as T;
+                }
+                if (optionId) {
+                  state = state.withJoin(
+                    currentTable: table,
+                    currentColumn: table.optionId,
+                    referencedTable:
+                        $$ProductOptionLinksTableReferences._optionIdTable(db),
+                    referencedColumn: $$ProductOptionLinksTableReferences
+                        ._optionIdTable(db)
+                        .id,
+                  ) as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ));
+}
+
+typedef $$ProductOptionLinksTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $ProductOptionLinksTable,
+    ProductOptionLink,
+    $$ProductOptionLinksTableFilterComposer,
+    $$ProductOptionLinksTableOrderingComposer,
+    $$ProductOptionLinksTableAnnotationComposer,
+    $$ProductOptionLinksTableCreateCompanionBuilder,
+    $$ProductOptionLinksTableUpdateCompanionBuilder,
+    (ProductOptionLink, $$ProductOptionLinksTableReferences),
+    ProductOptionLink,
+    PrefetchHooks Function({bool productId, bool optionId})>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -9580,6 +11072,10 @@ class $AppDatabaseManager {
       $$LoyaltySettingsTableTableManager(_db, _db.loyaltySettings);
   $$UserLoyaltiesTableTableManager get userLoyalties =>
       $$UserLoyaltiesTableTableManager(_db, _db.userLoyalties);
+  $$ProductOptionsTableTableManager get productOptions =>
+      $$ProductOptionsTableTableManager(_db, _db.productOptions);
+  $$ProductOptionLinksTableTableManager get productOptionLinks =>
+      $$ProductOptionLinksTableTableManager(_db, _db.productOptionLinks);
 }
 
 mixin _$ProductDaoMixin on DatabaseAccessor<AppDatabase> {
