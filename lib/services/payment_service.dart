@@ -14,11 +14,14 @@ class PaymentService {
 
   PaymentService({required this.db});
 
-  // --- LOGIQUE DE CRÉATION DE CLIENT ---
+  // --- GESTION DU CLIENT STRIPE ---
 
   Future<String?> getOrCreateStripeCustomer() async {
     final user = _supabase.auth.currentUser;
-    if (user == null) return null;
+    if (user == null) {
+      print('❌ Erreur: Aucun utilisateur Supabase connecté.');
+      return null;
+    }
 
     final localUser = await (db.select(db.users)..where((u) => u.id.equals(user.id))).getSingleOrNull();
     if (localUser?.stripeCustomerId != null) {
@@ -26,34 +29,46 @@ class PaymentService {
     }
 
     try {
+      final secretKey = dotenv.env['STRIPE_SECRET_KEY'];
+      if (secretKey == null || secretKey.isEmpty) {
+        print('❌ Erreur: STRIPE_SECRET_KEY est manquante dans le fichier .env');
+        return null;
+      }
+
+      print('ℹ️ Tentative de création client Stripe pour: ${user.email}');
+      
       final response = await http.post(
         Uri.parse('https://api.stripe.com/v1/customers'),
         headers: {
-          'Authorization': 'Bearer ${dotenv.env['STRIPE_SECRET_KEY']}',
+          'Authorization': 'Bearer $secretKey',
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: {
-          'email': user.email,
+          'email': user.email ?? '',
           'metadata[user_id]': user.id,
         },
       );
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final stripeId = data['id'] as String;
+      final data = json.decode(response.body);
 
+      if (response.statusCode == 200) {
+        final stripeId = data['id'] as String;
         await _supabase.from('users').update({'stripe_customer_id': stripeId}).eq('id', user.id);
         await (db.update(db.users)..where((u) => u.id.equals(user.id))).write(UsersCompanion(stripeCustomerId: Value(stripeId)));
-
+        print('✅ Client Stripe créé: $stripeId');
         return stripeId;
+      } else {
+        print('❌ Erreur Stripe API (Code ${response.statusCode}): ${data['error']?['message'] ?? response.body}');
+        return null;
       }
     } catch (e) {
-      print('❌ Erreur création client Stripe: $e');
+      print('❌ Erreur exceptionnelle création client Stripe: $e');
+      return null;
     }
-    return null;
   }
 
-  // ✅ NOUVEAU: Récupérer les détails de la carte enregistrée
+  // --- RÉCUPÉRATION DÉTAILS CARTE ---
+
   Future<Map<String, String>?> getSavedCardDetails(String customerId) async {
     try {
       final response = await http.get(
@@ -80,7 +95,7 @@ class PaymentService {
     return null;
   }
 
-  // --- LOGIQUE DE PAIEMENT RÉEL ---
+  // --- INITIALISATION PAIEMENT RÉEL ---
 
   Future<void> initPaymentSheet({
     required double amount,
@@ -88,6 +103,7 @@ class PaymentService {
   }) async {
     try {
       final customerId = await getOrCreateStripeCustomer();
+      if (customerId == null) throw 'Impossible de récupérer ou créer le profil client Stripe.';
       
       final response = await http.post(
         Uri.parse('https://api.stripe.com/v1/payment_intents'),
@@ -104,13 +120,14 @@ class PaymentService {
       );
 
       final data = json.decode(response.body);
+      if (data['client_secret'] == null) throw 'Erreur Stripe : Secret de paiement manquant. ${data['error']?['message'] ?? ''}';
 
       await Stripe.instance.initPaymentSheet(
         paymentSheetParameters: SetupPaymentSheetParameters(
           paymentIntentClientSecret: data['client_secret'],
           merchantDisplayName: 'Pizza Mania',
           customerId: customerId,
-          customerEphemeralKeySecret: await _getEphemeralKey(customerId!),
+          customerEphemeralKeySecret: await _getEphemeralKey(customerId),
           style: ThemeMode.light,
         ),
       );
@@ -120,11 +137,12 @@ class PaymentService {
     }
   }
 
-  // --- LOGIQUE D'EMPREINTE (GARANTIE) ---
+  // --- INITIALISATION GARANTIE (SETUP INTENT) ---
 
   Future<void> initSetupIntent() async {
     try {
       final customerId = await getOrCreateStripeCustomer();
+      if (customerId == null) throw 'Impossible de créer le profil client Stripe.';
 
       final response = await http.post(
         Uri.parse('https://api.stripe.com/v1/setup_intents'),
@@ -139,18 +157,31 @@ class PaymentService {
       );
 
       final data = json.decode(response.body);
+      if (data['client_secret'] == null) throw 'Erreur Stripe : Secret de garantie manquant. ${data['error']?['message'] ?? ''}';
 
       await Stripe.instance.initPaymentSheet(
         paymentSheetParameters: SetupPaymentSheetParameters(
           setupIntentClientSecret: data['client_secret'],
           merchantDisplayName: 'Pizza Mania (Garantie)',
           customerId: customerId,
-          customerEphemeralKeySecret: await _getEphemeralKey(customerId!),
+          customerEphemeralKeySecret: await _getEphemeralKey(customerId),
         ),
       );
     } catch (e) {
       print('❌ Erreur initialisation Garantie: $e');
       rethrow;
+    }
+  }
+
+  Future<bool> presentAndConfirm() async {
+    try {
+      await Stripe.instance.presentPaymentSheet();
+      return true;
+    } catch (e) {
+      if (e is StripeException) {
+        print('❌ Erreur Stripe: ${e.error.localizedMessage}');
+      }
+      return false;
     }
   }
 
@@ -166,18 +197,8 @@ class PaymentService {
         'customer': customerId,
       },
     );
-    return json.decode(response.body)['secret'];
-  }
-
-  Future<bool> presentAndConfirm() async {
-    try {
-      await Stripe.instance.presentPaymentSheet();
-      return true;
-    } catch (e) {
-      if (e is StripeException) {
-        print('❌ Erreur Stripe: ${e.error.localizedMessage}');
-      }
-      return false;
-    }
+    final data = json.decode(response.body);
+    if (data['secret'] == null) throw 'Erreur Stripe : Clé éphémère manquante. ${data['error']?['message'] ?? ''}';
+    return data['secret'];
   }
 }

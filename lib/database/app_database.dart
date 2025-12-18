@@ -7,7 +7,7 @@ import 'package:rxdart/rxdart.dart';
 
 import 'initial_data.dart';
 
-// ✅ 1. LES PARTS (Le .g.dart doit être là)
+// ✅ 1. LES PARTS
 part 'app_database.g.dart';
 part 'product.dart';
 part 'user.dart';
@@ -118,6 +118,7 @@ class AppDatabase extends _$AppDatabase {
   Future<void> clearSavedCart() => delete(savedCartItems).go();
 
   Stream<List<ReviewWithOrder>> watchUserReviews(String userId) {
+    // ✅ CORRIGÉ : Double point au lieu de triple point
     final query = select(reviews).join([innerJoin(orders, orders.id.equalsExp(reviews.orderId))])..where(reviews.userId.equals(userId))..orderBy([OrderingTerm(expression: reviews.createdAt, mode: OrderingMode.desc)]);
     return query.watch().map((rows) => rows.map((row) => ReviewWithOrder(review: row.readTable(reviews),order: row.readTable(orders))).toList());
   }
