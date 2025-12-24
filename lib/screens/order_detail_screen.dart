@@ -7,6 +7,7 @@ import '../database/app_database.dart';
 import '../services/admin_service.dart';
 import '../services/auth_service.dart';
 import '../services/sync_service.dart';
+import '../services/order_service.dart';
 import 'add_review_screen.dart';
 
 String formatPrice(double price) {
@@ -41,6 +42,27 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  Future<void> _confirmPayment(BuildContext context) async {
+    final orderService = context.read<OrderService>();
+    final syncService = context.read<SyncService>();
+    try {
+      await orderService.updatePaymentStatus(widget.order.id, 'paid');
+      await syncService.syncAll();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('✅ Paiement confirmé !'), backgroundColor: Colors.green),
+        );
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur lors de la confirmation: $e'), backgroundColor: Colors.red),
         );
       }
     }
@@ -86,6 +108,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   Widget build(BuildContext context) {
     final db = Provider.of<AppDatabase>(context, listen: false);
     final authService = context.watch<AuthService>();
+    final bool isPaid = widget.order.paymentStatus == 'paid'; // ✅ Variable réutilisable
 
     return FutureBuilder<List<dynamic>>(
       future: Future.wait([db.getOrderItems(widget.order.id), db.getCompanyInfo()]),
@@ -106,15 +129,16 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           body: ListView(
                   padding: const EdgeInsets.all(16.0),
                   children: [
-                    _buildOrderSummary(context, totalItems, authService.isAdmin, companyInfo),
+                    _buildOrderSummary(context, totalItems, authService.isAdmin, companyInfo, isPaid),
                     const Divider(height: 32),
                     Text('Détails des articles', style: Theme.of(context).textTheme.titleLarge),
                     const SizedBox(height: 8),
                     ...orderItems.map((item) => OrderItemCard(item: item)),
                   ],
                 ),
-          bottomNavigationBar: _buildBottomBar(context, authService),
-          floatingActionButton: authService.isAdmin ? null : FloatingActionButton(
+          bottomNavigationBar: _buildBottomBar(context, authService, isPaid),
+          // ✅ MODIFIÉ: Le bouton de partage n'apparaît QUE si la commande est payée (et que ce n'est pas l'admin)
+          floatingActionButton: (authService.isAdmin || !isPaid) ? null : FloatingActionButton(
             onPressed: () => _shareInvoice(companyInfo, orderItems),
             tooltip: 'Partager la facture',
             child: const Icon(Icons.share),
@@ -124,15 +148,34 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     );
   }
 
-  Widget? _buildBottomBar(BuildContext context, AuthService authService) {
+  Widget? _buildBottomBar(BuildContext context, AuthService authService, bool isPaid) {
     if (authService.isAdmin) {
-      if (widget.status == 'À faire') {
-        return _buildAdminButton(context, 'Marquer comme PRÊTE', 'Prête', Colors.green);
-      }
-      if (widget.status == 'Prête') {
-        return _buildAdminButton(context, 'Marquer comme TERMINÉE', 'Terminée', Colors.blue);
-      }
-      return null;
+      return Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (!isPaid)
+              ElevatedButton.icon(
+                icon: const Icon(Icons.monetization_on),
+                label: const Text('CONFIRMER LE RÈGLEMENT SUR PLACE'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+                onPressed: () => _confirmPayment(context),
+              ),
+            if (!isPaid) const SizedBox(height: 8),
+            
+            if (widget.status == 'À faire')
+              _buildAdminButton(context, 'MARQUER COMME PRÊTE', 'Prête', Colors.green),
+            if (widget.status == 'Prête')
+              _buildAdminButton(context, 'MARQUER COMME TERMINÉE', 'Terminée', Colors.blue),
+          ],
+        ),
+      );
     }
 
     return StreamBuilder<Review?>(
@@ -159,22 +202,19 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   Widget _buildAdminButton(BuildContext context, String label, String newStatus, Color color) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: ElevatedButton.icon(
-        icon: const Icon(Icons.check_circle_outline),
-        label: Text(label),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: color,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-        ),
-        onPressed: () => _updateOrderStatus(context, newStatus),
+    return ElevatedButton.icon(
+      icon: const Icon(Icons.check_circle_outline),
+      label: Text(label),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(vertical: 16),
       ),
+      onPressed: () => _updateOrderStatus(context, newStatus),
     );
   }
 
-  Widget _buildOrderSummary(BuildContext context, int totalItems, bool isAdmin, CompanyInfoData? companyInfo) {
+  Widget _buildOrderSummary(BuildContext context, int totalItems, bool isAdmin, CompanyInfoData? companyInfo, bool isPaid) {
     double tvaAmount = 0;
     double tvaRateForDisplay = 0;
 
@@ -190,7 +230,22 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (isAdmin) _buildSummaryRow('Statut:', widget.status, isStatus: true) else _buildSummaryRow('Statut:', 'Payé le ${DateFormat('dd/MM/yyyy').format(widget.order.createdAt)}', color: Colors.green),
+            if (isAdmin) 
+              _buildSummaryRow('Statut Commande:', widget.status, isStatus: true) 
+            else 
+              // ✅ MODIFIÉ: Message dynamique pour le client
+              _buildSummaryRow(
+                'Statut Commande:', 
+                isPaid ? 'Payée le ${DateFormat('dd/MM/yyyy').format(widget.order.createdAt)}' : 'À régler sur place', 
+                color: isPaid ? Colors.green : Colors.red
+              ),
+            
+            _buildSummaryRow(
+              'Statut Paiement:', 
+              isPaid ? 'PAYÉ' : 'À ENCAISSER SUR PLACE',
+              color: isPaid ? Colors.green : Colors.red,
+            ),
+            
             _buildSummaryRow('Référence:', widget.order.referenceName ?? 'Non spécifié'),
             _buildSummaryRow('Heure de retrait:', widget.order.pickupTime ?? 'Non spécifiée'),
             _buildSummaryRow('Date:', DateFormat('dd/MM/yyyy HH:mm', 'fr_FR').format(widget.order.createdAt)),
@@ -246,7 +301,6 @@ class OrderItemCard extends StatelessWidget {
 
   const OrderItemCard({super.key, required this.item});
 
-  // ✅ Logique de coloration améliorée
   Widget _buildOptionsText(BuildContext context) {
     final text = item.optionsDescription!;
     final defaultStyle = TextStyle(color: Colors.grey.shade600, fontStyle: FontStyle.italic);

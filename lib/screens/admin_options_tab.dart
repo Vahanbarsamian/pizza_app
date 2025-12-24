@@ -22,11 +22,11 @@ class _AdminOptionsTabState extends State<AdminOptionsTab> {
   Ingredient? _selectedIngredient;
   bool _isLoading = false;
   bool _isFormExpanded = false;
+  bool _isAscending = true;
 
   @override
   void initState() {
     super.initState();
-    _isFormExpanded = _selectedIngredient != null;
   }
 
   void _clearForm() {
@@ -76,10 +76,7 @@ class _AdminOptionsTabState extends State<AdminOptionsTab> {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ Ingrédient enregistré !'), backgroundColor: Colors.green,));
       }
     } catch (e, stacktrace) {
-      debugPrint('--- ERREUR CAPTURÉE ---');
-      debugPrint(e.toString());
-      debugPrint(stacktrace.toString());
-      debugPrint('-----------------------');
+      debugPrint('Erreur: $e\n$stacktrace');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: ${e.toString()}')));
       }
@@ -95,7 +92,7 @@ class _AdminOptionsTabState extends State<AdminOptionsTab> {
     try {
       await adminService.deleteIngredient(id);
       await syncService.syncAll();
-      _clearForm(); // Clear form after deletion
+      _clearForm();
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('🗑️ Ingrédient supprimé.')));
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("❌ Erreur: $e")));
@@ -113,24 +110,17 @@ class _AdminOptionsTabState extends State<AdminOptionsTab> {
         children: [
           ExpansionPanelList(
             elevation: 2,
-            // ✅ MODIFIÉ: Le callback est maintenant géré par le GestureDetector ci-dessous
             expansionCallback: (int index, bool isExpanded) {
-              // La logique est maintenant dans le GestureDetector
+              setState(() {
+                _isFormExpanded = isExpanded;
+              });
             },
             children: [
               ExpansionPanel(
-                // ✅ MODIFIÉ: Le header est maintenant explicitement cliquable
                 headerBuilder: (BuildContext context, bool isExpanded) {
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _isFormExpanded = !_isFormExpanded;
-                      });
-                    },
-                    child: _CardHeader(
-                      title: _selectedIngredient == null ? 'Ajouter un Ingrédient' : 'Modifier l\'Ingrédient',
-                      icon: _selectedIngredient == null ? Icons.add_circle : Icons.edit,
-                    ),
+                  return _CardHeader(
+                    title: _selectedIngredient == null ? 'Ajouter un Ingrédient' : 'Modifier l\'Ingrédient',
+                    icon: _selectedIngredient == null ? Icons.add_circle : Icons.edit,
                   );
                 },
                 body: Padding(
@@ -146,13 +136,35 @@ class _AdminOptionsTabState extends State<AdminOptionsTab> {
                       const SizedBox(height: 12),
                       SwitchListTile(title: const Text('Supplément Global'), subtitle: const Text('Appliquer à toutes les pizzas par défaut'), value: _isGlobal, onChanged: (value) => setState(() => _isGlobal = value)),
                       const SizedBox(height: 20),
-                      ElevatedButton.icon(
+                      // ✅ MODIFIÉ: Style identique à Admin Info (Pleine largeur, Vert, Animation fluide)
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          elevation: 4,
+                        ),
                         onPressed: _isLoading ? null : _saveIngredient,
-                        icon: _isLoading ? const SizedBox(width:16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.save),
-                        label: Text(_isLoading ? 'Enregistrement...' : 'Enregistrer'),
+                        child: _isLoading
+                            ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3),
+                              )
+                            : const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.save),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'Enregistrer l\'ingrédient',
+                                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                  ),
+                                ],
+                              ),
                       ),
                       const SizedBox(height: 8),
-                      // ✅ MODIFIÉ: Bouton 'Annuler' plus clair
                       if (_selectedIngredient != null)
                         OutlinedButton.icon(
                           onPressed: _clearForm, 
@@ -164,19 +176,35 @@ class _AdminOptionsTabState extends State<AdminOptionsTab> {
                   ),
                 ),
                 isExpanded: _isFormExpanded,
-                canTapOnHeader: false, // On désactive le clic par défaut car on le gère nous-mêmes
+                canTapOnHeader: true,
               ),
             ],
           ),
           const Divider(height: 32),
-          _ListHeader(title: 'Bibliothèque d\'Ingrédients', icon: Icons.storage),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _ListHeader(title: 'Bibliothèque d\'Ingrédients', icon: Icons.storage),
+              IconButton(
+                icon: Icon(_isAscending ? Icons.sort_by_alpha : Icons.sort_by_alpha_outlined),
+                tooltip: _isAscending ? 'Trier Z-A' : 'Trier A-Z',
+                onPressed: () => setState(() => _isAscending = !_isAscending),
+                color: Colors.blue,
+              ),
+            ],
+          ),
           const SizedBox(height: 8),
           Expanded(
             child: StreamBuilder<List<Ingredient>>(
               stream: db.watchAllIngredients(),
               builder: (context, snapshot) {
-                final ingredients = snapshot.data ?? [];
+                var ingredients = snapshot.data ?? [];
                 if (ingredients.isEmpty) return const Text('Aucun ingrédient dans la bibliothèque.');
+                
+                ingredients.sort((a, b) => _isAscending 
+                  ? a.name.compareTo(b.name) 
+                  : b.name.compareTo(a.name));
+
                 return ListView.builder(
                   itemCount: ingredients.length,
                   itemBuilder: (context, index) {
@@ -249,7 +277,7 @@ class _ListHeader extends StatelessWidget {
       children: [
         Icon(icon, color: Colors.grey.shade700, size: 22),
         const SizedBox(width: 8),
-        Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
       ],
     );
   }

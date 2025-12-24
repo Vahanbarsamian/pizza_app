@@ -28,6 +28,7 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> with SingleTickerProvid
   bool _areOrdersOpen = true;
   DateTime? _vacationStartDate, _vacationEndDate, _tempClosureStartDate, _tempClosureEndDate;
   ClosureMessageType? _selectedClosureMessage;
+  bool _isSavingSettings = false;
 
   @override
   void initState() {
@@ -116,6 +117,7 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> with SingleTickerProvid
   }
 
   Future<void> _saveSettings() async {
+    setState(() => _isSavingSettings = true);
     final adminService = context.read<AdminService>();
     final syncService = context.read<SyncService>();
 
@@ -138,12 +140,14 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> with SingleTickerProvid
       );
       await syncService.syncAll();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Réglages sauvegardés'), backgroundColor: Colors.green));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ Réglages sauvegardés !'), backgroundColor: Colors.green));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❌ Erreur: $e'), backgroundColor: Colors.red));
       }
+    } finally {
+      if (mounted) setState(() => _isSavingSettings = false);
     }
   }
 
@@ -179,6 +183,7 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> with SingleTickerProvid
                 OrdersList(startDate: _filterStartDate, endDate: _filterEndDate),
                 ArchivesTab(archiveStartDate: _archiveStartDate, archiveEndDate: _archiveEndDate, onArchiveDateChanged: (start, end) => setState(() => { _archiveStartDate = start, _archiveEndDate = end }), onArchivePressed: _archiveWork),
                 SettingsTab(
+                  isSaving: _isSavingSettings,
                   initialFilterStartDate: _filterStartDate, initialFilterEndDate: _filterEndDate,
                   areOrdersOpen: _areOrdersOpen, vacationStartDate: _vacationStartDate, vacationEndDate: _vacationEndDate,
                   tempClosureStartDate: _tempClosureStartDate, tempClosureEndDate: _tempClosureEndDate,
@@ -229,7 +234,6 @@ class OrdersList extends StatelessWidget {
         var allOrders = snapshot.data ?? [];
         allOrders = allOrders.where((o) => o.order.isArchived != true).toList();
 
-        // ... Tris et filtres ...
         if (startDate != null) {
           final startOfDay = DateTime(startDate!.year, startDate!.month, startDate!.day);
           allOrders = allOrders.where((o) => o.order.createdAt.isAfter(startOfDay)).toList();
@@ -297,7 +301,6 @@ class OrderCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('Heure: ${order.pickupTime}'),
-            // ✅ AJOUT: Affichage du statut de paiement
             Text(
               isPaid ? 'PAYÉE' : 'À PAYER SUR PLACE (Garanti par carte)',
               style: TextStyle(
@@ -314,7 +317,7 @@ class OrderCard extends StatelessWidget {
 }
 
 class SettingsTab extends StatelessWidget {
-  // ... Le reste du code reste inchangé ...
+  final bool isSaving;
   final DateTime? initialFilterStartDate, initialFilterEndDate, vacationStartDate, vacationEndDate, tempClosureStartDate, tempClosureEndDate;
   final bool areOrdersOpen;
   final ClosureMessageType? selectedClosureMessage;
@@ -326,6 +329,7 @@ class SettingsTab extends StatelessWidget {
 
   const SettingsTab({
     super.key,
+    required this.isSaving,
     required this.onFilterDateChanged, required this.onOrdersOpenChanged, required this.onVacationDateChanged, required this.onTempClosureDateChanged,
     this.initialFilterStartDate, this.initialFilterEndDate, required this.areOrdersOpen, this.vacationStartDate, this.vacationEndDate, this.tempClosureStartDate, this.tempClosureEndDate,
     required this.selectedClosureMessage, required this.onClosureMessageChanged, required this.onSave, required this.customClosureMessageController,
@@ -403,11 +407,36 @@ class SettingsTab extends StatelessWidget {
           ),
 
         const SizedBox(height: 32),
-        ElevatedButton.icon(
-          icon: const Icon(Icons.save),
-          label: const Text('Enregistrer les modifications'),
-          style: ElevatedButton.styleFrom(padding: const EdgeInsets.all(16)),
-          onPressed: onSave,
+        // ✅ Bouton Pleine Largeur avec style vert et animation
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.all(16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              elevation: 4,
+            ),
+            onPressed: isSaving ? null : onSave,
+            child: isSaving
+                ? const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3),
+                  )
+                : const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.save),
+                      SizedBox(width: 8),
+                      Text(
+                        'Enregistrer les modifications',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+          ),
         ),
       ],
     );

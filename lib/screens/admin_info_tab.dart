@@ -20,6 +20,8 @@ class AdminInfoTab extends StatefulWidget {
 class _AdminInfoTabState extends State<AdminInfoTab> {
   final _formKey = GlobalKey<FormState>();
   bool _isUploading = false;
+  bool _isSaving = false;
+  bool _initialDataLoaded = false; // ✅ AJOUT : Empêche l'écrasement des saisies
   
   final _nameController = TextEditingController();
   final _presentationController = TextEditingController();
@@ -58,7 +60,10 @@ class _AdminInfoTabState extends State<AdminInfoTab> {
   }
 
   void _updateControllers(CompanyInfoData? data) {
-    if (data == null) return;
+    // ✅ MODIFIÉ : On ne met à jour que si les données ne sont pas encore chargées
+    if (data == null || _isSaving || _initialDataLoaded) return;
+    
+    _initialDataLoaded = true; // Marquer comme chargé
     _nameController.text = data.name ?? '';
     _presentationController.text = data.presentation ?? '';
     _addressController.text = data.address ?? '';
@@ -78,6 +83,8 @@ class _AdminInfoTabState extends State<AdminInfoTab> {
 
   Future<void> _saveChanges() async {
     if (_formKey.currentState!.validate()) {
+      setState(() => _isSaving = true);
+
       final adminService = context.read<AdminService>();
       final syncService = context.read<SyncService>();
 
@@ -107,12 +114,14 @@ class _AdminInfoTabState extends State<AdminInfoTab> {
         await adminService.saveCompanyInfo(updatedInfo);
         await syncService.syncAll();
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Informations mises à jour'), backgroundColor: Colors.green,));
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ Informations mises à jour !'), backgroundColor: Colors.green,));
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red,));
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❌ Erreur: $e'), backgroundColor: Colors.red,));
         }
+      } finally {
+        if (mounted) setState(() => _isSaving = false);
       }
     }
   }
@@ -128,7 +137,7 @@ class _AdminInfoTabState extends State<AdminInfoTab> {
       try {
         final imageUrl = await storageService.uploadProductImage(pickedFile);
         setState(() {
-          _logoUrlController.text = imageUrl;
+          _logoUrlController.text = imageUrl; // ✅ Remplacera maintenant correctement le champ
           _isUploading = false;
         });
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Image uploadée avec succès !'), backgroundColor: Colors.green));
@@ -247,9 +256,24 @@ class _AdminInfoTabState extends State<AdminInfoTab> {
           ),
           const SizedBox(height: 32),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(padding: const EdgeInsets.all(16)),
-            onPressed: _saveChanges,
-            child: const Text('Enregistrer les modifications'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.all(16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              elevation: 4,
+            ),
+            onPressed: _isSaving ? null : _saveChanges,
+            child: _isSaving
+                ? const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3),
+                  )
+                : const Text(
+                    'Enregistrer les modifications',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
           ),
         ],
       ),

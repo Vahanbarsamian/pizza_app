@@ -118,7 +118,6 @@ class AppDatabase extends _$AppDatabase {
   Future<void> clearSavedCart() => delete(savedCartItems).go();
 
   Stream<List<ReviewWithOrder>> watchUserReviews(String userId) {
-    // ✅ CORRIGÉ : Double point au lieu de triple point
     final query = select(reviews).join([innerJoin(orders, orders.id.equalsExp(reviews.orderId))])..where(reviews.userId.equals(userId))..orderBy([OrderingTerm(expression: reviews.createdAt, mode: OrderingMode.desc)]);
     return query.watch().map((rows) => rows.map((row) => ReviewWithOrder(review: row.readTable(reviews),order: row.readTable(orders))).toList());
   }
@@ -136,7 +135,10 @@ class AppDatabase extends _$AppDatabase {
   Stream<List<Product>> watchAllProducts() => (select(products)..where((p) => p.isActive.equals(true) & p.isDrink.equals(false))..orderBy([(p) => OrderingTerm(expression: p.createdAt, mode: OrderingMode.desc)])).watch();
   Stream<List<Product>> watchAllDrinks() => (select(products)..where((p) => p.isActive.equals(true) & p.isDrink.equals(true))..orderBy([(p) => OrderingTerm(expression: p.name)])).watch();
   
-  Stream<List<Ingredient>> watchAllIngredients() => select(ingredients).watch();
+  // ✅ MODIFIÉ: watchAllIngredients trie maintenant toujours par nom (A-Z) par défaut
+  Stream<List<Ingredient>> watchAllIngredients() {
+    return (select(ingredients)..orderBy([(i) => OrderingTerm(expression: i.name)])).watch();
+  }
   
   Stream<Map<String, List<Ingredient>>> watchIngredientsForProductSeparated(int productId) {
     final linkedIngredientsQuery = select(productIngredientLinks).join([
@@ -189,7 +191,7 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<List<Product>> getAllProducts() => (select(products)..where((p) => p.isActive.equals(true))).get();
-  Future<List<Ingredient>> getAllIngredients() => select(ingredients).get();
+  Future<List<Ingredient>> getAllIngredients() => (select(ingredients)..orderBy([(i) => OrderingTerm(expression: i.name)])).get();
 
   Stream<LoyaltySetting?> watchLoyaltySettings() => (select(loyaltySettings)..where((s) => s.id.equals(1))).watchSingleOrNull();
   Stream<UserLoyalty?> watchUserLoyalty(String userId) => (select(userLoyalties)..where((u) => u.userId.equals(userId))).watchSingleOrNull();

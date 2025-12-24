@@ -67,29 +67,41 @@ class _MainScreenState extends State<MainScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        // ✅ CORRIGÉ: Le title est maintenant dans un Row pour l'aligner à gauche
-        title: Row(
-          children: [
-            StreamBuilder<CompanyInfoData?>(
-              stream: db.watchCompanyInfo(),
-              builder: (context, snapshot) {
-                final companyInfo = snapshot.data;
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(companyInfo?.name ?? 'Pizza App', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    if (companyInfo?.logoUrl != null && companyInfo!.logoUrl!.isNotEmpty)
-                      SizedBox(
-                        height: 35, // Hauteur ajustée
-                        child: CachedNetworkImage(imageUrl: companyInfo.logoUrl!, fit: BoxFit.contain),
-                      ),
-                  ],
-                );
-              },
-            ),
-          ],
-        ),
+        centerTitle: false,
         titleSpacing: 16.0,
+        // ✅ Ajustement de la taille de l'en-tête pour le logo plus grand
+        toolbarHeight: 100, 
+        title: StreamBuilder<CompanyInfoData?>(
+          stream: db.watchCompanyInfo(),
+          builder: (context, snapshot) {
+            final companyInfo = snapshot.data;
+            final hasLogo = companyInfo?.logoUrl != null && companyInfo!.logoUrl!.isNotEmpty;
+
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  companyInfo?.name ?? 'Pizza App',
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                if (hasLogo)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 10.0), // ✅ Espace augmenté
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 60, maxWidth: 200), // ✅ Taille augmentée
+                      child: CachedNetworkImage(
+                        imageUrl: companyInfo!.logoUrl!,
+                        fit: BoxFit.contain,
+                        placeholder: (context, url) => const SizedBox(height: 2, width: 20, child: LinearProgressIndicator()),
+                        errorWidget: (context, url, error) => const Icon(Icons.broken_image, size: 20, color: Colors.grey),
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
         actions: <Widget>[
           Badge(
             label: Text(
