@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart'; // ✅ AJOUT : Pour le style défilant
 import 'package:provider/provider.dart';
 
 import '../services/cart_service.dart';
@@ -31,6 +32,65 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     super.dispose();
   }
 
+  // ✅ MODIFIÉ: Sélecteur avec défilement (style roue)
+  void _selectTime(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return Container(
+          height: 300,
+          color: Colors.white,
+          child: Column(
+            children: [
+              // Barre de contrôle au-dessus du défilement
+              Container(
+                decoration: BoxDecoration(
+                  border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('ANNULER', style: TextStyle(color: Colors.red)),
+                    ),
+                    const Text('CHOISIR L\'HEURE', style: TextStyle(fontWeight: FontWeight.bold)),
+                    TextButton(
+                      onPressed: () {
+                        // Si le champ est vide, on met l'heure actuelle par défaut
+                        if (_timeController.text.isEmpty) {
+                          final now = DateTime.now();
+                          _timeController.text = "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}";
+                        }
+                        Navigator.pop(context);
+                      },
+                      child: const Text('VALIDER', style: TextStyle(color: Colors.green)),
+                    ),
+                  ],
+                ),
+              ),
+              // La roue de défilement
+              Expanded(
+                child: CupertinoDatePicker(
+                  mode: CupertinoDatePickerMode.time,
+                  use24hFormat: true,
+                  initialDateTime: DateTime.now(),
+                  onDateTimeChanged: (DateTime newDateTime) {
+                    setState(() {
+                      final String hour = newDateTime.hour.toString().padLeft(2, '0');
+                      final String minute = newDateTime.minute.toString().padLeft(2, '0');
+                      _timeController.text = '$hour:$minute';
+                    });
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   void _submit() {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
@@ -39,8 +99,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       cart.temporaryReferenceName = _nameController.text;
       cart.temporaryPickupTime = _timeController.text;
 
-      // On retourne les informations à l'écran précédent
-      // On met "À définir" pour le paiement, car Stripe s'en occupera à l'étape suivante
       Navigator.of(context).pop({
         'name': _nameController.text,
         'time': _timeController.text,
@@ -86,13 +144,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               const SizedBox(height: 24),
               TextFormField(
                 controller: _timeController,
+                readOnly: true, 
+                onTap: () => _selectTime(context),
                 decoration: const InputDecoration(
                   labelText: 'Heure de retrait souhaitée',
-                  hintText: 'Ex: 19h30',
+                  hintText: 'Cliquez pour choisir l\'heure',
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.access_time),
+                  suffixIcon: Icon(Icons.keyboard_arrow_down), // Indique que ça s'ouvre vers le bas
                 ),
-                validator: (value) => value == null || value.isEmpty ? 'Veuillez entrer une heure' : null,
+                validator: (value) => value == null || value.isEmpty ? 'Veuillez choisir une heure' : null,
               ),
               const SizedBox(height: 40),
               const Text(
