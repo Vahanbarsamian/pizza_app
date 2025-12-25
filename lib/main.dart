@@ -4,7 +4,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:flutter_stripe/flutter_stripe.dart'; // ✅ AJOUT
+import 'package:flutter_stripe/flutter_stripe.dart';
 
 import 'database/app_database.dart';
 import 'services/auth_service.dart';
@@ -18,7 +18,8 @@ import 'services/preferences_service.dart';
 import 'services/loyalty_service.dart';
 import 'services/storage_service.dart';
 import 'services/statistics_service.dart';
-import 'services/payment_service.dart'; // ✅ AJOUT (à créer)
+import 'services/payment_service.dart';
+import 'services/biometric_service.dart';
 
 import 'screens/pizza_splash_screen.dart';
 
@@ -29,7 +30,6 @@ Future<void> main() async {
 
   await dotenv.load(fileName: ".env");
 
-  // ✅ INITIALISATION STRIPE
   Stripe.publishableKey = dotenv.env['STRIPE_PUBLISHABLE_KEY'] ?? "";
   await Stripe.instance.applySettings();
 
@@ -54,7 +54,8 @@ class MyApp extends StatelessWidget {
         Provider<AppDatabase>.value(value: database),
         Provider(create: (_) => StorageService()),
         Provider(create: (_) => StatisticsService()),
-        Provider(create: (context) => PaymentService(db: context.read<AppDatabase>())), // ✅ AJOUT
+        Provider(create: (_) => BiometricService()),
+        Provider(create: (context) => PaymentService(db: context.read<AppDatabase>())),
         ChangeNotifierProvider(create: (_) => AuthService()),
         ChangeNotifierProvider(create: (_) => PreferencesService()),
         ChangeNotifierProxyProvider<AppDatabase, CartService>(
@@ -102,7 +103,7 @@ class MyApp extends StatelessWidget {
             elevation: 4,
           ),
           scaffoldBackgroundColor: const Color(0xFFF8F9FA),
-          visualDensity: VisualDensity.adaptivePlatformDensity,
+          visualDensity: VisualDensity.adaptivePlatformDensity, // ✅ CORRIGÉ
         ),
         home: PizzaSplashScreen(),
       ),

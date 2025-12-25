@@ -6,6 +6,8 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../database/app_database.dart';
 import '../services/auth_service.dart';
 import '../services/cart_service.dart';
+import '../services/biometric_service.dart'; // ✅ AJOUT
+import '../services/preferences_service.dart'; // ✅ AJOUT
 import '../widgets/drink_suggestion_bottom_sheet.dart';
 import 'menu_screen.dart';
 import 'promotions_screen.dart';
@@ -41,6 +43,28 @@ class _MainScreenState extends State<MainScreen> {
     });
   }
 
+  // ✅ NOUVEAU: Méthode de navigation sécurisée vers l'Admin
+  Future<void> _navigateToAdmin(BuildContext context) async {
+    final prefs = context.read<PreferencesService>();
+    final bioService = context.read<BiometricService>();
+
+    if (prefs.biometricEnabled) {
+      final bool canCheck = await bioService.canCheckBiometrics();
+      if (canCheck) {
+        final bool authenticated = await bioService.authenticate();
+        if (!authenticated) {
+          // Si l'utilisateur annule l'empreinte, on ne fait rien
+          return;
+        }
+      }
+    }
+
+    // Si authentifié ou si l'option est désactivée, on entre
+    if (mounted) {
+      Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AdminScreen()));
+    }
+  }
+
   void _handleCartPressed(BuildContext context) async {
     final cartService = context.read<CartService>();
     final navigator = Navigator.of(context);
@@ -69,7 +93,6 @@ class _MainScreenState extends State<MainScreen> {
       appBar: AppBar(
         centerTitle: false,
         titleSpacing: 16.0,
-        // ✅ Ajustement de la taille de l'en-tête pour le logo plus grand
         toolbarHeight: 100, 
         title: StreamBuilder<CompanyInfoData?>(
           stream: db.watchCompanyInfo(),
@@ -87,9 +110,9 @@ class _MainScreenState extends State<MainScreen> {
                 ),
                 if (hasLogo)
                   Padding(
-                    padding: const EdgeInsets.only(top: 10.0), // ✅ Espace augmenté
+                    padding: const EdgeInsets.only(top: 10.0),
                     child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxHeight: 60, maxWidth: 200), // ✅ Taille augmentée
+                      constraints: const BoxConstraints(maxHeight: 60, maxWidth: 200),
                       child: CachedNetworkImage(
                         imageUrl: companyInfo!.logoUrl!,
                         fit: BoxFit.contain,
@@ -150,7 +173,8 @@ class _MainScreenState extends State<MainScreen> {
                   ],
                 ).then((value) {
                   if (value == 'logout') authService.signOut();
-                  else if (value == 'admin') Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AdminScreen()));
+                  // ✅ MODIFIÉ: Utilisation de la navigation sécurisée
+                  else if (value == 'admin') _navigateToAdmin(context);
                 });
               }
             },
@@ -175,7 +199,8 @@ class _MainScreenState extends State<MainScreen> {
       ),
        floatingActionButton: authService.isAdmin
           ? FloatingActionButton(
-              onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (context) => const AdminScreen())),
+              // ✅ MODIFIÉ: Utilisation de la navigation sécurisée
+              onPressed: () => _navigateToAdmin(context),
               tooltip: 'Retour au Panneau Admin',
               child: const Icon(Icons.admin_panel_settings),
             )

@@ -31,6 +31,7 @@ dependencies:
   share_plus: ^12.0.1
   lottie: ^3.1.0
   image_picker: ^1.0.7
+  local_auth: ^2.2.0 # ✅ AJOUT : Authentification par empreinte / visage
 
 dev_dependencies:
   flutter_test:

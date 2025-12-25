@@ -107,6 +107,7 @@ class _AboutUsScreenState extends State<AboutUsScreen> {
       if (info.instagramUrl != null && info.instagramUrl!.isNotEmpty) info.instagramUrl!: const FaIcon(FontAwesomeIcons.instagram, color: Color(0xFFC13584)),
       if (info.xUrl != null && info.xUrl!.isNotEmpty) info.xUrl!: const FaIcon(FontAwesomeIcons.xTwitter, color: Colors.black),
       if (info.whatsappPhone != null && info.whatsappPhone!.isNotEmpty) 'https://wa.me/${info.whatsappPhone}': const FaIcon(FontAwesomeIcons.whatsapp, color: Color(0xFF25D366)),
+      // ✅ NOUVEAU : Liens Google et Pages Jaunes
       if (info.googleUrl != null && info.googleUrl!.isNotEmpty) info.googleUrl!: const FaIcon(FontAwesomeIcons.google, color: Color(0xFF4285F4)),
       if (info.pagesJaunesUrl != null && info.pagesJaunesUrl!.isNotEmpty) info.pagesJaunesUrl!: const FaIcon(FontAwesomeIcons.bookOpen, color: Color(0xFFFFD700)),
     };

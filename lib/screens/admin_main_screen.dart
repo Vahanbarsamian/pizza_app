@@ -5,6 +5,7 @@ import 'admin_announcements_tab.dart';
 import 'admin_info_tab.dart';
 import 'admin_statistics_tab.dart';
 import 'admin_payment_tab.dart';
+import 'admin_security_tab.dart'; // ✅ AJOUT
 
 class AdminMainScreen extends StatelessWidget {
   const AdminMainScreen({super.key});
@@ -56,6 +57,14 @@ class AdminMainScreen extends StatelessWidget {
             icon: Icons.payment,
             color: Colors.green,
             onTap: () => _navigateTo(context, const AdminPaymentTab(), 'Admin / Paiement'),
+          ),
+          // ✅ NOUVEAU BOUTON SÉCURITÉ
+          _buildMenuCard(
+            context,
+            title: 'Sécurité',
+            icon: Icons.security,
+            color: Colors.redAccent,
+            onTap: () => _navigateTo(context, const AdminSecurityTab(), 'Admin / Sécurité'),
           ),
         ],
       ),
