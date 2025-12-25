@@ -18,6 +18,7 @@ class AdminLoyaltyTab extends StatefulWidget {
 
 class _AdminLoyaltyTabState extends State<AdminLoyaltyTab> {
   bool _isLoading = true;
+  bool _isSaving = false; // ✅ État pour l'animation du bouton
   late LoyaltySetting _settings;
 
   final _thresholdController = TextEditingController();
@@ -47,6 +48,7 @@ class _AdminLoyaltyTabState extends State<AdminLoyaltyTab> {
   }
 
   Future<void> _saveSettings() async {
+    setState(() => _isSaving = true); // ✅ Début animation
     final adminService = context.read<AdminService>();
     final syncService = context.read<SyncService>();
 
@@ -63,11 +65,13 @@ class _AdminLoyaltyTabState extends State<AdminLoyaltyTab> {
       await syncService.syncAll();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Réglages sauvegardés avec succès.'), backgroundColor: Colors.green),
+          const SnackBar(content: Text('✅ Réglages sauvegardés avec succès.'), backgroundColor: Colors.green),
         );
       }
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur de sauvegarde: $e')));
+    } finally {
+      if (mounted) setState(() => _isSaving = false); // ✅ Fin animation
     }
   }
 
@@ -86,7 +90,7 @@ class _AdminLoyaltyTabState extends State<AdminLoyaltyTab> {
           title: const Text('Admin / Fidélité'), 
           centerTitle: true, 
           automaticallyImplyLeading: false,
-          backgroundColor: Theme.of(context).appBarTheme.backgroundColor, // ✅ CORRIGÉ
+          backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         ),
         body: const Center(child: CircularProgressIndicator()),
       );
@@ -99,7 +103,7 @@ class _AdminLoyaltyTabState extends State<AdminLoyaltyTab> {
           title: const Text('Admin / Fidélité'),
           centerTitle: true,
           automaticallyImplyLeading: false,
-          backgroundColor: Theme.of(context).appBarTheme.backgroundColor, // ✅ CORRIGÉ
+          backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         ),
         body: ListView(
           padding: const EdgeInsets.all(16.0),
@@ -179,11 +183,33 @@ class _AdminLoyaltyTabState extends State<AdminLoyaltyTab> {
         ),
         bottomNavigationBar: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: ElevatedButton.icon(
-            icon: const Icon(Icons.save_alt),
-            label: const Text('Sauvegarder les réglages'),
-            style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
-            onPressed: _saveSettings,
+          // ✅ MODIFIÉ: Bouton stylisé avec fond vert, texte blanc et animation
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.all(16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              elevation: 4,
+            ),
+            onPressed: _isSaving ? null : _saveSettings,
+            child: _isSaving
+                ? const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3),
+                  )
+                : const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.save),
+                      SizedBox(width: 8),
+                      Text(
+                        'Sauvegarder les réglages',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
           ),
         ),
       ),

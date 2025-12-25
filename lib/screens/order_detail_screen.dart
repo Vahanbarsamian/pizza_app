@@ -25,6 +25,7 @@ class OrderDetailScreen extends StatefulWidget {
 }
 
 class _OrderDetailScreenState extends State<OrderDetailScreen> {
+  bool _isNavigating = false; // ✅ État pour l'animation du bouton avis
 
   Future<void> _updateOrderStatus(BuildContext context, String newStatus) async {
     final adminService = context.read<AdminService>();
@@ -108,7 +109,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   Widget build(BuildContext context) {
     final db = Provider.of<AppDatabase>(context, listen: false);
     final authService = context.watch<AuthService>();
-    final bool isPaid = widget.order.paymentStatus == 'paid'; // ✅ Variable réutilisable
+    final bool isPaid = widget.order.paymentStatus == 'paid';
 
     return FutureBuilder<List<dynamic>>(
       future: Future.wait([db.getOrderItems(widget.order.id), db.getCompanyInfo()]),
@@ -137,7 +138,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   ],
                 ),
           bottomNavigationBar: _buildBottomBar(context, authService, isPaid),
-          // ✅ MODIFIÉ: Le bouton de partage n'apparaît QUE si la commande est payée (et que ce n'est pas l'admin)
           floatingActionButton: (authService.isAdmin || !isPaid) ? null : FloatingActionButton(
             onPressed: () => _shareInvoice(companyInfo, orderItems),
             tooltip: 'Partager la facture',
@@ -187,14 +187,39 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         }
         return Padding(
           padding: const EdgeInsets.all(16.0),
-          child: ElevatedButton.icon(
-            icon: const Icon(Icons.rate_review_outlined),
-            label: const Text('Laisser un avis'),
-            onPressed: () {
-              Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) => AddReviewScreen(order: widget.order),
-              ));
+          // ✅ MODIFIÉ : Style vert, texte blanc et animation de temporisation
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              elevation: 4,
+            ),
+            onPressed: _isNavigating ? null : () async {
+              setState(() => _isNavigating = true);
+              await Future.delayed(const Duration(milliseconds: 500)); // Courte temporisation visuelle
+              if (mounted) {
+                setState(() => _isNavigating = false);
+                Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => AddReviewScreen(order: widget.order),
+                ));
+              }
             },
+            child: _isNavigating
+                ? const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3),
+                  )
+                : const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.rate_review_outlined),
+                      SizedBox(width: 8),
+                      Text('Laisser un avis', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
           ),
         );
       },
@@ -233,7 +258,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             if (isAdmin) 
               _buildSummaryRow('Statut Commande:', widget.status, isStatus: true) 
             else 
-              // ✅ MODIFIÉ: Message dynamique pour le client
               _buildSummaryRow(
                 'Statut Commande:', 
                 isPaid ? 'Payée le ${DateFormat('dd/MM/yyyy').format(widget.order.createdAt)}' : 'À régler sur place', 

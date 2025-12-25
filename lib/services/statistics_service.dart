@@ -30,17 +30,18 @@ class BestSellerProduct {
   final String name;
   final String? image;
   final int totalSold;
+  final bool isDrink; // ✅ AJOUTÉ
 
   BestSellerProduct.fromJson(Map<String, dynamic> json)
       : id = json['id'] as int,
         name = json['name'] as String? ?? 'Produit inconnu',
         image = json['image'] as String?,
-        totalSold = json['total_sold'] as int? ?? 0;
+        totalSold = json['total_sold'] as int? ?? 0,
+        isDrink = json['is_drink'] as bool? ?? false; // ✅ AJOUTÉ
 }
 
-// ✅ AJOUT: Modèle pour les données de ventes temporelles
 class TimeSeriesSales {
-  final int timeUnit; // Jour de la semaine (1-7) ou heure (0-23)
+  final int timeUnit;
   final double totalRevenue;
 
   TimeSeriesSales.fromJson(Map<String, dynamic> json)
@@ -55,7 +56,6 @@ class StatisticsService {
     required DateTime startDate,
     required DateTime endDate,
   }) async {
-    // ... (code inchangé)
     try {
       final response = await _supabase.rpc(
         'get_sales_overview',
@@ -65,11 +65,8 @@ class StatisticsService {
         },
       );
       return SalesOverview.fromJson(response as Map<String, dynamic>);
-    } on PostgrestException catch (e) {
-      print('Erreur Postgrest (getSalesOverview): ${e.message}');
-      rethrow;
     } catch (e) {
-      print('Erreur inattendue (getSalesOverview): $e');
+      print('Erreur (getSalesOverview): $e');
       rethrow;
     }
   }
@@ -79,7 +76,6 @@ class StatisticsService {
     required DateTime endDate,
     int limit = 5,
   }) async {
-    // ... (code inchangé)
     try {
       final response = await _supabase.rpc(
         'get_best_sellers',
@@ -92,22 +88,17 @@ class StatisticsService {
       
       if (response == null) return [];
 
-      final productList = (response as List).map((item) => BestSellerProduct.fromJson(item as Map<String, dynamic>)).toList();
-      return productList;
-    } on PostgrestException catch (e) {
-      print('Erreur Postgrest (getBestSellers): ${e.message}');
-      rethrow;
+      return (response as List).map((item) => BestSellerProduct.fromJson(item as Map<String, dynamic>)).toList();
     } catch (e) {
-      print('Erreur inattendue (getBestSellers): $e');
+      print('Erreur (getBestSellers): $e');
       rethrow;
     }
   }
 
-  // ✅ AJOUT: Nouvelle méthode pour les ventes par période
   Future<List<TimeSeriesSales>> getSalesByTime({
     required DateTime startDate,
     required DateTime endDate,
-    required String groupByUnit, // 'dow' ou 'hour'
+    required String groupByUnit,
   }) async {
     try {
       final response = await _supabase.rpc(
@@ -121,13 +112,9 @@ class StatisticsService {
 
       if (response == null) return [];
 
-      final salesList = (response as List).map((item) => TimeSeriesSales.fromJson(item as Map<String, dynamic>)).toList();
-      return salesList;
-    } on PostgrestException catch (e) {
-      print('Erreur Postgrest (getSalesByTime): ${e.message}');
-      rethrow;
+      return (response as List).map((item) => TimeSeriesSales.fromJson(item as Map<String, dynamic>)).toList();
     } catch (e) {
-      print('Erreur inattendue (getSalesByTime): $e');
+      print('Erreur (getSalesByTime): $e');
       rethrow;
     }
   }

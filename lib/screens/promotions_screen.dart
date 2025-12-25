@@ -14,7 +14,6 @@ class PromotionsScreen extends StatelessWidget {
     final db = Provider.of<AppDatabase>(context);
     final authService = context.watch<AuthService>();
 
-    // ✅ AJOUT: Scaffold avec AppBar locale
     return Scaffold(
       appBar: AppBar(
         title: const Text('Promotions & Annonces'),
@@ -136,7 +135,13 @@ class AnnouncementCard extends StatelessWidget {
                 child: IconButton(
                   icon: const Icon(Icons.edit, color: Colors.white, size: 20),
                   onPressed: () {
-                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => AdminAnnouncementsTab()));
+                    // ✅ CORRIGÉ: On enveloppe l'onglet dans un Scaffold pour avoir le bouton retour
+                    Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => Scaffold(
+                        appBar: AppBar(title: const Text('Modifier l\'Annonce')),
+                        body: const AdminAnnouncementsTab(),
+                      ),
+                    ));
                   },
                 ),
               ),

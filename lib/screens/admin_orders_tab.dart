@@ -181,7 +181,12 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> with SingleTickerProvid
               controller: _tabController,
               children: [
                 OrdersList(startDate: _filterStartDate, endDate: _filterEndDate),
-                ArchivesTab(archiveStartDate: _archiveStartDate, archiveEndDate: _archiveEndDate, onArchiveDateChanged: (start, end) => setState(() => { _archiveStartDate = start, _archiveEndDate = end }), onArchivePressed: _archiveWork),
+                ArchivesTab(
+                  archiveStartDate: _archiveStartDate, 
+                  archiveEndDate: _archiveEndDate, 
+                  onArchiveDateChanged: (start, end) => setState(() => { _archiveStartDate = start, _archiveEndDate = end }), 
+                  onArchivePressed: _archiveWork
+                ),
                 SettingsTab(
                   isSaving: _isSavingSettings,
                   initialFilterStartDate: _filterStartDate, initialFilterEndDate: _filterEndDate,
@@ -407,7 +412,6 @@ class SettingsTab extends StatelessWidget {
           ),
 
         const SizedBox(height: 32),
-        // ✅ Bouton Pleine Largeur avec style vert et animation
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
@@ -458,13 +462,20 @@ class SettingsTab extends StatelessWidget {
   }
 }
 
+// ✅ RÉTABLI: Classe ArchivesTab manquante
 class ArchivesTab extends StatefulWidget {
   final DateTime? archiveStartDate;
   final DateTime? archiveEndDate;
   final Function(DateTime?, DateTime?) onArchiveDateChanged;
   final Future<void> Function() onArchivePressed;
 
-  const ArchivesTab({super.key, this.archiveStartDate, this.archiveEndDate, required this.onArchiveDateChanged, required this.onArchivePressed});
+  const ArchivesTab({
+    super.key, 
+    this.archiveStartDate, 
+    this.archiveEndDate, 
+    required this.onArchiveDateChanged, 
+    required this.onArchivePressed
+  });
 
   @override
   State<ArchivesTab> createState() => _ArchivesTabState();
@@ -500,7 +511,23 @@ class _ArchivesTabState extends State<ArchivesTab> {
     return Column(
       children: [
         Card(margin: const EdgeInsets.all(16.0), elevation: 4, child: Padding(padding: const EdgeInsets.all(8.0), child: Column(children: [Text('Actions', style: Theme.of(context).textTheme.titleLarge), const SizedBox(height: 8), TextButton.icon(icon: const Icon(Icons.archive_outlined, color: Colors.red), label: const Text('Archiver les commandes terminées du jour', style: TextStyle(color: Colors.red)), onPressed: widget.onArchivePressed)]))),
-        Card(margin: const EdgeInsets.fromLTRB(16, 0, 16, 16), elevation: 4, child: Padding(padding: const EdgeInsets.all(8.0), child: Column(children: [Text('Rechercher dans les archives', style: Theme.of(context).textTheme.titleLarge), const SizedBox(height: 8), Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [ElevatedButton.icon(icon: const Icon(Icons.calendar_today_outlined), label: Text(widget.archiveStartDate == null ? 'Début' : dateFormat.format(widget.archiveStartDate!)), onPressed: () => _selectDate(context, initialDate: widget.archiveStartDate, onDateSelected: (date) => widget.onArchiveDateChanged(date, widget.archiveEndDate))), ElevatedButton.icon(icon: const Icon(Icons.calendar_today), label: Text(widget.archiveEndDate == null ? 'Fin' : dateFormat.format(widget.archiveEndDate!)), onPressed: () => _selectDate(context, initialDate: widget.archiveEndDate, onDateSelected: (date) => widget.onArchiveDateChanged(widget.archiveStartDate, date)))]), const SizedBox(height: 8), SizedBox(width: double.infinity, child: ElevatedButton(onPressed: _fetchArchives, child: const Text('Afficher')))]))),
+        Card(margin: const EdgeInsets.fromLTRB(16, 0, 16, 16), elevation: 4, child: Padding(padding: const EdgeInsets.all(8.0), child: Column(children: [Text('Rechercher dans les archives', style: Theme.of(context).textTheme.titleLarge), const SizedBox(height: 8), Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [ElevatedButton.icon(icon: const Icon(Icons.calendar_today_outlined), label: Text(widget.archiveStartDate == null ? 'Début' : dateFormat.format(widget.archiveStartDate!)), onPressed: () => _selectDate(context, initialDate: widget.archiveStartDate, onDateSelected: (date) => widget.onArchiveDateChanged(date, widget.archiveEndDate))), ElevatedButton.icon(icon: const Icon(Icons.calendar_today), label: Text(widget.archiveEndDate == null ? 'Fin' : dateFormat.format(widget.archiveEndDate!)), onPressed: () => _selectDate(context, initialDate: widget.archiveEndDate, onDateSelected: (date) => widget.onArchiveDateChanged(widget.archiveStartDate, date)))]), const SizedBox(height: 8), 
+        // ✅ Bouton Afficher stylisé en vert avec animation
+        SizedBox(
+          width: double.infinity, 
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: _isLoading ? null : _fetchArchives, 
+            child: _isLoading 
+              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+              : const Text('Afficher', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          )
+        )]))),
         Expanded(child: _isLoading ? const Center(child: CircularProgressIndicator()) : _archivedOrders.isEmpty ? const Center(child: Text('Aucun résultat pour cette période.')) : ListView.builder(padding: const EdgeInsets.symmetric(horizontal: 16), itemCount: _archivedOrders.length, itemBuilder: (context, index) {
           final order = _archivedOrders[index];
           return Card(child: ListTile(title: Text('Commande de ${order.referenceName ?? 'N/A'}'), subtitle: Text('Archivée le ${dateFormat.format(order.createdAt)} '), trailing: Text('${order.total.toStringAsFixed(2)} €')));
