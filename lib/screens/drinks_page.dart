@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../database/app_database.dart';
 import '../services/auth_service.dart';
-import '../widgets/product_display_card.dart'; // ✅ CORRIGÉ
+import '../widgets/product_display_card.dart';
 
 class DrinksPage extends StatelessWidget {
   const DrinksPage({super.key});
@@ -15,6 +15,9 @@ class DrinksPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Nos Boissons'),
+        centerTitle: true,
+        // ✅ C'EST CETTE LIGNE QUI SUPPRIME LA FLÈCHE SANS ENLEVER LE TITRE
+        automaticallyImplyLeading: false, 
       ),
       body: StreamBuilder<List<Product>>(
         stream: db.watchAllDrinks(),
@@ -41,7 +44,6 @@ class DrinksPage extends StatelessWidget {
             itemCount: drinks.length,
             itemBuilder: (context, index) {
               final drink = drinks[index];
-              // ✅ CORRIGÉ: Utilisation du widget partagé
               return ProductDisplayCard(product: drink, isAdmin: authService.isAdmin, ordersEnabled: true);
             },
           );

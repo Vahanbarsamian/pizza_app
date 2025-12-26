@@ -16,14 +16,12 @@ class _AdminAnnouncementsTabState extends State<AdminAnnouncementsTab> {
   Announcement? _editingAnnouncement;
   bool _isCreatingNew = false;
 
-  // Un GlobalKey pour pouvoir scroller automatiquement quand le formulaire apparaît
   final _scrollController = ScrollController();
 
   void _editAnnouncement(Announcement announcement) {
     setState(() {
       _isCreatingNew = false;
       _editingAnnouncement = announcement;
-      // Fait défiler vers le bas pour voir le formulaire
       _scrollToForm();
     });
   }
@@ -44,7 +42,6 @@ class _AdminAnnouncementsTabState extends State<AdminAnnouncementsTab> {
   }
 
   void _scrollToForm() {
-    // Petite temporisation pour laisser le temps au formulaire de se construire
     Future.delayed(const Duration(milliseconds: 50), () {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
@@ -62,11 +59,10 @@ class _AdminAnnouncementsTabState extends State<AdminAnnouncementsTab> {
     final db = Provider.of<AppDatabase>(context);
     bool isFormVisible = _isCreatingNew || _editingAnnouncement != null;
 
-    // ✅ CORRIGÉ: Le Scaffold est retiré et remplacé par un LayoutBuilder pour mieux gérer l'espace
     return Scaffold(
       body: SingleChildScrollView(
         controller: _scrollController,
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 100), // Espace en bas pour la nav bar et le FAB
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 100), 
         child: Column(
           children: [
             _buildAnnouncementsList(db),
@@ -103,7 +99,14 @@ class _AdminAnnouncementsTabState extends State<AdminAnnouncementsTab> {
             return Card(
               child: ListTile(
                 title: Text(announcement.title, style: TextStyle(fontWeight: announcement.isActive ? FontWeight.bold : FontWeight.normal)),
-                subtitle: Text(announcement.type, style: TextStyle(color: announcement.type == 'Promotion' ? Colors.green : Colors.blue)),
+                // ✅ MODIFIÉ: Texte 'Promotion' en Jaune Ambre et Gras pour la cohérence UI
+                subtitle: Text(
+                  announcement.type, 
+                  style: TextStyle(
+                    color: announcement.type == 'Promotion' ? Colors.amber.shade800 : Colors.blue,
+                    fontWeight: announcement.type == 'Promotion' ? FontWeight.bold : FontWeight.normal,
+                  )
+                ),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -169,7 +172,7 @@ class _AdminAnnouncementsTabState extends State<AdminAnnouncementsTab> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Annonce supprimée.'), backgroundColor: Colors.green),
         );
-        _cancelEditing(); // Pour cacher le formulaire après suppression
+        _cancelEditing(); 
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red),
@@ -306,8 +309,13 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
               children: [
                 TextButton(onPressed: widget.onCancel, child: const Text('Annuler')),
                 const SizedBox(width: 8),
+                // ✅ STYLE DU BOUTON HARMONISÉ (Vert/Blanc)
                 ElevatedButton.icon(
-                  icon: _isLoading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 3)) : const Icon(Icons.save),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                  ),
+                  icon: _isLoading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 3, color: Colors.white)) : const Icon(Icons.save),
                   label: Text(_isLoading ? 'Sauvegarde...' : 'Sauvegarder'),
                   onPressed: _isLoading ? null : _save,
                 ),

@@ -25,7 +25,7 @@ class OrderDetailScreen extends StatefulWidget {
 }
 
 class _OrderDetailScreenState extends State<OrderDetailScreen> {
-  bool _isNavigating = false; // ✅ État pour l'animation du bouton avis
+  bool _isNavigating = false;
 
   Future<void> _updateOrderStatus(BuildContext context, String newStatus) async {
     final adminService = context.read<AdminService>();
@@ -182,12 +182,14 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       stream: context.read<AppDatabase>().watchReviewForOrder(widget.order.id),
       builder: (context, snapshot) {
         final hasReview = snapshot.hasData && snapshot.data != null;
-        if (hasReview || widget.status != 'Terminée') {
+        
+        // ✅ MODIFIÉ: On n'affiche le bouton QUE si c'est terminé ET payé
+        if (hasReview || widget.status != 'Terminée' || !isPaid) {
           return const SizedBox.shrink();
         }
+        
         return Padding(
           padding: const EdgeInsets.all(16.0),
-          // ✅ MODIFIÉ : Style vert, texte blanc et animation de temporisation
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.green,
@@ -198,7 +200,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             ),
             onPressed: _isNavigating ? null : () async {
               setState(() => _isNavigating = true);
-              await Future.delayed(const Duration(milliseconds: 500)); // Courte temporisation visuelle
+              await Future.delayed(const Duration(milliseconds: 500));
               if (mounted) {
                 setState(() => _isNavigating = false);
                 Navigator.of(context).push(MaterialPageRoute(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart'; // ✅ AJOUT : Pour l'icône de boisson
 
 import '../models/cart_item.dart';
 import '../services/cart_service.dart';
@@ -8,7 +9,7 @@ import '../services/auth_service.dart';
 import '../services/sync_service.dart';
 import 'login_screen.dart';
 import 'checkout_screen.dart';
-import 'payment_screen.dart'; // ✅ AJOUT
+import 'payment_screen.dart';
 
 String formatPrice(double price) {
   return '${price.toStringAsFixed(2)} € TTC';
@@ -66,10 +67,8 @@ class _CartScreenState extends State<CartScreen> {
       final pickupTime = orderDetails['time']!;
       final paymentMethod = orderDetails['payment']!;
 
-      // 1. Créer la commande et récupérer son ID
       final orderId = await orderService.createOrderFromCart(cart, user.id, referenceName, pickupTime, paymentMethod);
       
-      // 2. ✅ REDIRECTION VERS L'ÉCRAN DE PAIEMENT
       if (context.mounted) {
         final paymentSuccess = await Navigator.of(context).push<bool>(
           MaterialPageRoute(
@@ -78,7 +77,6 @@ class _CartScreenState extends State<CartScreen> {
         );
 
         if (paymentSuccess == true) {
-          // Si le paiement ou la garantie a réussi
           cart.clearCart();
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -114,9 +112,14 @@ class _CartScreenState extends State<CartScreen> {
               itemBuilder: (context, index) {
                 final itemId = cartService.items.keys.elementAt(index);
                 final item = cartService.items[itemId]!;
+                final isDrink = item.product.isDrink; // ✅ Détection du type
 
                 return ListTile(
-                  leading: const Icon(Icons.local_pizza_outlined, color: Colors.orange),
+                  // ✅ MODIFIÉ : Icône dynamique (Pizza ou Boisson)
+                  leading: Icon(
+                    isDrink ? FontAwesomeIcons.bottleWater : Icons.local_pizza_outlined,
+                    color: isDrink ? Colors.blue : Colors.orange,
+                  ),
                   title: Text(item.product.name),
                   subtitle: _buildOptionsSubtitle(context, item),
                   trailing: Row(

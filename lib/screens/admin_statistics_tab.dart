@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart'; // ✅ AJOUT
 
 import '../services/statistics_service.dart';
 
@@ -261,7 +262,20 @@ class _AdminStatisticsTabState extends State<AdminStatisticsTab> {
         else
           ListView.builder(shrinkWrap: true, physics: const NeverScrollableScrollPhysics(), itemCount: bestSellers.length, itemBuilder: (context, index) {
             final product = bestSellers[index];
-            return Card(margin: const EdgeInsets.only(bottom: 8.0), child: ListTile(leading: CircleAvatar(backgroundImage: (product.image != null && product.image!.isNotEmpty) ? CachedNetworkImageProvider(product.image!) : null, child: (product.image == null || product.image!.isEmpty) ? const Icon(Icons.local_pizza) : null), title: Text(product.name, style: const TextStyle(fontWeight: FontWeight.bold)), trailing: Text('Vendu: ${product.totalSold}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blueGrey))));
+            return Card(
+              margin: const EdgeInsets.only(bottom: 8.0), 
+              child: ListTile(
+                leading: CircleAvatar(
+                  backgroundImage: (product.image != null && product.image!.isNotEmpty) ? CachedNetworkImageProvider(product.image!) : null, 
+                  // ✅ MODIFIÉ : Icône dynamique (Pizza ou Bouteille) s'il n'y a pas de photo
+                  child: (product.image == null || product.image!.isEmpty) 
+                    ? FaIcon(product.isDrink ? FontAwesomeIcons.bottleWater : FontAwesomeIcons.pizzaSlice, size: 20) 
+                    : null
+                ), 
+                title: Text(product.name, style: const TextStyle(fontWeight: FontWeight.bold)), 
+                trailing: Text('Vendu: ${product.totalSold}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blueGrey))
+              )
+            );
           }),
       ],
     );

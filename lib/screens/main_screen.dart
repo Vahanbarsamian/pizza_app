@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:shimmer/shimmer.dart';
 
 import '../database/app_database.dart';
 import '../services/auth_service.dart';
 import '../services/cart_service.dart';
-import '../services/biometric_service.dart'; // ✅ AJOUT
-import '../services/preferences_service.dart'; // ✅ AJOUT
+import '../services/biometric_service.dart';
+import '../services/preferences_service.dart';
 import '../widgets/drink_suggestion_bottom_sheet.dart';
 import 'menu_screen.dart';
 import 'promotions_screen.dart';
@@ -43,7 +44,6 @@ class _MainScreenState extends State<MainScreen> {
     });
   }
 
-  // ✅ NOUVEAU: Méthode de navigation sécurisée vers l'Admin
   Future<void> _navigateToAdmin(BuildContext context) async {
     final prefs = context.read<PreferencesService>();
     final bioService = context.read<BiometricService>();
@@ -52,14 +52,10 @@ class _MainScreenState extends State<MainScreen> {
       final bool canCheck = await bioService.canCheckBiometrics();
       if (canCheck) {
         final bool authenticated = await bioService.authenticate();
-        if (!authenticated) {
-          // Si l'utilisateur annule l'empreinte, on ne fait rien
-          return;
-        }
+        if (!authenticated) return;
       }
     }
 
-    // Si authentifié ou si l'option est désactivée, on entre
     if (mounted) {
       Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AdminScreen()));
     }
@@ -111,13 +107,31 @@ class _MainScreenState extends State<MainScreen> {
                 if (hasLogo)
                   Padding(
                     padding: const EdgeInsets.only(top: 10.0),
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxHeight: 60, maxWidth: 200),
-                      child: CachedNetworkImage(
-                        imageUrl: companyInfo!.logoUrl!,
-                        fit: BoxFit.contain,
-                        placeholder: (context, url) => const SizedBox(height: 2, width: 20, child: LinearProgressIndicator()),
-                        errorWidget: (context, url, error) => const Icon(Icons.broken_image, size: 20, color: Colors.grey),
+                    child: SizedBox(
+                      height: 60,
+                      width: 200,
+                      child: Stack(
+                        children: [
+                          // 1. LE LOGO RÉEL (Toujours visible, couleurs intactes)
+                          CachedNetworkImage(
+                            imageUrl: companyInfo!.logoUrl!,
+                            fit: BoxFit.contain,
+                            alignment: Alignment.centerLeft,
+                            placeholder: (context, url) => const SizedBox(height: 2, width: 20, child: LinearProgressIndicator()),
+                            errorWidget: (context, url, error) => const Icon(Icons.broken_image, size: 20, color: Colors.grey),
+                          ),
+                          // 2. L'EFFET DE SCINTILLEMENT (Discret, passe par-dessus la forme du logo)
+                          Shimmer.fromColors(
+                            baseColor: Colors.white.withOpacity(0), // Fond transparent
+                            highlightColor: Colors.white.withOpacity(0.5), // Reflet blanc translucide
+                            period: const Duration(seconds: 5), // Très lent pour être sobre
+                            child: CachedNetworkImage(
+                              imageUrl: companyInfo.logoUrl!,
+                              fit: BoxFit.contain,
+                              alignment: Alignment.centerLeft,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -173,7 +187,6 @@ class _MainScreenState extends State<MainScreen> {
                   ],
                 ).then((value) {
                   if (value == 'logout') authService.signOut();
-                  // ✅ MODIFIÉ: Utilisation de la navigation sécurisée
                   else if (value == 'admin') _navigateToAdmin(context);
                 });
               }
@@ -199,7 +212,6 @@ class _MainScreenState extends State<MainScreen> {
       ),
        floatingActionButton: authService.isAdmin
           ? FloatingActionButton(
-              // ✅ MODIFIÉ: Utilisation de la navigation sécurisée
               onPressed: () => _navigateToAdmin(context),
               tooltip: 'Retour au Panneau Admin',
               child: const Icon(Icons.admin_panel_settings),

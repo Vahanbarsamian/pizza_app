@@ -41,7 +41,7 @@ class _PizzaDetailScreenState extends State<PizzaDetailScreen> {
     final totalPrice = (hasDiscount ? reducedPrice : widget.product.basePrice) + supplementsPrice;
 
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppBar( // ✅ CORRIGÉ
         title: Text(widget.product.name),
       ),
       body: Column(
@@ -104,8 +104,14 @@ class _PizzaDetailScreenState extends State<PizzaDetailScreen> {
                   final baseIngredients = snapshot.data!['base'] ?? [];
                   final allSupplements = snapshot.data!['supplements'] ?? [];
 
+                  baseIngredients.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+                  
                   final baseIngredientIds = baseIngredients.map((e) => e.id).toSet();
-                  final filteredSupplements = allSupplements.where((s) => !baseIngredientIds.contains(s.id)).toList();
+                  final filteredSupplements = allSupplements
+                      .where((s) => !baseIngredientIds.contains(s.id))
+                      .toList();
+                  
+                  filteredSupplements.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
 
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -165,7 +171,6 @@ class _PizzaDetailScreenState extends State<PizzaDetailScreen> {
                       );
                       Navigator.of(context).pop();
                       ScaffoldMessenger.of(context).showSnackBar(
-                        // ✅ CORRIGÉ: Ajout de la couleur de fond verte
                         const SnackBar(content: Text('Pizza ajoutée au panier !'), backgroundColor: Colors.green, duration: Duration(seconds: 2)),
                       );
                     }

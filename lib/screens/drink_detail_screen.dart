@@ -5,6 +5,8 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../database/app_database.dart';
 import '../services/cart_service.dart';
+import '../services/auth_service.dart'; // ✅ AJOUT
+import 'login_screen.dart'; // ✅ AJOUT
 
 class DrinkDetailScreen extends StatelessWidget {
   final Product product;
@@ -14,6 +16,8 @@ class DrinkDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cartService = context.read<CartService>();
+    final authService = context.watch<AuthService>(); // ✅ Écoute de l'auth
+    final isLoggedIn = authService.currentUser != null; // ✅ Vérification
     final hasImage = product.image != null && product.image!.isNotEmpty;
 
     return Scaffold(
@@ -69,24 +73,31 @@ class DrinkDetailScreen extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(8.0),
           child: ElevatedButton.icon(
-            icon: const Icon(Icons.add_shopping_cart),
-            label: const Text('Ajouter au panier'),
+            // ✅ MODIFIÉ : Icône et Libellé dynamiques
+            icon: Icon(isLoggedIn ? Icons.add_shopping_cart : Icons.login),
+            label: Text(isLoggedIn ? 'Ajouter au panier' : 'Connexion'),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.green,
               foregroundColor: Colors.white,
               minimumSize: const Size(double.infinity, 50),
             ),
             onPressed: () {
-              cartService.addToCart(product);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('${product.name} ajouté au panier !'),
-                  backgroundColor: Colors.green,
-                  duration: const Duration(seconds: 1),
-                ),
-              );
-              // ✅ AJOUT: Retourne à l'écran précédent
-              Navigator.of(context).pop();
+              if (isLoggedIn) {
+                cartService.addToCart(product);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('${product.name} ajouté au panier !'),
+                    backgroundColor: Colors.green,
+                    duration: const Duration(seconds: 1),
+                  ),
+                );
+                Navigator.of(context).pop();
+              } else {
+                // ✅ AJOUT : Redirection si non connecté
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                );
+              }
             },
           ),
         ),

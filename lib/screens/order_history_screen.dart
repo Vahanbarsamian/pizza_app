@@ -84,7 +84,6 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     );
   }
 
-  // ✅ CORRIGÉ: Traduction des étiquettes de filtre
   Widget _buildFilterChips() {
     final labels = {
       OrderFilter.all: 'Tout',
@@ -102,7 +101,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
           return ChoiceChip(
             label: Text(labels[filter]!),
             selected: _activeFilter == filter,
-            selectedColor: const Color(0xFFE6E6FA), // Mauve pâle
+            selectedColor: const Color(0xFFE6E6FA), 
             onSelected: (selected) {
               if (selected) {
                 setState(() => _activeFilter = filter);
@@ -179,11 +178,34 @@ class OrderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final referenceText = "${order.referenceName ?? 'Commande'}${order.pickupTime != null ? ' pour ${order.pickupTime}' : ''}";
+    final bool isPaid = order.paymentStatus == 'paid';
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       child: ListTile(
-        title: Text(referenceText, style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(child: Text(referenceText, style: const TextStyle(fontWeight: FontWeight.bold))),
+            // ✅ AJOUT : Tampon de paiement
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: isPaid ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(color: isPaid ? Colors.green : Colors.red, width: 1),
+              ),
+              child: Text(
+                isPaid ? 'PAYÉE' : 'À RÉGLER',
+                style: TextStyle(
+                  color: isPaid ? Colors.green : Colors.red,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
         subtitle: Text(DateFormat('le dd/MM/yyyy à HH:mm', 'fr_FR').format(order.createdAt)),
         trailing: Text.rich(
           TextSpan(
@@ -196,7 +218,7 @@ class OrderCard extends StatelessWidget {
         ),
         onTap: () {
           Navigator.of(context).push(MaterialPageRoute(
-            builder: (_) => OrderDetailScreen(order: order, status: 'Terminée'), // Le statut ici est arbitraire car non utilisé dans la logique de l'écran de détail pour l'user
+            builder: (_) => OrderDetailScreen(order: order, status: 'Terminée'),
           ));
         },
       ),
