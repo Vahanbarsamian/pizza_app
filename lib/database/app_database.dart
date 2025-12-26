@@ -23,6 +23,7 @@ part 'loyalty_setting.dart';
 part 'daos/product_dao.dart';
 part 'option.dart';
 part 'product_option_link.dart';
+part 'opening_hour.dart';
 
 // ✅ 2. LES CLASSES DE DONNÉES
 class ReviewWithOrder {
@@ -43,6 +44,7 @@ class OrderWithStatus {
   Announcements, CompanyInfo, ProductIngredientLinks, SavedCartItems, 
   OrderStatusHistories, LoyaltySettings, UserLoyalties,
   ProductOptions, ProductOptionLinks,
+  OpeningHours,
 ], daos: [
   ProductDao
 ])
@@ -50,7 +52,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 34;
+  int get schemaVersion => 35;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -118,7 +120,6 @@ class AppDatabase extends _$AppDatabase {
   Future<void> clearSavedCart() => delete(savedCartItems).go();
 
   Stream<List<ReviewWithOrder>> watchUserReviews(String userId) {
-    // ✅ CORRIGÉ : ..where au lieu de ...where
     final query = select(reviews).join([innerJoin(orders, orders.id.equalsExp(reviews.orderId))])..where(reviews.userId.equals(userId))..orderBy([OrderingTerm(expression: reviews.createdAt, mode: OrderingMode.desc)]);
     return query.watch().map((rows) => rows.map((row) => ReviewWithOrder(review: row.readTable(reviews),order: row.readTable(orders))).toList());
   }
@@ -136,7 +137,6 @@ class AppDatabase extends _$AppDatabase {
   Stream<List<Product>> watchAllProducts() => (select(products)..where((p) => p.isActive.equals(true) & p.isDrink.equals(false))..orderBy([(p) => OrderingTerm(expression: p.createdAt, mode: OrderingMode.desc)])).watch();
   Stream<List<Product>> watchAllDrinks() => (select(products)..where((p) => p.isActive.equals(true) & p.isDrink.equals(true))..orderBy([(p) => OrderingTerm(expression: p.name)])).watch();
   
-  // ✅ MODIFIÉ: watchAllIngredients trie maintenant toujours par nom (A-Z) par défaut
   Stream<List<Ingredient>> watchAllIngredients() {
     return (select(ingredients)..orderBy([(i) => OrderingTerm(expression: i.name)])).watch();
   }
@@ -196,6 +196,25 @@ class AppDatabase extends _$AppDatabase {
 
   Stream<LoyaltySetting?> watchLoyaltySettings() => (select(loyaltySettings)..where((s) => s.id.equals(1))).watchSingleOrNull();
   Stream<UserLoyalty?> watchUserLoyalty(String userId) => (select(userLoyalties)..where((u) => u.userId.equals(userId))).watchSingleOrNull();
+
+  Stream<List<OpeningHour>> watchAllOpeningHours() => (select(openingHours)..orderBy([(o) => OrderingTerm(expression: o.id)])).watch();
+  Future<void> saveOpeningHour(OpeningHoursCompanion hour) => into(openingHours).insert(hour, mode: InsertMode.replace);
+
+  // ✅ NOUVEAU: Logique de vérification de l'ouverture
+  Stream<bool> watchIsStoreCurrentlyOpen() {
+    return watchAllOpeningHours().map((hours) {
+      if (hours.isEmpty) return true; // Si pas d'horaires, on laisse ouvert
+
+      final now = DateTime.now();
+      // Drift/SQLite utilise 1 pour Lundi, mais DateTime.weekday aussi.
+      final today = hours.firstWhere((h) => h.id == now.weekday, orElse: () => hours.first);
+
+      if (!today.isOpen) return false;
+
+      final currentTimeStr = "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}";
+      return currentTimeStr.compareTo(today.openTime) >= 0 && currentTimeStr.compareTo(today.closeTime) <= 0;
+    });
+  }
 }
 
 LazyDatabase _openConnection() {

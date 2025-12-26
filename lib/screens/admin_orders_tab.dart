@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart'; // ✅ AJOUT
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
@@ -292,7 +293,6 @@ class OrderCard extends StatelessWidget {
 
   const OrderCard({super.key, required this.orderWithStatus, required this.adminService, required this.syncService});
 
-  // ✅ NOUVEAU: Boîte de dialogue pour confirmer la suppression
   Future<void> _confirmDelete(BuildContext context) async {
     final bool? confirmed = await showDialog<bool>(
       context: context,
@@ -355,7 +355,6 @@ class OrderCard extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text('${order.total.toStringAsFixed(2)} €', style: const TextStyle(fontWeight: FontWeight.bold)),
-            // ✅ RÉTABLI: Icône corbeille pour supprimer une commande
             IconButton(
               icon: const Icon(Icons.delete_outline, color: Colors.red),
               onPressed: () => _confirmDelete(context),
@@ -392,9 +391,51 @@ class SettingsTab extends StatelessWidget {
     if (newDate != null) onDateSelected(newDate);
   }
 
+  // ✅ NOUVEAU : Sélecteur d'horaire menu roulant
+  void _selectTime(BuildContext context, String title, String initialTime, Function(String) onTimeSelected) {
+    final parts = initialTime.split(':');
+    final initialDateTime = DateTime(2024, 1, 1, int.parse(parts[0]), int.parse(parts[1]));
+
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => Container(
+        height: 250,
+        color: Colors.white,
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Colors.grey.shade200))),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK')),
+                ],
+              ),
+            ),
+            Expanded(
+              child: CupertinoDatePicker(
+                mode: CupertinoDatePickerMode.time,
+                use24hFormat: true,
+                initialDateTime: initialDateTime,
+                onDateTimeChanged: (dt) {
+                  final newTime = "${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}";
+                  onTimeSelected(newTime);
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final dateFormat = DateFormat('dd/MM/yyyy');
+    final db = context.read<AppDatabase>();
+    final adminService = context.read<AdminService>();
 
     return ListView(
       padding: const EdgeInsets.all(16.0),
@@ -406,7 +447,55 @@ class SettingsTab extends StatelessWidget {
         ]),
         const Divider(height: 32),
 
-        _buildSectionTitle(context, 'Gestion des Commandes'),
+        // ✅ NOUVEAU: Grille des horaires d'ouverture hebdomadaires
+        _buildSectionTitle(context, 'Horaires d\'ouverture automatiques'),
+        StreamBuilder<List<OpeningHour>>(
+          stream: db.watchAllOpeningHours(),
+          builder: (context, snapshot) {
+            final hours = snapshot.data ?? [];
+            return Card(
+              child: ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: hours.length,
+                separatorBuilder: (context, index) => const Divider(height: 1),
+                itemBuilder: (context, index) {
+                  final h = hours[index];
+                  return ListTile(
+                    title: Text(h.dayName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: h.isOpen ? Text("${h.openTime} - ${h.closeTime}") : const Text('Fermé', style: TextStyle(color: Colors.red)),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Switch(
+                          value: h.isOpen, 
+                          onChanged: (val) => adminService.updateOpeningHour(h.copyWith(isOpen: val))
+                        ),
+                        if (h.isOpen)
+                          IconButton(
+                            icon: const Icon(Icons.access_time, color: Colors.blue),
+                            onPressed: () => _selectTime(context, "Ouverture ${h.dayName}", h.openTime, (time) {
+                              adminService.updateOpeningHour(h.copyWith(openTime: time));
+                            }),
+                          ),
+                        if (h.isOpen)
+                          IconButton(
+                            icon: const Icon(Icons.timer_off_outlined, color: Colors.orange),
+                            onPressed: () => _selectTime(context, "Fermeture ${h.dayName}", h.closeTime, (time) {
+                              adminService.updateOpeningHour(h.copyWith(closeTime: time));
+                            }),
+                          ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            );
+          },
+        ),
+        const Divider(height: 32),
+
+        _buildSectionTitle(context, 'Gestion manuelle (Clôture immédiate)'),
         SwitchListTile(title: const Text('Prise de commandes'), subtitle: Text(areOrdersOpen ? 'Ouverte' : 'Fermée'), value: areOrdersOpen, onChanged: onOrdersOpenChanged),
         
         if (!areOrdersOpen)

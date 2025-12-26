@@ -6238,6 +6238,299 @@ class ProductOptionLinksCompanion extends UpdateCompanion<ProductOptionLink> {
   }
 }
 
+class $OpeningHoursTable extends OpeningHours
+    with TableInfo<$OpeningHoursTable, OpeningHour> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $OpeningHoursTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _dayNameMeta =
+      const VerificationMeta('dayName');
+  @override
+  late final GeneratedColumn<String> dayName = GeneratedColumn<String>(
+      'day_name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _isOpenMeta = const VerificationMeta('isOpen');
+  @override
+  late final GeneratedColumn<bool> isOpen = GeneratedColumn<bool>(
+      'is_open', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_open" IN (0, 1))'),
+      defaultValue: const Constant(true));
+  static const VerificationMeta _openTimeMeta =
+      const VerificationMeta('openTime');
+  @override
+  late final GeneratedColumn<String> openTime = GeneratedColumn<String>(
+      'open_time', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('11:00'));
+  static const VerificationMeta _closeTimeMeta =
+      const VerificationMeta('closeTime');
+  @override
+  late final GeneratedColumn<String> closeTime = GeneratedColumn<String>(
+      'close_time', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('22:00'));
+  @override
+  List<GeneratedColumn> get $columns =>
+      [id, dayName, isOpen, openTime, closeTime];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'opening_hours';
+  @override
+  VerificationContext validateIntegrity(Insertable<OpeningHour> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('day_name')) {
+      context.handle(_dayNameMeta,
+          dayName.isAcceptableOrUnknown(data['day_name']!, _dayNameMeta));
+    } else if (isInserting) {
+      context.missing(_dayNameMeta);
+    }
+    if (data.containsKey('is_open')) {
+      context.handle(_isOpenMeta,
+          isOpen.isAcceptableOrUnknown(data['is_open']!, _isOpenMeta));
+    }
+    if (data.containsKey('open_time')) {
+      context.handle(_openTimeMeta,
+          openTime.isAcceptableOrUnknown(data['open_time']!, _openTimeMeta));
+    }
+    if (data.containsKey('close_time')) {
+      context.handle(_closeTimeMeta,
+          closeTime.isAcceptableOrUnknown(data['close_time']!, _closeTimeMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  OpeningHour map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return OpeningHour(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      dayName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}day_name'])!,
+      isOpen: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_open'])!,
+      openTime: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}open_time'])!,
+      closeTime: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}close_time'])!,
+    );
+  }
+
+  @override
+  $OpeningHoursTable createAlias(String alias) {
+    return $OpeningHoursTable(attachedDatabase, alias);
+  }
+}
+
+class OpeningHour extends DataClass implements Insertable<OpeningHour> {
+  final int id;
+  final String dayName;
+  final bool isOpen;
+  final String openTime;
+  final String closeTime;
+  const OpeningHour(
+      {required this.id,
+      required this.dayName,
+      required this.isOpen,
+      required this.openTime,
+      required this.closeTime});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['day_name'] = Variable<String>(dayName);
+    map['is_open'] = Variable<bool>(isOpen);
+    map['open_time'] = Variable<String>(openTime);
+    map['close_time'] = Variable<String>(closeTime);
+    return map;
+  }
+
+  OpeningHoursCompanion toCompanion(bool nullToAbsent) {
+    return OpeningHoursCompanion(
+      id: Value(id),
+      dayName: Value(dayName),
+      isOpen: Value(isOpen),
+      openTime: Value(openTime),
+      closeTime: Value(closeTime),
+    );
+  }
+
+  factory OpeningHour.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return OpeningHour(
+      id: serializer.fromJson<int>(json['id']),
+      dayName: serializer.fromJson<String>(json['dayName']),
+      isOpen: serializer.fromJson<bool>(json['isOpen']),
+      openTime: serializer.fromJson<String>(json['openTime']),
+      closeTime: serializer.fromJson<String>(json['closeTime']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'dayName': serializer.toJson<String>(dayName),
+      'isOpen': serializer.toJson<bool>(isOpen),
+      'openTime': serializer.toJson<String>(openTime),
+      'closeTime': serializer.toJson<String>(closeTime),
+    };
+  }
+
+  OpeningHour copyWith(
+          {int? id,
+          String? dayName,
+          bool? isOpen,
+          String? openTime,
+          String? closeTime}) =>
+      OpeningHour(
+        id: id ?? this.id,
+        dayName: dayName ?? this.dayName,
+        isOpen: isOpen ?? this.isOpen,
+        openTime: openTime ?? this.openTime,
+        closeTime: closeTime ?? this.closeTime,
+      );
+  OpeningHour copyWithCompanion(OpeningHoursCompanion data) {
+    return OpeningHour(
+      id: data.id.present ? data.id.value : this.id,
+      dayName: data.dayName.present ? data.dayName.value : this.dayName,
+      isOpen: data.isOpen.present ? data.isOpen.value : this.isOpen,
+      openTime: data.openTime.present ? data.openTime.value : this.openTime,
+      closeTime: data.closeTime.present ? data.closeTime.value : this.closeTime,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('OpeningHour(')
+          ..write('id: $id, ')
+          ..write('dayName: $dayName, ')
+          ..write('isOpen: $isOpen, ')
+          ..write('openTime: $openTime, ')
+          ..write('closeTime: $closeTime')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, dayName, isOpen, openTime, closeTime);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is OpeningHour &&
+          other.id == this.id &&
+          other.dayName == this.dayName &&
+          other.isOpen == this.isOpen &&
+          other.openTime == this.openTime &&
+          other.closeTime == this.closeTime);
+}
+
+class OpeningHoursCompanion extends UpdateCompanion<OpeningHour> {
+  final Value<int> id;
+  final Value<String> dayName;
+  final Value<bool> isOpen;
+  final Value<String> openTime;
+  final Value<String> closeTime;
+  const OpeningHoursCompanion({
+    this.id = const Value.absent(),
+    this.dayName = const Value.absent(),
+    this.isOpen = const Value.absent(),
+    this.openTime = const Value.absent(),
+    this.closeTime = const Value.absent(),
+  });
+  OpeningHoursCompanion.insert({
+    this.id = const Value.absent(),
+    required String dayName,
+    this.isOpen = const Value.absent(),
+    this.openTime = const Value.absent(),
+    this.closeTime = const Value.absent(),
+  }) : dayName = Value(dayName);
+  static Insertable<OpeningHour> custom({
+    Expression<int>? id,
+    Expression<String>? dayName,
+    Expression<bool>? isOpen,
+    Expression<String>? openTime,
+    Expression<String>? closeTime,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (dayName != null) 'day_name': dayName,
+      if (isOpen != null) 'is_open': isOpen,
+      if (openTime != null) 'open_time': openTime,
+      if (closeTime != null) 'close_time': closeTime,
+    });
+  }
+
+  OpeningHoursCompanion copyWith(
+      {Value<int>? id,
+      Value<String>? dayName,
+      Value<bool>? isOpen,
+      Value<String>? openTime,
+      Value<String>? closeTime}) {
+    return OpeningHoursCompanion(
+      id: id ?? this.id,
+      dayName: dayName ?? this.dayName,
+      isOpen: isOpen ?? this.isOpen,
+      openTime: openTime ?? this.openTime,
+      closeTime: closeTime ?? this.closeTime,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (dayName.present) {
+      map['day_name'] = Variable<String>(dayName.value);
+    }
+    if (isOpen.present) {
+      map['is_open'] = Variable<bool>(isOpen.value);
+    }
+    if (openTime.present) {
+      map['open_time'] = Variable<String>(openTime.value);
+    }
+    if (closeTime.present) {
+      map['close_time'] = Variable<String>(closeTime.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('OpeningHoursCompanion(')
+          ..write('id: $id, ')
+          ..write('dayName: $dayName, ')
+          ..write('isOpen: $isOpen, ')
+          ..write('openTime: $openTime, ')
+          ..write('closeTime: $closeTime')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -6261,6 +6554,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $ProductOptionsTable productOptions = $ProductOptionsTable(this);
   late final $ProductOptionLinksTable productOptionLinks =
       $ProductOptionLinksTable(this);
+  late final $OpeningHoursTable openingHours = $OpeningHoursTable(this);
   late final ProductDao productDao = ProductDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
@@ -6282,7 +6576,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         loyaltySettings,
         userLoyalties,
         productOptions,
-        productOptionLinks
+        productOptionLinks,
+        openingHours
       ];
 }
 
@@ -11219,6 +11514,173 @@ typedef $$ProductOptionLinksTableProcessedTableManager = ProcessedTableManager<
     (ProductOptionLink, $$ProductOptionLinksTableReferences),
     ProductOptionLink,
     PrefetchHooks Function({bool productId, bool optionId})>;
+typedef $$OpeningHoursTableCreateCompanionBuilder = OpeningHoursCompanion
+    Function({
+  Value<int> id,
+  required String dayName,
+  Value<bool> isOpen,
+  Value<String> openTime,
+  Value<String> closeTime,
+});
+typedef $$OpeningHoursTableUpdateCompanionBuilder = OpeningHoursCompanion
+    Function({
+  Value<int> id,
+  Value<String> dayName,
+  Value<bool> isOpen,
+  Value<String> openTime,
+  Value<String> closeTime,
+});
+
+class $$OpeningHoursTableFilterComposer
+    extends Composer<_$AppDatabase, $OpeningHoursTable> {
+  $$OpeningHoursTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get dayName => $composableBuilder(
+      column: $table.dayName, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isOpen => $composableBuilder(
+      column: $table.isOpen, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get openTime => $composableBuilder(
+      column: $table.openTime, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get closeTime => $composableBuilder(
+      column: $table.closeTime, builder: (column) => ColumnFilters(column));
+}
+
+class $$OpeningHoursTableOrderingComposer
+    extends Composer<_$AppDatabase, $OpeningHoursTable> {
+  $$OpeningHoursTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get dayName => $composableBuilder(
+      column: $table.dayName, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get isOpen => $composableBuilder(
+      column: $table.isOpen, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get openTime => $composableBuilder(
+      column: $table.openTime, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get closeTime => $composableBuilder(
+      column: $table.closeTime, builder: (column) => ColumnOrderings(column));
+}
+
+class $$OpeningHoursTableAnnotationComposer
+    extends Composer<_$AppDatabase, $OpeningHoursTable> {
+  $$OpeningHoursTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get dayName =>
+      $composableBuilder(column: $table.dayName, builder: (column) => column);
+
+  GeneratedColumn<bool> get isOpen =>
+      $composableBuilder(column: $table.isOpen, builder: (column) => column);
+
+  GeneratedColumn<String> get openTime =>
+      $composableBuilder(column: $table.openTime, builder: (column) => column);
+
+  GeneratedColumn<String> get closeTime =>
+      $composableBuilder(column: $table.closeTime, builder: (column) => column);
+}
+
+class $$OpeningHoursTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $OpeningHoursTable,
+    OpeningHour,
+    $$OpeningHoursTableFilterComposer,
+    $$OpeningHoursTableOrderingComposer,
+    $$OpeningHoursTableAnnotationComposer,
+    $$OpeningHoursTableCreateCompanionBuilder,
+    $$OpeningHoursTableUpdateCompanionBuilder,
+    (
+      OpeningHour,
+      BaseReferences<_$AppDatabase, $OpeningHoursTable, OpeningHour>
+    ),
+    OpeningHour,
+    PrefetchHooks Function()> {
+  $$OpeningHoursTableTableManager(_$AppDatabase db, $OpeningHoursTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$OpeningHoursTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$OpeningHoursTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$OpeningHoursTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<String> dayName = const Value.absent(),
+            Value<bool> isOpen = const Value.absent(),
+            Value<String> openTime = const Value.absent(),
+            Value<String> closeTime = const Value.absent(),
+          }) =>
+              OpeningHoursCompanion(
+            id: id,
+            dayName: dayName,
+            isOpen: isOpen,
+            openTime: openTime,
+            closeTime: closeTime,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required String dayName,
+            Value<bool> isOpen = const Value.absent(),
+            Value<String> openTime = const Value.absent(),
+            Value<String> closeTime = const Value.absent(),
+          }) =>
+              OpeningHoursCompanion.insert(
+            id: id,
+            dayName: dayName,
+            isOpen: isOpen,
+            openTime: openTime,
+            closeTime: closeTime,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$OpeningHoursTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $OpeningHoursTable,
+    OpeningHour,
+    $$OpeningHoursTableFilterComposer,
+    $$OpeningHoursTableOrderingComposer,
+    $$OpeningHoursTableAnnotationComposer,
+    $$OpeningHoursTableCreateCompanionBuilder,
+    $$OpeningHoursTableUpdateCompanionBuilder,
+    (
+      OpeningHour,
+      BaseReferences<_$AppDatabase, $OpeningHoursTable, OpeningHour>
+    ),
+    OpeningHour,
+    PrefetchHooks Function()>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -11256,6 +11718,8 @@ class $AppDatabaseManager {
       $$ProductOptionsTableTableManager(_db, _db.productOptions);
   $$ProductOptionLinksTableTableManager get productOptionLinks =>
       $$ProductOptionLinksTableTableManager(_db, _db.productOptionLinks);
+  $$OpeningHoursTableTableManager get openingHours =>
+      $$OpeningHoursTableTableManager(_db, _db.openingHours);
 }
 
 mixin _$ProductDaoMixin on DatabaseAccessor<AppDatabase> {

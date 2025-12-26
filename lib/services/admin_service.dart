@@ -87,6 +87,16 @@ class AdminService {
     await _supabase.from('company_info').update(dataToSave).eq('id', 1);
   }
 
+  // ✅ NOUVEAU: Sauvegarde d'un horaire d'ouverture
+  Future<void> updateOpeningHour(OpeningHour hour) async {
+    final data = {
+      'is_open': hour.isOpen,
+      'open_time': hour.openTime,
+      'close_time': hour.closeTime,
+    };
+    await _supabase.from('opening_hours').update(data).eq('id', hour.id);
+  }
+
   Future<Map<String, dynamic>> saveProduct({
     int? id,
     required String name,
@@ -183,7 +193,6 @@ class AdminService {
     if (info.googleUrl.present) data['google_url'] = info.googleUrl.value;
     if (info.pagesJaunesUrl.present) data['pagesjaunes_url'] = info.pagesJaunesUrl.value;
     
-    // ✅ AJOUT: Sauvegarde de l'état du paiement
     if (info.isPaymentEnabled.present) data['is_payment_enabled'] = info.isPaymentEnabled.value;
 
     await _supabase.from('company_info').upsert(data);

@@ -22,8 +22,29 @@ class SyncService {
     await _syncReviews();
     await _syncLoyaltySettings();
     await _syncUserLoyalty();
-    await _syncUsers(); // ✅ AJOUT: Synchronisation des profils utilisateurs
+    await _syncUsers();
+    await _syncOpeningHours(); // ✅ AJOUT : Synchronisation des horaires
     print('✅ [SyncService] Synchronisation complète terminée.');
+  }
+
+  Future<void> _syncOpeningHours() async {
+    try {
+      final response = await _supabase.from('opening_hours').select();
+      final hoursToSync = response.map((item) => OpeningHoursCompanion(
+        id: Value(item['id'] as int),
+        dayName: Value(item['day_name'] as String),
+        isOpen: Value(item['is_open'] as bool),
+        openTime: Value(item['open_time'] as String),
+        closeTime: Value(item['close_time'] as String),
+      )).toList();
+
+      await db.transaction(() async {
+        await db.delete(db.openingHours).go();
+        await db.batch((batch) => batch.insertAll(db.openingHours, hoursToSync));
+      });
+    } catch (e) {
+      print('❌ Erreur de synchronisation (OpeningHours): $e');
+    }
   }
 
   Future<void> _syncUsers() async {
@@ -34,7 +55,7 @@ class SyncService {
         name: Value(item['name'] as String?),
         email: Value(item['email'] as String),
         postalCode: Value(item['postal_code'] as String?),
-        stripeCustomerId: Value(item['stripe_customer_id'] as String?), // ✅ NOUVEAU
+        stripeCustomerId: Value(item['stripe_customer_id'] as String?),
       )).toList();
       await db.transaction(() async {
         await db.delete(db.users).go();
@@ -56,7 +77,7 @@ class SyncService {
           referenceName: Value(item['reference_name'] as String?),
           pickupTime: Value(item['pickup_time'] as String?),
           paymentMethod: Value(item['payment_method'] as String?),
-          paymentStatus: Value(item['payment_status'] as String? ?? 'pending'), // ✅ NOUVEAU
+          paymentStatus: Value(item['payment_status'] as String? ?? 'pending'),
           isArchived: Value(item['is_archived'] as bool? ?? false),
           createdAt: Value(DateTime.parse(item['created_at'] as String? ?? '2023-01-01T00:00:00Z')),
           updatedAt: item['updated_at'] != null ? Value(DateTime.parse(item['updated_at'])) : const Value.absent(),
@@ -99,7 +120,7 @@ class SyncService {
           tvaRate: Value((info['tva_rate'] as num?)?.toDouble()),
           googleUrl: Value(info['google_url'] as String?),
           pagesJaunesUrl: Value(info['pagesjaunes_url'] as String?),
-          isPaymentEnabled: Value(info['is_payment_enabled'] as bool? ?? false), // ✅ NOUVEAU
+          isPaymentEnabled: Value(info['is_payment_enabled'] as bool? ?? false),
         );
         await db.transaction(() async {
           await db.delete(db.companyInfo).go();
@@ -111,7 +132,6 @@ class SyncService {
     }
   }
 
-  // Les autres méthodes (_syncProducts, _syncIngredients, etc.) restent inchangées...
   Future<void> _syncLoyaltySettings() async {
     try {
       final response = await _supabase.from('loyalty_settings').select();
