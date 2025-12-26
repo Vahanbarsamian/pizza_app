@@ -5,19 +5,20 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../database/app_database.dart';
 import '../services/cart_service.dart';
-import '../services/auth_service.dart'; // ✅ AJOUT
-import 'login_screen.dart'; // ✅ AJOUT
+import '../services/auth_service.dart';
+import 'login_screen.dart';
 
 class DrinkDetailScreen extends StatelessWidget {
   final Product product;
+  final bool ordersEnabled; // ✅ AJOUT
 
-  const DrinkDetailScreen({super.key, required this.product});
+  const DrinkDetailScreen({super.key, required this.product, required this.ordersEnabled}); // ✅ MODIFIÉ
 
   @override
   Widget build(BuildContext context) {
     final cartService = context.read<CartService>();
-    final authService = context.watch<AuthService>(); // ✅ Écoute de l'auth
-    final isLoggedIn = authService.currentUser != null; // ✅ Vérification
+    final authService = context.watch<AuthService>();
+    final isLoggedIn = authService.currentUser != null;
     final hasImage = product.image != null && product.image!.isNotEmpty;
 
     return Scaffold(
@@ -73,16 +74,18 @@ class DrinkDetailScreen extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(8.0),
           child: ElevatedButton.icon(
-            // ✅ MODIFIÉ : Icône et Libellé dynamiques
-            icon: Icon(isLoggedIn ? Icons.add_shopping_cart : Icons.login),
-            label: Text(isLoggedIn ? 'Ajouter au panier' : 'Connexion'),
+            // ✅ MODIFIÉ : État dynamique selon l'ouverture
+            icon: Icon(isLoggedIn ? (ordersEnabled ? Icons.add_shopping_cart : Icons.lock_clock) : Icons.login),
+            label: Text(isLoggedIn ? (ordersEnabled ? 'Ajouter au panier' : 'Commandes fermées') : 'Connexion'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
+              backgroundColor: isLoggedIn && !ordersEnabled ? Colors.grey : Colors.green,
               foregroundColor: Colors.white,
               minimumSize: const Size(double.infinity, 50),
             ),
             onPressed: () {
-              if (isLoggedIn) {
+              if (!isLoggedIn) {
+                Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LoginScreen()));
+              } else if (ordersEnabled) {
                 cartService.addToCart(product);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -93,9 +96,12 @@ class DrinkDetailScreen extends StatelessWidget {
                 );
                 Navigator.of(context).pop();
               } else {
-                // ✅ AJOUT : Redirection si non connecté
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                // ✅ MESSAGE D'AVERTISSEMENT
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Désolé, nous ne prenons plus de commandes actuellement. Vérifiez nos horaires d\'ouverture.'),
+                    backgroundColor: Colors.orange,
+                  ),
                 );
               }
             },

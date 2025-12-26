@@ -10,7 +10,9 @@ import '../widgets/product_display_card.dart';
 import 'admin_orders_tab.dart';
 
 class MenuScreen extends StatefulWidget {
-  const MenuScreen({super.key});
+  final bool ordersEnabled; // ✅ AJOUT
+
+  const MenuScreen({super.key, required this.ordersEnabled}); // ✅ MODIFIÉ
 
   @override
   State<MenuScreen> createState() => _MenuScreenState();
@@ -98,12 +100,11 @@ class _MenuScreenState extends State<MenuScreen> {
     final db = context.watch<AppDatabase>();
     final authService = context.watch<AuthService>();
 
-    // ✅ MODIFIÉ: On réintroduit un Scaffold avec une AppBar simple
     return Scaffold(
       appBar: AppBar(
         title: const Text('Nos Pizzas'),
         centerTitle: true,
-        automaticallyImplyLeading: false, // Pas de bouton retour
+        automaticallyImplyLeading: false,
       ),
       body: RefreshIndicator(
         onRefresh: _refreshData,
@@ -120,9 +121,11 @@ class _MenuScreenState extends State<MenuScreen> {
             final data = snapshot.data ?? [];
             final info = data.isNotEmpty ? data[0] as CompanyInfoData? : null;
             final pizzas = data.isNotEmpty ? data[1] as List<Product> : [];
-            final ordersEnabled = info?.ordersEnabled ?? true;
+            
+            // ✅ MODIFIÉ: On utilise l'état d'ouverture calculé par MainScreen
+            final bool isAvailable = widget.ordersEnabled;
 
-            if (info != null && !ordersEnabled) {
+            if (info != null && !isAvailable) {
               _showClosureDialog(context, info);
             }
 
@@ -136,7 +139,7 @@ class _MenuScreenState extends State<MenuScreen> {
               itemCount: pizzas.length,
               itemBuilder: (context, index) {
                 final pizza = pizzas[index];
-                return ProductDisplayCard(product: pizza, isAdmin: authService.isAdmin, ordersEnabled: ordersEnabled);
+                return ProductDisplayCard(product: pizza, isAdmin: authService.isAdmin, ordersEnabled: isAvailable);
               },
             );
           },

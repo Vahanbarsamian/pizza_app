@@ -6,7 +6,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../database/app_database.dart';
 import '../screens/admin_edit_product_screen.dart';
 import '../screens/pizza_detail_screen.dart';
-import '../screens/drink_detail_screen.dart'; // ✅ AJOUT
+import '../screens/drink_detail_screen.dart';
 
 class ProductDisplayCard extends StatelessWidget {
   final Product product;
@@ -28,10 +28,9 @@ class ProductDisplayCard extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         onTap: () {
-          // ✅ CORRIGÉ: Redirige vers l'écran de détail pour les boissons
           if (product.isDrink) {
             Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => DrinkDetailScreen(product: product)),
+              MaterialPageRoute(builder: (_) => DrinkDetailScreen(product: product, ordersEnabled: ordersEnabled)), // ✅ MODIFIÉ
             );
           } else {
              Navigator.of(context).push(

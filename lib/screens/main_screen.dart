@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:rxdart/rxdart.dart'; // ✅ AJOUT : Pour combiner les flux
 
 import '../database/app_database.dart';
 import '../services/auth_service.dart';
@@ -30,13 +31,17 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
 
-  static const List<Widget> _widgetOptions = <Widget>[
-    MenuScreen(),
-    DrinksPage(),
-    PromotionsScreen(),
-    PublicReviewsScreen(),
-    AboutUsScreen(),
-  ];
+  // ✅ NOUVEAU : Flux combiné pour savoir si la boutique est VRAIMENT ouverte
+  Stream<bool> _effectiveOpenStream(AppDatabase db) {
+    return Rx.combineLatest2(
+      db.watchCompanyInfo(),
+      db.watchIsStoreCurrentlyOpen(),
+      (CompanyInfoData? info, bool isScheduleOpen) {
+        final bool manualOpen = info?.ordersEnabled ?? true;
+        return manualOpen && isScheduleOpen; // Ouvert seulement si les deux sont OK
+      },
+    );
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -85,138 +90,163 @@ class _MainScreenState extends State<MainScreen> {
     final cartService = context.watch<CartService>();
     final db = context.watch<AppDatabase>();
 
-    return Scaffold(
-      appBar: AppBar(
-        centerTitle: false,
-        titleSpacing: 16.0,
-        toolbarHeight: 100, 
-        title: StreamBuilder<CompanyInfoData?>(
-          stream: db.watchCompanyInfo(),
-          builder: (context, snapshot) {
-            final companyInfo = snapshot.data;
-            final hasLogo = companyInfo?.logoUrl != null && companyInfo!.logoUrl!.isNotEmpty;
+    return StreamBuilder<bool>(
+      stream: _effectiveOpenStream(db),
+      builder: (context, openSnapshot) {
+        final bool isCurrentlyTakingOrders = openSnapshot.data ?? true;
 
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  companyInfo?.name ?? 'Pizza App',
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                if (hasLogo)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 10.0),
-                    child: SizedBox(
-                      height: 60,
-                      width: 200,
-                      child: Stack(
-                        children: [
-                          // 1. LE LOGO RÉEL (Toujours visible, couleurs intactes)
-                          CachedNetworkImage(
-                            imageUrl: companyInfo!.logoUrl!,
-                            fit: BoxFit.contain,
-                            alignment: Alignment.centerLeft,
-                            placeholder: (context, url) => const SizedBox(height: 2, width: 20, child: LinearProgressIndicator()),
-                            errorWidget: (context, url, error) => const Icon(Icons.broken_image, size: 20, color: Colors.grey),
+        // On injecte l'état d'ouverture dans les pages du menu
+        final List<Widget> widgetOptions = <Widget>[
+          MenuScreen(ordersEnabled: isCurrentlyTakingOrders), // ✅ Transmis ici
+          DrinksPage(ordersEnabled: isCurrentlyTakingOrders), // ✅ Transmis ici
+          const PromotionsScreen(),
+          const PublicReviewsScreen(),
+          const AboutUsScreen(),
+        ];
+
+        return Scaffold(
+          appBar: AppBar(
+            centerTitle: false,
+            titleSpacing: 16.0,
+            toolbarHeight: 100, 
+            title: StreamBuilder<CompanyInfoData?>(
+              stream: db.watchCompanyInfo(),
+              builder: (context, snapshot) {
+                final companyInfo = snapshot.data;
+                final hasLogo = companyInfo?.logoUrl != null && companyInfo!.logoUrl!.isNotEmpty;
+
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      companyInfo?.name ?? 'Pizza App',
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    if (hasLogo)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 10.0),
+                        child: SizedBox(
+                          height: 60,
+                          width: 200,
+                          child: Stack(
+                            children: [
+                              CachedNetworkImage(
+                                imageUrl: companyInfo!.logoUrl!,
+                                fit: BoxFit.contain,
+                                alignment: Alignment.centerLeft,
+                                placeholder: (context, url) => const SizedBox(height: 2, width: 20, child: LinearProgressIndicator()),
+                                errorWidget: (context, url, error) => const Icon(Icons.broken_image, size: 20, color: Colors.grey),
+                              ),
+                              Shimmer.fromColors(
+                                baseColor: Colors.white.withOpacity(0),
+                                highlightColor: Colors.white.withOpacity(0.5),
+                                period: const Duration(seconds: 5),
+                                child: CachedNetworkImage(
+                                  imageUrl: companyInfo.logoUrl!,
+                                  fit: BoxFit.contain,
+                                  alignment: Alignment.centerLeft,
+                                ),
+                              ),
+                            ],
                           ),
-                          // 2. L'EFFET DE SCINTILLEMENT (Discret, passe par-dessus la forme du logo)
-                          Shimmer.fromColors(
-                            baseColor: Colors.white.withOpacity(0), // Fond transparent
-                            highlightColor: Colors.white.withOpacity(0.5), // Reflet blanc translucide
-                            period: const Duration(seconds: 5), // Très lent pour être sobre
-                            child: CachedNetworkImage(
-                              imageUrl: companyInfo.logoUrl!,
-                              fit: BoxFit.contain,
-                              alignment: Alignment.centerLeft,
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
+                  ],
+                );
+              },
+            ),
+            actions: <Widget>[
+              // ✅ Message visuel si fermé
+              if (!isCurrentlyTakingOrders)
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.only(right: 8.0),
+                    child: Text(
+                      'FERMÉ', 
+                      style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 12),
                     ),
                   ),
-              ],
-            );
-          },
-        ),
-        actions: <Widget>[
-          Badge(
-            label: Text(
-              cartService.itemCount.toString(), 
-              style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold),
-            ),
-            isLabelVisible: cartService.itemCount > 0,
-            backgroundColor: Colors.green,
-            alignment: AlignmentDirectional.bottomEnd,
-            offset: const Offset(-8, -16),
-            padding: const EdgeInsets.symmetric(horizontal: 6),
-            largeSize: 18,
-            child: IconButton(
-              icon: const Icon(Icons.shopping_cart),
-              onPressed: () => _handleCartPressed(context),
-            ),
+                ),
+              Badge(
+                label: Text(
+                  cartService.itemCount.toString(), 
+                  style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+                isLabelVisible: cartService.itemCount > 0,
+                backgroundColor: Colors.green,
+                alignment: AlignmentDirectional.bottomEnd,
+                offset: const Offset(-8, -16),
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                largeSize: 18,
+                child: IconButton(
+                  icon: const Icon(Icons.shopping_cart),
+                  onPressed: () => _handleCartPressed(context),
+                ),
+              ),
+              if (authService.currentUser != null && !authService.isAdmin)
+                IconButton(
+                  tooltip: 'Mon Espace Client',
+                  icon: const Icon(Icons.home),
+                  onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ClientAreaScreen())),
+                ),
+              IconButton(
+                tooltip: authService.currentUser == null ? 'Connexion' : 'Mon Compte / Déconnexion',
+                icon: Icon(Icons.person, color: authService.currentUser == null ? Colors.grey.shade400 : Colors.greenAccent),
+                onPressed: () {
+                  if (authService.currentUser == null) {
+                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LoginScreen()));
+                  } else {
+                    showMenu(
+                      context: context,
+                      position: const RelativeRect.fromLTRB(1000.0, 80.0, 0.0, 0.0),
+                      items: <PopupMenuEntry<String>>[
+                        PopupMenuItem<String>(enabled: false, child: Text('Connecté: ${authService.currentUser!.email}')),
+                        if (authService.isAdmin)
+                          const PopupMenuItem<String>(
+                            value: 'admin',
+                            child: ListTile(leading: Icon(Icons.admin_panel_settings), title: Text('Panneau Admin')),
+                          ),
+                        const PopupMenuDivider(),
+                        const PopupMenuItem<String>(
+                          value: 'logout',
+                          child: ListTile(leading: Icon(Icons.logout, color: Colors.red), title: Text('Déconnexion', style: TextStyle(color: Colors.red))),
+                        ),
+                      ],
+                    ).then((value) {
+                      if (value == 'logout') authService.signOut();
+                      else if (value == 'admin') _navigateToAdmin(context);
+                    });
+                  }
+                },
+              ),
+            ],
           ),
-          if (authService.currentUser != null && !authService.isAdmin)
-            IconButton(
-              tooltip: 'Mon Espace Client',
-              icon: const Icon(Icons.home),
-              onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ClientAreaScreen())),
-            ),
-          IconButton(
-            tooltip: authService.currentUser == null ? 'Connexion' : 'Mon Compte / Déconnexion',
-            icon: Icon(Icons.person, color: authService.currentUser == null ? Colors.grey.shade400 : Colors.greenAccent),
-            onPressed: () {
-              if (authService.currentUser == null) {
-                Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LoginScreen()));
-              } else {
-                showMenu(
-                  context: context,
-                  position: const RelativeRect.fromLTRB(1000.0, 80.0, 0.0, 0.0),
-                  items: <PopupMenuEntry<String>>[
-                    PopupMenuItem<String>(enabled: false, child: Text('Connecté: ${authService.currentUser!.email}')),
-                    if (authService.isAdmin)
-                      const PopupMenuItem<String>(
-                        value: 'admin',
-                        child: ListTile(leading: Icon(Icons.admin_panel_settings), title: Text('Panneau Admin')),
-                      ),
-                    const PopupMenuDivider(),
-                    const PopupMenuItem<String>(
-                      value: 'logout',
-                      child: ListTile(leading: Icon(Icons.logout, color: Colors.red), title: Text('Déconnexion', style: TextStyle(color: Colors.red))),
-                    ),
-                  ],
-                ).then((value) {
-                  if (value == 'logout') authService.signOut();
-                  else if (value == 'admin') _navigateToAdmin(context);
-                });
-              }
-            },
+          body: Center(child: widgetOptions.elementAt(_selectedIndex)),
+          bottomNavigationBar: BottomNavigationBar(
+            type: BottomNavigationBarType.fixed,
+            items: const <BottomNavigationBarItem>[
+              BottomNavigationBarItem(icon: Icon(Icons.local_pizza), label: 'Pizzas'),
+              BottomNavigationBarItem(
+                icon: FaIcon(FontAwesomeIcons.bottleWater),
+                label: 'Boissons',
+              ),
+              BottomNavigationBarItem(icon: Icon(Icons.campaign), label: 'Promos'),
+              BottomNavigationBarItem(icon: Icon(Icons.rate_review), label: 'Avis'),
+              BottomNavigationBarItem(icon: Icon(Icons.info_outline), label: 'Info'),
+            ],
+            currentIndex: _selectedIndex,
+            onTap: _onItemTapped,
           ),
-        ],
-      ),
-      body: Center(child: _widgetOptions.elementAt(_selectedIndex)),
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(icon: Icon(Icons.local_pizza), label: 'Pizzas'),
-          BottomNavigationBarItem(
-            icon: FaIcon(FontAwesomeIcons.bottleWater),
-            label: 'Boissons',
-          ),
-          BottomNavigationBarItem(icon: Icon(Icons.campaign), label: 'Promos'),
-          BottomNavigationBarItem(icon: Icon(Icons.rate_review), label: 'Avis'),
-          BottomNavigationBarItem(icon: Icon(Icons.info_outline), label: 'Info'),
-        ],
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-      ),
-       floatingActionButton: authService.isAdmin
-          ? FloatingActionButton(
-              onPressed: () => _navigateToAdmin(context),
-              tooltip: 'Retour au Panneau Admin',
-              child: const Icon(Icons.admin_panel_settings),
-            )
-          : null,
+           floatingActionButton: authService.isAdmin
+              ? FloatingActionButton(
+                  onPressed: () => _navigateToAdmin(context),
+                  tooltip: 'Retour au Panneau Admin',
+                  child: const Icon(Icons.admin_panel_settings),
+                )
+              : null,
+        );
+      }
     );
   }
 }

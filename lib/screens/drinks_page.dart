@@ -5,7 +5,9 @@ import '../services/auth_service.dart';
 import '../widgets/product_display_card.dart';
 
 class DrinksPage extends StatelessWidget {
-  const DrinksPage({super.key});
+  final bool ordersEnabled; 
+
+  const DrinksPage({super.key, required this.ordersEnabled});
 
   @override
   Widget build(BuildContext context) {
@@ -16,7 +18,6 @@ class DrinksPage extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Nos Boissons'),
         centerTitle: true,
-        // ✅ C'EST CETTE LIGNE QUI SUPPRIME LA FLÈCHE SANS ENLEVER LE TITRE
         automaticallyImplyLeading: false, 
       ),
       body: StreamBuilder<List<Product>>(
@@ -44,7 +45,7 @@ class DrinksPage extends StatelessWidget {
             itemCount: drinks.length,
             itemBuilder: (context, index) {
               final drink = drinks[index];
-              return ProductDisplayCard(product: drink, isAdmin: authService.isAdmin, ordersEnabled: true);
+              return ProductDisplayCard(product: drink, isAdmin: authService.isAdmin, ordersEnabled: ordersEnabled);
             },
           );
         },
