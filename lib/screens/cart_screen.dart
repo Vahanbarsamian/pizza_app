@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart'; // ✅ AJOUT : Pour l'icône de boisson
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../models/cart_item.dart';
 import '../services/cart_service.dart';
@@ -54,7 +54,8 @@ class _CartScreenState extends State<CartScreen> {
         return;
       }
 
-      final orderDetails = await Navigator.of(context).push<Map<String, String>>(
+      // ✅ RÉCUPÉRATION DES INFOS (Inclus les préférences de notification)
+      final orderDetails = await Navigator.of(context).push<Map<String, dynamic>>(
         MaterialPageRoute(builder: (_) => const CheckoutScreen()),
       );
 
@@ -66,8 +67,19 @@ class _CartScreenState extends State<CartScreen> {
       final referenceName = orderDetails['name']!;
       final pickupTime = orderDetails['time']!;
       final paymentMethod = orderDetails['payment']!;
+      final notificationPreference = orderDetails['notificationPreference'] ?? 'none';
+      final notificationPhone = orderDetails['notificationPhone'];
 
-      final orderId = await orderService.createOrderFromCart(cart, user.id, referenceName, pickupTime, paymentMethod);
+      // ✅ TRANSMISSION DES INFOS AU SERVICE
+      final orderId = await orderService.createOrderFromCart(
+        cart, 
+        user.id, 
+        referenceName, 
+        pickupTime, 
+        paymentMethod,
+        notificationPreference: notificationPreference,
+        notificationPhone: notificationPhone,
+      );
       
       if (context.mounted) {
         final paymentSuccess = await Navigator.of(context).push<bool>(
@@ -112,10 +124,9 @@ class _CartScreenState extends State<CartScreen> {
               itemBuilder: (context, index) {
                 final itemId = cartService.items.keys.elementAt(index);
                 final item = cartService.items[itemId]!;
-                final isDrink = item.product.isDrink; // ✅ Détection du type
+                final isDrink = item.product.isDrink;
 
                 return ListTile(
-                  // ✅ MODIFIÉ : Icône dynamique (Pizza ou Boisson)
                   leading: Icon(
                     isDrink ? FontAwesomeIcons.bottleWater : Icons.local_pizza_outlined,
                     color: isDrink ? Colors.blue : Colors.orange,

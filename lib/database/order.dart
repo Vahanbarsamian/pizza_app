@@ -11,9 +11,11 @@ class Orders extends Table {
   DateTimeColumn get createdAt => dateTime().named('created_at')();
   DateTimeColumn get updatedAt => dateTime().named('updated_at').nullable()();
   BoolColumn get isArchived => boolean().named('is_archived').nullable()();
-
-  // ✅ NOUVEAU: Statut du paiement
   TextColumn get paymentStatus => text().named('payment_status').withDefault(const Constant('pending'))();
+
+  // ✅ NOUVEAU : Préférences de notification
+  TextColumn get notificationPreference => text().named('notification_preference').withDefault(const Constant('none'))();
+  TextColumn get notificationPhone => text().named('notification_phone').nullable()();
 }
 
 @DataClassName('OrderItem')

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart'; // ✅ AJOUT : Pour le style défilant
+import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 
 import '../services/cart_service.dart';
+import '../services/auth_service.dart';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
@@ -15,24 +16,34 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _timeController;
+  late final TextEditingController _phoneController;
+  
+  String _notificationPreference = 'none'; // 'none', 'sms', 'email'
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
     final cart = context.read<CartService>();
+    final auth = context.read<AuthService>();
+    
     _nameController = TextEditingController(text: cart.temporaryReferenceName);
     _timeController = TextEditingController(text: cart.temporaryPickupTime);
+    _phoneController = TextEditingController();
+    
+    if (auth.currentUser != null) {
+      _notificationPreference = 'email';
+    }
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _timeController.dispose();
+    _phoneController.dispose();
     super.dispose();
   }
 
-  // ✅ MODIFIÉ: Sélecteur avec défilement (style roue)
   void _selectTime(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -42,7 +53,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           color: Colors.white,
           child: Column(
             children: [
-              // Barre de contrôle au-dessus du défilement
               Container(
                 decoration: BoxDecoration(
                   border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
@@ -57,7 +67,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     const Text('CHOISIR L\'HEURE', style: TextStyle(fontWeight: FontWeight.bold)),
                     TextButton(
                       onPressed: () {
-                        // Si le champ est vide, on met l'heure actuelle par défaut
                         if (_timeController.text.isEmpty) {
                           final now = DateTime.now();
                           _timeController.text = "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}";
@@ -69,7 +78,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   ],
                 ),
               ),
-              // La roue de défilement
               Expanded(
                 child: CupertinoDatePicker(
                   mode: CupertinoDatePickerMode.time,
@@ -102,7 +110,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       Navigator.of(context).pop({
         'name': _nameController.text,
         'time': _timeController.text,
-        'payment': 'En attente', 
+        'payment': 'En attente',
+        'notificationPreference': _notificationPreference,
+        'notificationPhone': _notificationPreference == 'sms' ? _phoneController.text : null,
       });
     }
   }
@@ -111,7 +121,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Infos de retrait'),
+        title: const Text('Finaliser la commande'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
@@ -120,16 +130,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Center(
-                child: Icon(Icons.timer_outlined, size: 64, color: Colors.orange),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'Quand souhaitez-vous récupérer votre commande ?',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 32),
+              _buildSectionTitle('Informations de retrait'),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _nameController,
                 decoration: const InputDecoration(
@@ -138,10 +140,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.person_outline),
                 ),
-                autofocus: true,
                 validator: (value) => value == null || value.isEmpty ? 'Veuillez entrer un nom' : null,
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _timeController,
                 readOnly: true, 
@@ -151,14 +152,59 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   hintText: 'Cliquez pour choisir l\'heure',
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.access_time),
-                  suffixIcon: Icon(Icons.keyboard_arrow_down), // Indique que ça s'ouvre vers le bas
+                  suffixIcon: Icon(Icons.keyboard_arrow_down),
                 ),
                 validator: (value) => value == null || value.isEmpty ? 'Veuillez choisir une heure' : null,
               ),
-              const SizedBox(height: 40),
+              
+              const SizedBox(height: 32),
+              _buildSectionTitle('Notification de préparation'),
+              // ✅ TEXTE RENDU PLUS SOMBRE ET VISIBLE ICI
               const Text(
-                'Note : Le règlement s\'effectuera à l\'étape suivante.',
-                style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
+                'Voulez-vous être notifié lorsque votre commande sera prête ?', 
+                style: TextStyle(
+                  color: Color(0xFF2C3E50), // Bleu-Gris très sombre
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                ),
+              ),
+              const SizedBox(height: 8),
+              
+              RadioListTile<String>(
+                title: const Text('Par Email'),
+                subtitle: const Text('Utilise l\'adresse de votre compte'),
+                value: 'email',
+                groupValue: _notificationPreference,
+                onChanged: (val) => setState(() => _notificationPreference = val!),
+              ),
+              RadioListTile<String>(
+                title: const Text('Par SMS'),
+                value: 'sms',
+                groupValue: _notificationPreference,
+                onChanged: (val) => setState(() => _notificationPreference = val!),
+              ),
+              
+              if (_notificationPreference == 'sms')
+                Padding(
+                  padding: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 16.0),
+                  child: TextFormField(
+                    controller: _phoneController,
+                    keyboardType: TextInputType.phone,
+                    decoration: const InputDecoration(
+                      labelText: 'Numéro de téléphone',
+                      hintText: 'Ex: 06 12 34 56 78',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.phone_android),
+                    ),
+                    validator: (value) => (_notificationPreference == 'sms' && (value == null || value.isEmpty)) ? 'Numéro requis pour le SMS' : null,
+                  ),
+                ),
+                
+              RadioListTile<String>(
+                title: const Text('Ne pas m\'avertir'),
+                value: 'none',
+                groupValue: _notificationPreference,
+                onChanged: (val) => setState(() => _notificationPreference = val!),
               ),
             ],
           ),
@@ -178,6 +224,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3)) 
               : const Text('Passer au règlement', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         ),
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Text(
+        title,
+        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
       ),
     );
   }

@@ -22,11 +22,18 @@ class ProductDisplayCard extends StatelessWidget {
     final authService = context.watch<AuthService>();
     final userId = authService.currentUser?.id;
 
+    final isDark = Theme.of(context).brightness == Brightness.dark; // ✅ Détection du mode sombre
+    const creamWhite = Color(0xFFF5F5DC); // ✅ Couleur Blanc Ivoire/Crème
+
     final hasImage = product.image != null && product.image!.isNotEmpty;
     final hasDiscount = product.discountPercentage > 0;
     final reducedPrice = product.basePrice * (1 - product.discountPercentage);
     final isNew = DateTime.now().difference(product.createdAt).inDays <= 15;
     final isOutOfStock = product.isOutOfStock;
+
+    // Définition de la couleur du texte selon le mode
+    final textColor = isDark ? creamWhite : Colors.black;
+    final secondaryTextColor = isDark ? creamWhite.withOpacity(0.7) : Colors.grey;
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -60,7 +67,6 @@ class ProductDisplayCard extends StatelessWidget {
                         )
                       : _buildPlaceholderIcon(),
                   
-                  // ✅ DÉPLACÉ : BOUTON FAVORIS (Cœur) en bas à droite
                   if (userId != null && !isAdmin)
                     Positioned(
                       bottom: 4,
@@ -73,7 +79,6 @@ class ProductDisplayCard extends StatelessWidget {
                             icon: Icon(
                               isFavorite ? Icons.favorite : Icons.favorite_border,
                               color: isFavorite ? Colors.red : Colors.white,
-                              // Ombre portée pour que le cœur blanc reste visible sur des images claires
                               shadows: const [
                                 Shadow(blurRadius: 15, color: Colors.black54),
                                 Shadow(blurRadius: 8, color: Colors.black),
@@ -127,7 +132,11 @@ class ProductDisplayCard extends StatelessWidget {
                 children: [
                   Text(
                     product.name,
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: isOutOfStock ? Colors.grey : Colors.black),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold, 
+                      fontSize: 16, 
+                      color: isOutOfStock ? secondaryTextColor : textColor, // ✅ COULEUR DYNAMIQUE
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -138,14 +147,32 @@ class ProductDisplayCard extends StatelessWidget {
                     textBaseline: TextBaseline.alphabetic,
                     children: [
                       if (hasDiscount)
-                        Text('${product.basePrice.toStringAsFixed(2)} €', style: const TextStyle(fontSize: 14, color: Colors.grey, decoration: TextDecoration.lineThrough)),
+                        Text(
+                          '${product.basePrice.toStringAsFixed(2)} €', 
+                          style: TextStyle(
+                            fontSize: 14, 
+                            color: secondaryTextColor, 
+                            decoration: TextDecoration.lineThrough,
+                          ),
+                        ),
                       const SizedBox(width: 4),
                       Text.rich(
                         TextSpan(
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isOutOfStock ? Colors.grey : (hasDiscount ? Colors.red : Colors.black)),
+                          style: TextStyle(
+                            fontSize: 18, 
+                            fontWeight: FontWeight.bold, 
+                            color: isOutOfStock ? secondaryTextColor : (hasDiscount ? Colors.red : textColor), // ✅ COULEUR DYNAMIQUE
+                          ),
                           children: [
                             TextSpan(text: (hasDiscount ? reducedPrice : product.basePrice).toStringAsFixed(2)),
-                            const TextSpan(text: ' € TTC', style: TextStyle(fontSize: 10, fontWeight: FontWeight.normal)),
+                            TextSpan(
+                              text: ' € TTC', 
+                              style: TextStyle(
+                                fontSize: 10, 
+                                fontWeight: FontWeight.normal,
+                                color: secondaryTextColor,
+                              ),
+                            ),
                           ],
                         ),
                       ),

@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:shimmer/shimmer.dart';
-import 'package:rxdart/rxdart.dart'; // ✅ AJOUT : Pour combiner les flux
+import 'package:rxdart/rxdart.dart';
 
 import '../database/app_database.dart';
 import '../services/auth_service.dart';
@@ -31,16 +31,22 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
 
-  // ✅ NOUVEAU : Flux combiné pour savoir si la boutique est VRAIMENT ouverte
   Stream<bool> _effectiveOpenStream(AppDatabase db) {
     return Rx.combineLatest2(
       db.watchCompanyInfo(),
       db.watchIsStoreCurrentlyOpen(),
       (CompanyInfoData? info, bool isScheduleOpen) {
         final bool manualOpen = info?.ordersEnabled ?? true;
-        return manualOpen && isScheduleOpen; // Ouvert seulement si les deux sont OK
+        return manualOpen && isScheduleOpen;
       },
     );
+  }
+
+  // ✅ NOUVEAU: Détermine si on doit proposer le bouton de thème
+  bool _shouldShowThemeToggle() {
+    final now = DateTime.now();
+    // Propose l'icône entre 18h et 6h du matin
+    return now.hour >= 18 || now.hour < 6;
   }
 
   void _onItemTapped(int index) {
@@ -89,16 +95,16 @@ class _MainScreenState extends State<MainScreen> {
     final authService = context.watch<AuthService>();
     final cartService = context.watch<CartService>();
     final db = context.watch<AppDatabase>();
+    final prefs = context.watch<PreferencesService>(); // ✅ Écoute des prefs
 
     return StreamBuilder<bool>(
       stream: _effectiveOpenStream(db),
       builder: (context, openSnapshot) {
         final bool isCurrentlyTakingOrders = openSnapshot.data ?? true;
 
-        // On injecte l'état d'ouverture dans les pages du menu
         final List<Widget> widgetOptions = <Widget>[
-          MenuScreen(ordersEnabled: isCurrentlyTakingOrders), // ✅ Transmis ici
-          DrinksPage(ordersEnabled: isCurrentlyTakingOrders), // ✅ Transmis ici
+          MenuScreen(ordersEnabled: isCurrentlyTakingOrders),
+          DrinksPage(ordersEnabled: isCurrentlyTakingOrders),
           const PromotionsScreen(),
           const PublicReviewsScreen(),
           const AboutUsScreen(),
@@ -157,7 +163,17 @@ class _MainScreenState extends State<MainScreen> {
               },
             ),
             actions: <Widget>[
-              // ✅ Message visuel si fermé
+              // ✅ NOUVEAU: Bouton de thème contextuel (apparaît le soir)
+              if (_shouldShowThemeToggle())
+                IconButton(
+                  icon: Icon(
+                    prefs.themeMode == ThemeMode.light ? Icons.dark_mode_outlined : Icons.light_mode_outlined,
+                    color: Colors.amber,
+                  ),
+                  tooltip: 'Changer le thème',
+                  onPressed: () => prefs.toggleTheme(),
+                ),
+
               if (!isCurrentlyTakingOrders)
                 const Center(
                   child: Padding(

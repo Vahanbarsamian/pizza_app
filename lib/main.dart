@@ -25,9 +25,7 @@ import 'screens/pizza_splash_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
   await initializeDateFormatting('fr_FR', null);
-
   await dotenv.load(fileName: ".env");
 
   Stripe.publishableKey = dotenv.env['STRIPE_PUBLISHABLE_KEY'] ?? "";
@@ -39,7 +37,6 @@ Future<void> main() async {
   );
 
   final db = AppDatabase();
-
   runApp(MyApp(database: db));
 }
 
@@ -80,32 +77,60 @@ class MyApp extends StatelessWidget {
           update: (_, db, service) => service!,
         ),
       ],
-      child: MaterialApp(
-        title: 'Pizza App',
-        theme: ThemeData(
-          brightness: Brightness.light,
-          primaryColor: const Color(0xFF2C3E50),
-          colorScheme: const ColorScheme.light(
-            primary: Color(0xFF2C3E50),
-            secondary: Color(0xFFE74C3C),
-            background: Color(0xFFECF0F1),
-          ),
-          appBarTheme: const AppBarTheme(
-            color: Color(0xFF2C3E50),
-            foregroundColor: Colors.white,
-            elevation: 2,
-            centerTitle: true,
-          ),
-          bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-            backgroundColor: Color(0xFF87CEEB),
-            selectedItemColor: Colors.orange,
-            unselectedItemColor: Colors.white,
-            elevation: 4,
-          ),
-          scaffoldBackgroundColor: const Color(0xFFF8F9FA),
-          visualDensity: VisualDensity.adaptivePlatformDensity, // ✅ CORRIGÉ
-        ),
-        home: PizzaSplashScreen(),
+      child: Consumer<PreferencesService>(
+        builder: (context, prefs, child) {
+          return MaterialApp(
+            title: 'Pizza App',
+            themeMode: prefs.themeMode,
+            theme: ThemeData(
+              brightness: Brightness.light,
+              primaryColor: const Color(0xFF2C3E50),
+              colorScheme: const ColorScheme.light(
+                primary: Color(0xFF2C3E50),
+                secondary: Color(0xFFE74C3C),
+                surface: Color(0xFFECF0F1),
+              ),
+              appBarTheme: const AppBarTheme(
+                color: Color(0xFF2C3E50),
+                foregroundColor: Colors.white, 
+                elevation: 2,
+                centerTitle: true,
+              ),
+              bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+                backgroundColor: Color(0xFF87CEEB),
+                selectedItemColor: Colors.orange,
+                unselectedItemColor: Colors.white,
+              ),
+              scaffoldBackgroundColor: const Color(0xFFF8F9FA),
+            ),
+            darkTheme: ThemeData(
+              brightness: Brightness.dark,
+              primaryColor: const Color(0xFF1A2533),
+              colorScheme: const ColorScheme.dark(
+                primary: Color(0xFF1A2533),
+                secondary: Color(0xFFE74C3C),
+                surface: Color(0xFF1E1E1E),
+              ),
+              appBarTheme: const AppBarTheme(
+                color: Color(0xFF1A2533),
+                foregroundColor: Colors.white,
+                elevation: 0,
+              ),
+              bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+                backgroundColor: Color(0xFF0D1B2A),
+                selectedItemColor: Colors.orange,
+                unselectedItemColor: Colors.grey,
+              ),
+              scaffoldBackgroundColor: const Color(0xFF121212),
+              cardTheme: CardThemeData(
+                color: const Color(0xFF1E1E1E),
+                elevation: 4,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+            home: PizzaSplashScreen(),
+          );
+        },
       ),
     );
   }

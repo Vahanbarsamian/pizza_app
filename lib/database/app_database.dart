@@ -24,7 +24,7 @@ part 'daos/product_dao.dart';
 part 'option.dart';
 part 'product_option_link.dart';
 part 'opening_hour.dart';
-part 'favorite.dart'; // ✅ AJOUT
+part 'favorite.dart';
 
 // ✅ 2. LES CLASSES DE DONNÉES
 class ReviewWithOrder {
@@ -46,7 +46,7 @@ class OrderWithStatus {
   OrderStatusHistories, LoyaltySettings, UserLoyalties,
   ProductOptions, ProductOptionLinks,
   OpeningHours,
-  Favorites, // ✅ AJOUT
+  Favorites,
 ], daos: [
   ProductDao
 ])
@@ -54,7 +54,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 38; // ✅ PASSAGE À LA VERSION 38
+  int get schemaVersion => 39; // ✅ PASSAGE À LA VERSION 39
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -216,7 +216,6 @@ class AppDatabase extends _$AppDatabase {
     });
   }
 
-  // ✅ NOUVEAU: Gestion des favoris
   Stream<bool> watchIsFavorite(String userId, int productId) {
     return (select(favorites)..where((f) => f.userId.equals(userId) & f.productId.equals(productId)))
         .watch()

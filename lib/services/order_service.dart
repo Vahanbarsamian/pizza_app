@@ -10,14 +10,15 @@ class OrderService {
 
   OrderService({required AppDatabase db}) : _db = db;
 
-  // ✅ LOGIQUE DE CRÉATION
   Future<int> createOrderFromCart(
     CartService cart,
     String userId,
     String referenceName,
     String pickupTime,
-    String paymentMethod,
-  ) async {
+    String paymentMethod, {
+    String notificationPreference = 'none', // ✅ AJOUT
+    String? notificationPhone, // ✅ AJOUT
+  }) async {
     if (cart.items.isEmpty) {
       throw 'Le panier est vide.';
     }
@@ -32,7 +33,6 @@ class OrderService {
         };
       }).toList();
 
-      // On appelle la fonction RPC qui crée la commande et nous renvoie son ID
       final response = await _supabase.rpc(
         'create_order_with_loyalty',
         params: {
@@ -41,10 +41,11 @@ class OrderService {
           'p_pickup_time': pickupTime,
           'p_payment_method': paymentMethod,
           'p_order_items': orderItemsForRpc,
+          'p_notification_preference': notificationPreference, // ✅ AJOUT RPC
+          'p_notification_phone': notificationPhone, // ✅ AJOUT RPC
         },
       );
 
-      // On suppose que la fonction RPC renvoie l'ID de la commande créée
       final orderId = response as int;
       print('✅ [OrderService] Commande #$orderId créée.');
       return orderId;
@@ -58,7 +59,6 @@ class OrderService {
     }
   }
 
-  // ✅ NOUVEAU: Mettre à jour le statut du paiement (paid, guaranteed, pending)
   Future<void> updatePaymentStatus(int orderId, String status) async {
     try {
       await _supabase
@@ -66,7 +66,6 @@ class OrderService {
           .update({'payment_status': status})
           .eq('id', orderId);
       
-      // Mise à jour locale
       await (_db.update(_db.orders)..where((o) => o.id.equals(orderId)))
           .write(OrdersCompanion(paymentStatus: Value(status)));
           

@@ -1070,6 +1070,20 @@ class $OrdersTable extends Orders with TableInfo<$OrdersTable, Order> {
       type: DriftSqlType.string,
       requiredDuringInsert: false,
       defaultValue: const Constant('pending'));
+  static const VerificationMeta _notificationPreferenceMeta =
+      const VerificationMeta('notificationPreference');
+  @override
+  late final GeneratedColumn<String> notificationPreference =
+      GeneratedColumn<String>('notification_preference', aliasedName, false,
+          type: DriftSqlType.string,
+          requiredDuringInsert: false,
+          defaultValue: const Constant('none'));
+  static const VerificationMeta _notificationPhoneMeta =
+      const VerificationMeta('notificationPhone');
+  @override
+  late final GeneratedColumn<String> notificationPhone =
+      GeneratedColumn<String>('notification_phone', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -1081,7 +1095,9 @@ class $OrdersTable extends Orders with TableInfo<$OrdersTable, Order> {
         createdAt,
         updatedAt,
         isArchived,
-        paymentStatus
+        paymentStatus,
+        notificationPreference,
+        notificationPhone
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1148,6 +1164,18 @@ class $OrdersTable extends Orders with TableInfo<$OrdersTable, Order> {
           paymentStatus.isAcceptableOrUnknown(
               data['payment_status']!, _paymentStatusMeta));
     }
+    if (data.containsKey('notification_preference')) {
+      context.handle(
+          _notificationPreferenceMeta,
+          notificationPreference.isAcceptableOrUnknown(
+              data['notification_preference']!, _notificationPreferenceMeta));
+    }
+    if (data.containsKey('notification_phone')) {
+      context.handle(
+          _notificationPhoneMeta,
+          notificationPhone.isAcceptableOrUnknown(
+              data['notification_phone']!, _notificationPhoneMeta));
+    }
     return context;
   }
 
@@ -1177,6 +1205,11 @@ class $OrdersTable extends Orders with TableInfo<$OrdersTable, Order> {
           .read(DriftSqlType.bool, data['${effectivePrefix}is_archived']),
       paymentStatus: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}payment_status'])!,
+      notificationPreference: attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}notification_preference'])!,
+      notificationPhone: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}notification_phone']),
     );
   }
 
@@ -1197,6 +1230,8 @@ class Order extends DataClass implements Insertable<Order> {
   final DateTime? updatedAt;
   final bool? isArchived;
   final String paymentStatus;
+  final String notificationPreference;
+  final String? notificationPhone;
   const Order(
       {required this.id,
       required this.userId,
@@ -1207,7 +1242,9 @@ class Order extends DataClass implements Insertable<Order> {
       required this.createdAt,
       this.updatedAt,
       this.isArchived,
-      required this.paymentStatus});
+      required this.paymentStatus,
+      required this.notificationPreference,
+      this.notificationPhone});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -1231,6 +1268,10 @@ class Order extends DataClass implements Insertable<Order> {
       map['is_archived'] = Variable<bool>(isArchived);
     }
     map['payment_status'] = Variable<String>(paymentStatus);
+    map['notification_preference'] = Variable<String>(notificationPreference);
+    if (!nullToAbsent || notificationPhone != null) {
+      map['notification_phone'] = Variable<String>(notificationPhone);
+    }
     return map;
   }
 
@@ -1256,6 +1297,10 @@ class Order extends DataClass implements Insertable<Order> {
           ? const Value.absent()
           : Value(isArchived),
       paymentStatus: Value(paymentStatus),
+      notificationPreference: Value(notificationPreference),
+      notificationPhone: notificationPhone == null && nullToAbsent
+          ? const Value.absent()
+          : Value(notificationPhone),
     );
   }
 
@@ -1273,6 +1318,10 @@ class Order extends DataClass implements Insertable<Order> {
       updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
       isArchived: serializer.fromJson<bool?>(json['isArchived']),
       paymentStatus: serializer.fromJson<String>(json['paymentStatus']),
+      notificationPreference:
+          serializer.fromJson<String>(json['notificationPreference']),
+      notificationPhone:
+          serializer.fromJson<String?>(json['notificationPhone']),
     );
   }
   @override
@@ -1289,6 +1338,9 @@ class Order extends DataClass implements Insertable<Order> {
       'updatedAt': serializer.toJson<DateTime?>(updatedAt),
       'isArchived': serializer.toJson<bool?>(isArchived),
       'paymentStatus': serializer.toJson<String>(paymentStatus),
+      'notificationPreference':
+          serializer.toJson<String>(notificationPreference),
+      'notificationPhone': serializer.toJson<String?>(notificationPhone),
     };
   }
 
@@ -1302,7 +1354,9 @@ class Order extends DataClass implements Insertable<Order> {
           DateTime? createdAt,
           Value<DateTime?> updatedAt = const Value.absent(),
           Value<bool?> isArchived = const Value.absent(),
-          String? paymentStatus}) =>
+          String? paymentStatus,
+          String? notificationPreference,
+          Value<String?> notificationPhone = const Value.absent()}) =>
       Order(
         id: id ?? this.id,
         userId: userId ?? this.userId,
@@ -1316,6 +1370,11 @@ class Order extends DataClass implements Insertable<Order> {
         updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
         isArchived: isArchived.present ? isArchived.value : this.isArchived,
         paymentStatus: paymentStatus ?? this.paymentStatus,
+        notificationPreference:
+            notificationPreference ?? this.notificationPreference,
+        notificationPhone: notificationPhone.present
+            ? notificationPhone.value
+            : this.notificationPhone,
       );
   Order copyWithCompanion(OrdersCompanion data) {
     return Order(
@@ -1337,6 +1396,12 @@ class Order extends DataClass implements Insertable<Order> {
       paymentStatus: data.paymentStatus.present
           ? data.paymentStatus.value
           : this.paymentStatus,
+      notificationPreference: data.notificationPreference.present
+          ? data.notificationPreference.value
+          : this.notificationPreference,
+      notificationPhone: data.notificationPhone.present
+          ? data.notificationPhone.value
+          : this.notificationPhone,
     );
   }
 
@@ -1352,14 +1417,27 @@ class Order extends DataClass implements Insertable<Order> {
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('isArchived: $isArchived, ')
-          ..write('paymentStatus: $paymentStatus')
+          ..write('paymentStatus: $paymentStatus, ')
+          ..write('notificationPreference: $notificationPreference, ')
+          ..write('notificationPhone: $notificationPhone')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, userId, referenceName, pickupTime,
-      paymentMethod, total, createdAt, updatedAt, isArchived, paymentStatus);
+  int get hashCode => Object.hash(
+      id,
+      userId,
+      referenceName,
+      pickupTime,
+      paymentMethod,
+      total,
+      createdAt,
+      updatedAt,
+      isArchived,
+      paymentStatus,
+      notificationPreference,
+      notificationPhone);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1373,7 +1451,9 @@ class Order extends DataClass implements Insertable<Order> {
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
           other.isArchived == this.isArchived &&
-          other.paymentStatus == this.paymentStatus);
+          other.paymentStatus == this.paymentStatus &&
+          other.notificationPreference == this.notificationPreference &&
+          other.notificationPhone == this.notificationPhone);
 }
 
 class OrdersCompanion extends UpdateCompanion<Order> {
@@ -1387,6 +1467,8 @@ class OrdersCompanion extends UpdateCompanion<Order> {
   final Value<DateTime?> updatedAt;
   final Value<bool?> isArchived;
   final Value<String> paymentStatus;
+  final Value<String> notificationPreference;
+  final Value<String?> notificationPhone;
   const OrdersCompanion({
     this.id = const Value.absent(),
     this.userId = const Value.absent(),
@@ -1398,6 +1480,8 @@ class OrdersCompanion extends UpdateCompanion<Order> {
     this.updatedAt = const Value.absent(),
     this.isArchived = const Value.absent(),
     this.paymentStatus = const Value.absent(),
+    this.notificationPreference = const Value.absent(),
+    this.notificationPhone = const Value.absent(),
   });
   OrdersCompanion.insert({
     this.id = const Value.absent(),
@@ -1410,6 +1494,8 @@ class OrdersCompanion extends UpdateCompanion<Order> {
     this.updatedAt = const Value.absent(),
     this.isArchived = const Value.absent(),
     this.paymentStatus = const Value.absent(),
+    this.notificationPreference = const Value.absent(),
+    this.notificationPhone = const Value.absent(),
   })  : userId = Value(userId),
         total = Value(total),
         createdAt = Value(createdAt);
@@ -1424,6 +1510,8 @@ class OrdersCompanion extends UpdateCompanion<Order> {
     Expression<DateTime>? updatedAt,
     Expression<bool>? isArchived,
     Expression<String>? paymentStatus,
+    Expression<String>? notificationPreference,
+    Expression<String>? notificationPhone,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1436,6 +1524,9 @@ class OrdersCompanion extends UpdateCompanion<Order> {
       if (updatedAt != null) 'updated_at': updatedAt,
       if (isArchived != null) 'is_archived': isArchived,
       if (paymentStatus != null) 'payment_status': paymentStatus,
+      if (notificationPreference != null)
+        'notification_preference': notificationPreference,
+      if (notificationPhone != null) 'notification_phone': notificationPhone,
     });
   }
 
@@ -1449,7 +1540,9 @@ class OrdersCompanion extends UpdateCompanion<Order> {
       Value<DateTime>? createdAt,
       Value<DateTime?>? updatedAt,
       Value<bool?>? isArchived,
-      Value<String>? paymentStatus}) {
+      Value<String>? paymentStatus,
+      Value<String>? notificationPreference,
+      Value<String?>? notificationPhone}) {
     return OrdersCompanion(
       id: id ?? this.id,
       userId: userId ?? this.userId,
@@ -1461,6 +1554,9 @@ class OrdersCompanion extends UpdateCompanion<Order> {
       updatedAt: updatedAt ?? this.updatedAt,
       isArchived: isArchived ?? this.isArchived,
       paymentStatus: paymentStatus ?? this.paymentStatus,
+      notificationPreference:
+          notificationPreference ?? this.notificationPreference,
+      notificationPhone: notificationPhone ?? this.notificationPhone,
     );
   }
 
@@ -1497,6 +1593,13 @@ class OrdersCompanion extends UpdateCompanion<Order> {
     if (paymentStatus.present) {
       map['payment_status'] = Variable<String>(paymentStatus.value);
     }
+    if (notificationPreference.present) {
+      map['notification_preference'] =
+          Variable<String>(notificationPreference.value);
+    }
+    if (notificationPhone.present) {
+      map['notification_phone'] = Variable<String>(notificationPhone.value);
+    }
     return map;
   }
 
@@ -1512,7 +1615,9 @@ class OrdersCompanion extends UpdateCompanion<Order> {
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('isArchived: $isArchived, ')
-          ..write('paymentStatus: $paymentStatus')
+          ..write('paymentStatus: $paymentStatus, ')
+          ..write('notificationPreference: $notificationPreference, ')
+          ..write('notificationPhone: $notificationPhone')
           ..write(')'))
         .toString();
   }
@@ -7976,6 +8081,8 @@ typedef $$OrdersTableCreateCompanionBuilder = OrdersCompanion Function({
   Value<DateTime?> updatedAt,
   Value<bool?> isArchived,
   Value<String> paymentStatus,
+  Value<String> notificationPreference,
+  Value<String?> notificationPhone,
 });
 typedef $$OrdersTableUpdateCompanionBuilder = OrdersCompanion Function({
   Value<int> id,
@@ -7988,6 +8095,8 @@ typedef $$OrdersTableUpdateCompanionBuilder = OrdersCompanion Function({
   Value<DateTime?> updatedAt,
   Value<bool?> isArchived,
   Value<String> paymentStatus,
+  Value<String> notificationPreference,
+  Value<String?> notificationPhone,
 });
 
 final class $$OrdersTableReferences
@@ -8080,6 +8189,14 @@ class $$OrdersTableFilterComposer
 
   ColumnFilters<String> get paymentStatus => $composableBuilder(
       column: $table.paymentStatus, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get notificationPreference => $composableBuilder(
+      column: $table.notificationPreference,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get notificationPhone => $composableBuilder(
+      column: $table.notificationPhone,
+      builder: (column) => ColumnFilters(column));
 
   Expression<bool> orderItemsRefs(
       Expression<bool> Function($$OrderItemsTableFilterComposer f) f) {
@@ -8187,6 +8304,14 @@ class $$OrdersTableOrderingComposer
   ColumnOrderings<String> get paymentStatus => $composableBuilder(
       column: $table.paymentStatus,
       builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get notificationPreference => $composableBuilder(
+      column: $table.notificationPreference,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get notificationPhone => $composableBuilder(
+      column: $table.notificationPhone,
+      builder: (column) => ColumnOrderings(column));
 }
 
 class $$OrdersTableAnnotationComposer
@@ -8227,6 +8352,12 @@ class $$OrdersTableAnnotationComposer
 
   GeneratedColumn<String> get paymentStatus => $composableBuilder(
       column: $table.paymentStatus, builder: (column) => column);
+
+  GeneratedColumn<String> get notificationPreference => $composableBuilder(
+      column: $table.notificationPreference, builder: (column) => column);
+
+  GeneratedColumn<String> get notificationPhone => $composableBuilder(
+      column: $table.notificationPhone, builder: (column) => column);
 
   Expression<T> orderItemsRefs<T extends Object>(
       Expression<T> Function($$OrderItemsTableAnnotationComposer a) f) {
@@ -8330,6 +8461,8 @@ class $$OrdersTableTableManager extends RootTableManager<
             Value<DateTime?> updatedAt = const Value.absent(),
             Value<bool?> isArchived = const Value.absent(),
             Value<String> paymentStatus = const Value.absent(),
+            Value<String> notificationPreference = const Value.absent(),
+            Value<String?> notificationPhone = const Value.absent(),
           }) =>
               OrdersCompanion(
             id: id,
@@ -8342,6 +8475,8 @@ class $$OrdersTableTableManager extends RootTableManager<
             updatedAt: updatedAt,
             isArchived: isArchived,
             paymentStatus: paymentStatus,
+            notificationPreference: notificationPreference,
+            notificationPhone: notificationPhone,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -8354,6 +8489,8 @@ class $$OrdersTableTableManager extends RootTableManager<
             Value<DateTime?> updatedAt = const Value.absent(),
             Value<bool?> isArchived = const Value.absent(),
             Value<String> paymentStatus = const Value.absent(),
+            Value<String> notificationPreference = const Value.absent(),
+            Value<String?> notificationPhone = const Value.absent(),
           }) =>
               OrdersCompanion.insert(
             id: id,
@@ -8366,6 +8503,8 @@ class $$OrdersTableTableManager extends RootTableManager<
             updatedAt: updatedAt,
             isArchived: isArchived,
             paymentStatus: paymentStatus,
+            notificationPreference: notificationPreference,
+            notificationPhone: notificationPhone,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) =>
