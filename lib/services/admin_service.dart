@@ -62,9 +62,7 @@ class AdminService {
 
     final orderIds = finishedOrdersResponse.map((row) => row['order_id'] as int).toSet().toList();
 
-    if (orderIds.isEmpty) {
-      return;
-    }
+    if (orderIds.isEmpty) return;
 
     await _supabase.from('orders').update({'is_archived': true}).filter('id', 'in', orderIds);
   }
@@ -87,8 +85,16 @@ class AdminService {
     await _supabase.from('company_info').update(dataToSave).eq('id', 1);
   }
 
-  // ✅ NOUVEAU: Sauvegarde d'un horaire d'ouverture
+  // ✅ CORRIGÉ: Ajout de dayName pour que la base accepte la mise à jour
   Future<void> updateOpeningHour(OpeningHour hour) async {
+    await _db.saveOpeningHour(OpeningHoursCompanion(
+      id: Value(hour.id),
+      dayName: Value(hour.dayName), // Crucial pour le InsertMode.replace
+      isOpen: Value(hour.isOpen),
+      openTime: Value(hour.openTime),
+      closeTime: Value(hour.closeTime),
+    ));
+
     final data = {
       'is_open': hour.isOpen,
       'open_time': hour.openTime,
@@ -126,25 +132,13 @@ class AdminService {
 
   Future<void> updateProductIngredients(int productId, List<int> baseIngredientIds, List<int> supplementIngredientIds) async {
     await _supabase.from('product_ingredient_links').delete().eq('product_id', productId);
-
     final List<Map<String, dynamic>> linksToInsert = [];
-
     for (final ingredientId in baseIngredientIds) {
-      linksToInsert.add({
-        'product_id': productId,
-        'ingredient_id': ingredientId,
-        'is_base_ingredient': true,
-      });
+      linksToInsert.add({'product_id': productId, 'ingredient_id': ingredientId, 'is_base_ingredient': true});
     }
-
     for (final ingredientId in supplementIngredientIds) {
-      linksToInsert.add({
-        'product_id': productId,
-        'ingredient_id': ingredientId,
-        'is_base_ingredient': false,
-      });
+      linksToInsert.add({'product_id': productId, 'ingredient_id': ingredientId, 'is_base_ingredient': false});
     }
-
     if (linksToInsert.isNotEmpty) {
       await _supabase.from('product_ingredient_links').insert(linksToInsert);
     }
@@ -152,7 +146,6 @@ class AdminService {
 
   Future<void> saveIngredient(IngredientsCompanion ingredient) async {
     await _db.into(_db.ingredients).insert(ingredient, mode: InsertMode.replace);
-
     final data = {
       'name': ingredient.name.value,
       'price': ingredient.price.value,
@@ -160,11 +153,7 @@ class AdminService {
       'is_global': ingredient.isGlobal.value,
       'created_at': (ingredient.createdAt.value ?? DateTime.now()).toIso8601String(),
     };
-
-    if (ingredient.id.present) {
-      data['id'] = ingredient.id.value;
-    }
-
+    if (ingredient.id.present) data['id'] = ingredient.id.value;
     await _supabase.from('ingredients').upsert(data);
   }
 
@@ -174,9 +163,7 @@ class AdminService {
   }
 
   Future<void> saveCompanyInfo(CompanyInfoCompanion info) async {
-    final data = <String, dynamic>{
-      'id': info.id.value,
-    };
+    final data = <String, dynamic>{'id': info.id.value};
     if (info.name.present) data['name'] = info.name.value;
     if (info.presentation.present) data['presentation'] = info.presentation.value;
     if (info.address.present) data['address'] = info.address.value;
@@ -192,10 +179,12 @@ class AdminService {
     if (info.tvaRate.present) data['tva_rate'] = info.tvaRate.value;
     if (info.googleUrl.present) data['google_url'] = info.googleUrl.value;
     if (info.pagesJaunesUrl.present) data['pagesjaunes_url'] = info.pagesJaunesUrl.value;
-    
     if (info.isPaymentEnabled.present) data['is_payment_enabled'] = info.isPaymentEnabled.value;
+    
+    // ✅ CORRIGÉ: Nom du champ exact
+    if (info.closureScheduleMessage.present) data['closure_schedule_message'] = info.closureScheduleMessage.value;
 
-    await _supabase.from('company_info').upsert(data);
+    await _supabase.from('company_info').update(data).eq('id', info.id.value);
   }
 
   Future<void> saveAnnouncement({
@@ -217,11 +206,7 @@ class AdminService {
       'is_active': isActive,
       'type': type,
     };
-
-    if (id != null) {
-      data['id'] = id;
-    }
-
+    if (id != null) data['id'] = id;
     await _supabase.from('announcements').upsert(data);
   }
 

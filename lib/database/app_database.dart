@@ -52,7 +52,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 35;
+  int get schemaVersion => 36; // ✅ PASSAGE À LA VERSION 36
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -200,13 +200,11 @@ class AppDatabase extends _$AppDatabase {
   Stream<List<OpeningHour>> watchAllOpeningHours() => (select(openingHours)..orderBy([(o) => OrderingTerm(expression: o.id)])).watch();
   Future<void> saveOpeningHour(OpeningHoursCompanion hour) => into(openingHours).insert(hour, mode: InsertMode.replace);
 
-  // ✅ NOUVEAU: Logique de vérification de l'ouverture
   Stream<bool> watchIsStoreCurrentlyOpen() {
     return watchAllOpeningHours().map((hours) {
-      if (hours.isEmpty) return true; // Si pas d'horaires, on laisse ouvert
+      if (hours.isEmpty) return true; 
 
       final now = DateTime.now();
-      // Drift/SQLite utilise 1 pour Lundi, mais DateTime.weekday aussi.
       final today = hours.firstWhere((h) => h.id == now.weekday, orElse: () => hours.first);
 
       if (!today.isOpen) return false;

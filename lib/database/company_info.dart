@@ -21,13 +21,15 @@ class CompanyInfo extends Table {
   DateTimeColumn get closureEndDate => dateTime().named('closure_end_date').nullable()();
   TextColumn get closureCustomMessage => text().named('closure_custom_message').nullable()();
 
+  // ✅ AJOUT : Message pour la fermeture automatique via planning
+  TextColumn get closureScheduleMessage => text().named('closure_schedule_message').nullable()();
+
   TextColumn get logoUrl => text().named('logo_url').nullable()();
   RealColumn get tvaRate => real().named('tva_rate').nullable()();
   
   TextColumn get googleUrl => text().named('google_url').nullable()();
   TextColumn get pagesJaunesUrl => text().named('pagesjaunes_url').nullable()();
 
-  // ✅ AJOUT: Toggle global pour le paiement en ligne
   BoolColumn get isPaymentEnabled => boolean().named('is_payment_enabled').withDefault(const Constant(false))();
 
   @override

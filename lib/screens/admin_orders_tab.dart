@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart'; // ✅ AJOUT
+import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
+import 'package:drift/drift.dart' hide Column;
 
 import '../database/app_database.dart';
 import '../services/sync_service.dart';
@@ -24,6 +25,7 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> with SingleTickerProvid
   RealtimeChannel? _ordersChannel;
   late TabController _tabController;
   late TextEditingController _customClosureMessageController;
+  late TextEditingController _scheduleClosureMessageController; // ✅ NOUVEAU
 
   DateTime? _filterStartDate, _filterEndDate, _archiveStartDate, _archiveEndDate;
   bool _areOrdersOpen = true;
@@ -37,6 +39,7 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> with SingleTickerProvid
     _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(() => setState(() {}));
     _customClosureMessageController = TextEditingController();
+    _scheduleClosureMessageController = TextEditingController(); // ✅ INITIALISATION
     _loadInitialData();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _listenToNewOrders();
@@ -57,6 +60,7 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> with SingleTickerProvid
           } catch (e) { _selectedClosureMessage = null; }
         }
         _customClosureMessageController.text = info.closureCustomMessage ?? '';
+        _scheduleClosureMessageController.text = info.closureScheduleMessage ?? 'Le camion est actuellement fermé. Consultez nos horaires ci-dessous.'; // ✅ CHARGEMENT
       });
     }
   }
@@ -113,6 +117,7 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> with SingleTickerProvid
   void dispose() {
     _tabController.dispose();
     _customClosureMessageController.dispose();
+    _scheduleClosureMessageController.dispose(); // ✅ LIBÉRATION
     if (_ordersChannel != null) Supabase.instance.client.removeChannel(_ordersChannel!);
     super.dispose();
   }
@@ -132,6 +137,12 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> with SingleTickerProvid
     }
 
     try {
+      // Sauvegarde des réglages généraux ET du message de planning
+      await adminService.saveCompanyInfo(CompanyInfoCompanion(
+        id: const Value(1),
+        closureScheduleMessage: Value(_scheduleClosureMessageController.text),
+      ));
+
       await adminService.saveStoreStatus(
         ordersEnabled: _areOrdersOpen,
         messageType: _selectedClosureMessage,
@@ -139,13 +150,14 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> with SingleTickerProvid
         endDate: endDate,
         customMessage: _customClosureMessageController.text,
       );
+      
       await syncService.syncAll();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ Réglages sauvegardés !'), backgroundColor: Colors.green));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❌ Erreur: $e'), backgroundColor: Colors.red));
       }
     } finally {
       if (mounted) setState(() => _isSavingSettings = false);
@@ -194,6 +206,7 @@ class _AdminOrdersTabState extends State<AdminOrdersTab> with SingleTickerProvid
                   areOrdersOpen: _areOrdersOpen, vacationStartDate: _vacationStartDate, vacationEndDate: _vacationEndDate,
                   tempClosureStartDate: _tempClosureStartDate, tempClosureEndDate: _tempClosureEndDate,
                   selectedClosureMessage: _selectedClosureMessage, customClosureMessageController: _customClosureMessageController,
+                  scheduleClosureMessageController: _scheduleClosureMessageController, // ✅ TRANSMISSION
                   onFilterDateChanged: (start, end) => setState(() => { _filterStartDate = start, _filterEndDate = end }),
                   onOrdersOpenChanged: (value) => setState(() => { _areOrdersOpen = value, if (value) _selectedClosureMessage = null }),
                   onVacationDateChanged: (start, end) => setState(() => { _vacationStartDate = start, _vacationEndDate = end }),
@@ -373,6 +386,7 @@ class SettingsTab extends StatelessWidget {
   final bool areOrdersOpen;
   final ClosureMessageType? selectedClosureMessage;
   final TextEditingController customClosureMessageController;
+  final TextEditingController scheduleClosureMessageController; // ✅ AJOUT
   final Function(DateTime?, DateTime?) onFilterDateChanged, onVacationDateChanged, onTempClosureDateChanged;
   final Function(bool) onOrdersOpenChanged;
   final Function(ClosureMessageType?) onClosureMessageChanged;
@@ -384,6 +398,7 @@ class SettingsTab extends StatelessWidget {
     required this.onFilterDateChanged, required this.onOrdersOpenChanged, required this.onVacationDateChanged, required this.onTempClosureDateChanged,
     this.initialFilterStartDate, this.initialFilterEndDate, required this.areOrdersOpen, this.vacationStartDate, this.vacationEndDate, this.tempClosureStartDate, this.tempClosureEndDate,
     required this.selectedClosureMessage, required this.onClosureMessageChanged, required this.onSave, required this.customClosureMessageController,
+    required this.scheduleClosureMessageController, // ✅ AJOUT
   });
 
   Future<void> _selectDate(BuildContext context, {required DateTime? initialDate, required Function(DateTime) onDateSelected}) async {
@@ -391,7 +406,6 @@ class SettingsTab extends StatelessWidget {
     if (newDate != null) onDateSelected(newDate);
   }
 
-  // ✅ NOUVEAU : Sélecteur d'horaire menu roulant
   void _selectTime(BuildContext context, String title, String initialTime, Function(String) onTimeSelected) {
     final parts = initialTime.split(':');
     final initialDateTime = DateTime(2024, 1, 1, int.parse(parts[0]), int.parse(parts[1]));
@@ -447,7 +461,6 @@ class SettingsTab extends StatelessWidget {
         ]),
         const Divider(height: 32),
 
-        // ✅ NOUVEAU: Grille des horaires d'ouverture hebdomadaires
         _buildSectionTitle(context, 'Horaires d\'ouverture automatiques'),
         StreamBuilder<List<OpeningHour>>(
           stream: db.watchAllOpeningHours(),
@@ -493,6 +506,21 @@ class SettingsTab extends StatelessWidget {
             );
           },
         ),
+        
+        // ✅ AJOUT : Champ de texte pour le message de planning
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          child: TextFormField(
+            controller: scheduleClosureMessageController,
+            decoration: const InputDecoration(
+              labelText: 'Message affiché si fermé par planning',
+              border: OutlineInputBorder(),
+              helperText: 'Ce texte s\'affiche quand l\'horaire automatique bloque les commandes.',
+            ),
+            maxLines: 2,
+          ),
+        ),
+
         const Divider(height: 32),
 
         _buildSectionTitle(context, 'Gestion manuelle (Clôture immédiate)'),
