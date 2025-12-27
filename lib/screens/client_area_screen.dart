@@ -5,7 +5,8 @@ import '../widgets/loyalty_status_widget.dart';
 import '../services/auth_service.dart';
 import 'order_history_screen.dart';
 import 'my_reviews_screen.dart';
-import 'payment_methods_screen.dart'; // ✅ AJOUT
+import 'payment_methods_screen.dart';
+import 'my_favorites_screen.dart'; // ✅ AJOUT
 
 class ClientAreaScreen extends StatelessWidget {
   const ClientAreaScreen({super.key});
@@ -32,13 +33,22 @@ class ClientAreaScreen extends StatelessWidget {
               Navigator.of(context).push(MaterialPageRoute(builder: (_) => const OrderHistoryScreen()));
             },
           ),
+          // ✅ NOUVEAU BOUTON : Mes Favoris
+          _buildMenuOption(
+            context,
+            icon: Icons.favorite,
+            title: 'Mes Favoris',
+            subtitle: 'Vos pizzas et boissons préférées',
+            onTap: () {
+              Navigator.of(context).push(MaterialPageRoute(builder: (_) => const MyFavoritesScreen()));
+            },
+          ),
           _buildMenuOption(
             context,
             icon: Icons.credit_card,
             title: 'Mon Moyen de Paiement',
-            subtitle: 'Gérer vos cartes de crédit enregistrées', // ✅ MODIFIÉ
+            subtitle: 'Gérer vos cartes de crédit enregistrées',
             onTap: () {
-              // ✅ NAVIGATION VERS LE NOUVEL ÉCRAN
               Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PaymentMethodsScreen()));
             },
           ),

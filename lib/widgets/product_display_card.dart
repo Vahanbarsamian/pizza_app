@@ -7,6 +7,7 @@ import '../database/app_database.dart';
 import '../screens/admin_edit_product_screen.dart';
 import '../screens/pizza_detail_screen.dart';
 import '../screens/drink_detail_screen.dart';
+import '../services/auth_service.dart';
 
 class ProductDisplayCard extends StatelessWidget {
   final Product product;
@@ -17,12 +18,14 @@ class ProductDisplayCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final db = Provider.of<AppDatabase>(context);
+    final authService = context.watch<AuthService>();
+    final userId = authService.currentUser?.id;
+
     final hasImage = product.image != null && product.image!.isNotEmpty;
     final hasDiscount = product.discountPercentage > 0;
     final reducedPrice = product.basePrice * (1 - product.discountPercentage);
     final isNew = DateTime.now().difference(product.createdAt).inDays <= 15;
-    
-    // ✅ AJOUT : État de rupture de stock
     final isOutOfStock = product.isOutOfStock;
 
     return Card(
@@ -32,15 +35,9 @@ class ProductDisplayCard extends StatelessWidget {
       child: InkWell(
         onTap: () {
           if (product.isDrink) {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => DrinkDetailScreen(product: product, ordersEnabled: ordersEnabled)),
-            );
+            Navigator.of(context).push(MaterialPageRoute(builder: (_) => DrinkDetailScreen(product: product, ordersEnabled: ordersEnabled)));
           } else {
-             Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => PizzaDetailScreen(product: product, ordersEnabled: ordersEnabled),
-              ),
-            );
+             Navigator.of(context).push(MaterialPageRoute(builder: (_) => PizzaDetailScreen(product: product, ordersEnabled: ordersEnabled)));
           }
         },
         child: Column(
@@ -50,7 +47,6 @@ class ProductDisplayCard extends StatelessWidget {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  // ✅ MODIFIÉ : Filtre de couleur grise si épuisé
                   hasImage
                       ? ColorFiltered(
                           colorFilter: isOutOfStock 
@@ -64,18 +60,46 @@ class ProductDisplayCard extends StatelessWidget {
                         )
                       : _buildPlaceholderIcon(),
                   
+                  // ✅ DÉPLACÉ : BOUTON FAVORIS (Cœur) en bas à droite
+                  if (userId != null && !isAdmin)
+                    Positioned(
+                      bottom: 4,
+                      right: 4,
+                      child: StreamBuilder<bool>(
+                        stream: db.watchIsFavorite(userId, product.id),
+                        builder: (context, snapshot) {
+                          final isFavorite = snapshot.data ?? false;
+                          return IconButton(
+                            icon: Icon(
+                              isFavorite ? Icons.favorite : Icons.favorite_border,
+                              color: isFavorite ? Colors.red : Colors.white,
+                              // Ombre portée pour que le cœur blanc reste visible sur des images claires
+                              shadows: const [
+                                Shadow(blurRadius: 15, color: Colors.black54),
+                                Shadow(blurRadius: 8, color: Colors.black),
+                              ],
+                            ),
+                            iconSize: 28,
+                            onPressed: () {
+                              if (isFavorite) {
+                                db.removeFavorite(userId, product.id);
+                              } else {
+                                db.addFavorite(userId, product.id);
+                              }
+                            },
+                          );
+                        },
+                      ),
+                    ),
+
                   if (isAdmin)
                     Positioned(
                       bottom: 0,
                       right: 0,
                       child: IconButton(
                         icon: const Icon(Icons.edit, color: Colors.white),
-                        style: IconButton.styleFrom(
-                          backgroundColor: Colors.black.withOpacity(0.5),
-                        ),
-                        onPressed: () {
-                          Navigator.of(context).push(MaterialPageRoute(builder: (_) => AdminEditProductScreen(product: product)));
-                        },
+                        style: IconButton.styleFrom(backgroundColor: Colors.black.withOpacity(0.5)),
+                        onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => AdminEditProductScreen(product: product))),
                       ),
                     ),
                   
@@ -85,19 +109,12 @@ class ProductDisplayCard extends StatelessWidget {
                   if (isNew && !product.isDrink)
                     _buildBanner('NOUVEAU', Colors.blue, Colors.white, Alignment.topRight),
 
-                  // ✅ NOUVEAU : Bandeau ÉPUISÉ
                   if (isOutOfStock)
                     Center(
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Colors.red.withOpacity(0.9),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: const Text(
-                          'ÉPUISÉ',
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
-                        ),
+                        decoration: BoxDecoration(color: Colors.red.withOpacity(0.9), borderRadius: BorderRadius.circular(4)),
+                        child: const Text('ÉPUISÉ', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
                       ),
                     ),
                 ],
@@ -110,11 +127,7 @@ class ProductDisplayCard extends StatelessWidget {
                 children: [
                   Text(
                     product.name,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold, 
-                      fontSize: 16,
-                      color: isOutOfStock ? Colors.grey : Colors.black, // Grise le titre
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: isOutOfStock ? Colors.grey : Colors.black),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -125,31 +138,14 @@ class ProductDisplayCard extends StatelessWidget {
                     textBaseline: TextBaseline.alphabetic,
                     children: [
                       if (hasDiscount)
-                        Text(
-                          '${product.basePrice.toStringAsFixed(2)} €',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey,
-                            decoration: TextDecoration.lineThrough,
-                          ),
-                        ),
+                        Text('${product.basePrice.toStringAsFixed(2)} €', style: const TextStyle(fontSize: 14, color: Colors.grey, decoration: TextDecoration.lineThrough)),
                       const SizedBox(width: 4),
                       Text.rich(
                         TextSpan(
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: isOutOfStock ? Colors.grey : (hasDiscount ? Colors.red : Colors.black),
-                          ),
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isOutOfStock ? Colors.grey : (hasDiscount ? Colors.red : Colors.black)),
                           children: [
                             TextSpan(text: (hasDiscount ? reducedPrice : product.basePrice).toStringAsFixed(2)),
-                            const TextSpan(
-                              text: ' € TTC',
-                              style: TextStyle(
-                                fontSize: 10, 
-                                fontWeight: FontWeight.normal,
-                              ),
-                            ),
+                            const TextSpan(text: ' € TTC', style: TextStyle(fontSize: 10, fontWeight: FontWeight.normal)),
                           ],
                         ),
                       ),
@@ -167,13 +163,7 @@ class ProductDisplayCard extends StatelessWidget {
   Widget _buildPlaceholderIcon() {
     return Container(
       color: Colors.grey[200],
-      child: Center(
-        child: FaIcon(
-          product.isDrink ? FontAwesomeIcons.bottleWater : FontAwesomeIcons.pizzaSlice,
-          size: 50,
-          color: Colors.grey,
-        ),
-      ),
+      child: Center(child: FaIcon(product.isDrink ? FontAwesomeIcons.bottleWater : FontAwesomeIcons.pizzaSlice, size: 50, color: Colors.grey)),
     );
   }
 
@@ -183,11 +173,7 @@ class ProductDisplayCard extends StatelessWidget {
       message: text,
       location: isTopLeft ? BannerLocation.topStart : BannerLocation.topEnd,
       color: backgroundColor,
-      textStyle: TextStyle(
-        color: textColor,
-        fontWeight: FontWeight.bold,
-        fontSize: 12,
-      ),
+      textStyle: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 12),
     );
   }
 }

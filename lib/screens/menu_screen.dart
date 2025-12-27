@@ -34,10 +34,8 @@ class _MenuScreenState extends State<MenuScreen> {
         : null;
 
     if (widget.ordersEnabled == false && type == null) {
-      // Cas de la fermeture par planning automatique
       message = info.closureScheduleMessage ?? 'Le camion est actuellement fermé. On se retrouve très vite !';
     } else {
-      // Cas de la fermeture manuelle
       switch (type) {
         case ClosureMessageType.vacation:
         case ClosureMessageType.temporary:
@@ -71,7 +69,7 @@ class _MenuScreenState extends State<MenuScreen> {
                 content: TweenAnimationBuilder<double>(
                   duration: const Duration(milliseconds: 600),
                   tween: Tween(begin: 0.0, end: 1.0),
-                  curve: Curves.elasticOut, // ✅ EFFET DE REBOND "FUN"
+                  curve: Curves.elasticOut,
                   builder: (context, value, child) {
                     return Transform.scale(
                       scale: value,
@@ -122,7 +120,7 @@ class _MenuScreenState extends State<MenuScreen> {
       await context.read<SyncService>().syncAll();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur de synchronisation: $e')));
       }
     }
   }
@@ -131,6 +129,7 @@ class _MenuScreenState extends State<MenuScreen> {
   Widget build(BuildContext context) {
     final db = context.watch<AppDatabase>();
     final authService = context.watch<AuthService>();
+    final userId = authService.currentUser?.id;
 
     return Scaffold(
       appBar: AppBar(
@@ -140,40 +139,103 @@ class _MenuScreenState extends State<MenuScreen> {
       ),
       body: RefreshIndicator(
         onRefresh: _refreshData,
-        child: StreamBuilder<List<dynamic>>(
-          stream: db.watchProductsAndCompanyInfo(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            if (snapshot.hasError) {
-              return Center(child: Text('Erreur: ${snapshot.error}'));
-            }
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ✅ NOUVEAU : SECTION FAVORIS (si connecté)
+              if (userId != null)
+                StreamBuilder<List<Product>>(
+                  stream: db.watchUserFavorites(userId),
+                  builder: (context, snapshot) {
+                    final favorites = snapshot.data ?? [];
+                    if (favorites.isEmpty) return const SizedBox.shrink();
 
-            final data = snapshot.data ?? [];
-            final info = data.isNotEmpty ? data[0] as CompanyInfoData? : null;
-            final pizzas = data.isNotEmpty ? data[1] as List<Product> : [];
-            
-            final bool isAvailable = widget.ordersEnabled;
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Padding(
+                          padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+                          child: Text(
+                            'Vos coups de ❤️',
+                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.redAccent),
+                          ),
+                        ),
+                        SizedBox(
+                          height: 240,
+                          child: ListView.builder(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            scrollDirection: Axis.horizontal,
+                            itemCount: favorites.length,
+                            itemBuilder: (context, index) {
+                              return SizedBox(
+                                width: 180,
+                                child: ProductDisplayCard(
+                                  product: favorites[index], 
+                                  isAdmin: false, 
+                                  ordersEnabled: widget.ordersEnabled
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        const Divider(height: 32, indent: 16, endIndent: 16),
+                      ],
+                    );
+                  },
+                ),
 
-            if (info != null && !isAvailable) {
-              _showClosureDialog(context, info);
-            }
+              // ✅ SECTION MENU COMPLET
+              const Padding(
+                padding: EdgeInsets.fromLTRB(16, 8, 16, 16),
+                child: Text(
+                  'Toute la Carte',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+              ),
+              StreamBuilder<List<dynamic>>(
+                stream: db.watchProductsAndCompanyInfo(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  final data = snapshot.data ?? [];
+                  final info = data.isNotEmpty ? data[0] as CompanyInfoData? : null;
+                  final pizzas = data.isNotEmpty ? data[1] as List<Product> : [];
+                  
+                  if (info != null && !widget.ordersEnabled) {
+                    _showClosureDialog(context, info);
+                  }
 
-            if (pizzas.isEmpty) {
-              return const Center(child: Text('Aucune pizza au menu pour le moment.'));
-            }
+                  if (pizzas.isEmpty) {
+                    return const Padding(
+                      padding: EdgeInsets.all(32.0),
+                      child: Center(child: Text('Aucune pizza au menu pour le moment.')),
+                    );
+                  }
 
-            return GridView.builder(
-              padding: const EdgeInsets.all(16.0),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, childAspectRatio: 0.70),
-              itemCount: pizzas.length,
-              itemBuilder: (context, index) {
-                final pizza = pizzas[index];
-                return ProductDisplayCard(product: pizza, isAdmin: authService.isAdmin, ordersEnabled: isAvailable);
-              },
-            );
-          },
+                  return GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2, 
+                      childAspectRatio: 0.70,
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
+                    ),
+                    itemCount: pizzas.length,
+                    itemBuilder: (context, index) {
+                      final pizza = pizzas[index];
+                      return ProductDisplayCard(product: pizza, isAdmin: authService.isAdmin, ordersEnabled: widget.ordersEnabled);
+                    },
+                  );
+                },
+              ),
+              const SizedBox(height: 32),
+            ],
+          ),
         ),
       ),
     );

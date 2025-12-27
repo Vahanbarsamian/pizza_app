@@ -24,41 +24,30 @@ class SyncService {
     await _syncUserLoyalty();
     await _syncUsers();
     await _syncOpeningHours();
+    await _syncFavorites();
     print('✅ [SyncService] Synchronisation complète terminée.');
   }
 
-  Future<void> _syncProducts() async {
+  Future<void> _syncFavorites() async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) return;
+
     try {
-      final response = await _supabase.from('products').select();
-      final productsToSync = response.map((item) {
-        return ProductsCompanion(
-          id: Value(item['id'] as int),
-          name: Value(item['name'] as String? ?? 'Nom manquant'),
-          description: Value(item['description'] as String?),
-          basePrice: Value((item['base_price'] as num? ?? 0).toDouble()),
-          image: Value(item['image'] as String?),
-          category: Value(item['category'] as String?),
-          hasGlobalDiscount: Value(item['has_global_discount'] as bool? ?? false),
-          discountPercentage: Value((item['discount_percentage'] as num? ?? 0).toDouble()),
-          maxSupplements: Value(item['max_supplements'] as int?),
-          isActive: Value(item['is_active'] as bool? ?? true),
-          isDrink: Value(item['is_drink'] as bool? ?? false),
-          // ✅ AJOUT : Synchronisation de la rupture de stock
-          isOutOfStock: Value(item['is_out_of_stock'] as bool? ?? false),
-          createdAt: Value(DateTime.parse(item['created_at'] as String? ?? '2023-01-01T00:00:00Z')),
-        );
-      }).toList();
+      final response = await _supabase.from('favorites').select().eq('user_id', user.id);
+      final List<FavoritesCompanion> favoritesToSync = response.map((item) => FavoritesCompanion(
+        userId: Value(item['user_id'] as String),
+        productId: Value(item['product_id'] as int),
+      )).toList();
 
       await db.transaction(() async {
-        await db.delete(db.products).go();
-        await db.batch((batch) => batch.insertAll(db.products, productsToSync));
+        await (db.delete(db.favorites)..where((f) => f.userId.equals(user.id))).go();
+        await db.batch((batch) => batch.insertAll(db.favorites, favoritesToSync));
       });
     } catch (e) {
-      print('❌ Erreur de synchronisation (Products): $e');
+      print('❌ Erreur de synchronisation (Favorites): $e');
     }
   }
 
-  // Les autres méthodes (_syncOpeningHours, _syncUsers, etc.) restent inchangées...
   Future<void> _syncOpeningHours() async {
     try {
       final response = await _supabase.from('opening_hours').select();
@@ -66,14 +55,18 @@ class SyncService {
         id: Value(item['id'] as int),
         dayName: Value(item['day_name'] as String),
         isOpen: Value(item['is_open'] as bool),
+        // ✅ NOM DU CHAMP CORRIGÉ : openTime et closeTime
         openTime: Value(item['open_time'] as String),
         closeTime: Value(item['close_time'] as String),
       )).toList();
+
       await db.transaction(() async {
         await db.delete(db.openingHours).go();
         await db.batch((batch) => batch.insertAll(db.openingHours, hoursToSync));
       });
-    } catch (e) { print('❌ Erreur: $e'); }
+    } catch (e) {
+      print('❌ Erreur de synchronisation (OpeningHours): $e');
+    }
   }
 
   Future<void> _syncUsers() async {
@@ -268,6 +261,33 @@ class SyncService {
       await db.transaction(() async {
         await db.delete(db.userLoyalties).go();
         await db.batch((batch) => batch.insertAll(db.userLoyalties, loyaltyDataToSync));
+      });
+    } catch (e) { print('❌ Erreur: $e'); }
+  }
+
+  Future<void> _syncProducts() async {
+    try {
+      final response = await _supabase.from('products').select();
+      final productsToSync = response.map((item) {
+        return ProductsCompanion(
+          id: Value(item['id'] as int),
+          name: Value(item['name'] as String? ?? 'Nom manquant'),
+          description: Value(item['description'] as String?),
+          basePrice: Value((item['base_price'] as num? ?? 0).toDouble()),
+          image: Value(item['image'] as String?),
+          category: Value(item['category'] as String?),
+          hasGlobalDiscount: Value(item['has_global_discount'] as bool? ?? false),
+          discountPercentage: Value((item['discount_percentage'] as num? ?? 0).toDouble()),
+          maxSupplements: Value(item['max_supplements'] as int?),
+          isActive: Value(item['is_active'] as bool? ?? true),
+          isDrink: Value(item['is_drink'] as bool? ?? false),
+          isOutOfStock: Value(item['is_out_of_stock'] as bool? ?? false),
+          createdAt: Value(DateTime.parse(item['created_at'] as String? ?? '2023-01-01T00:00:00Z')),
+        );
+      }).toList();
+      await db.transaction(() async {
+        await db.delete(db.products).go();
+        await db.batch((batch) => batch.insertAll(db.products, productsToSync));
       });
     } catch (e) { print('❌ Erreur: $e'); }
   }

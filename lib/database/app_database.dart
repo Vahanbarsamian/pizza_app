@@ -24,6 +24,7 @@ part 'daos/product_dao.dart';
 part 'option.dart';
 part 'product_option_link.dart';
 part 'opening_hour.dart';
+part 'favorite.dart'; // ✅ AJOUT
 
 // ✅ 2. LES CLASSES DE DONNÉES
 class ReviewWithOrder {
@@ -45,6 +46,7 @@ class OrderWithStatus {
   OrderStatusHistories, LoyaltySettings, UserLoyalties,
   ProductOptions, ProductOptionLinks,
   OpeningHours,
+  Favorites, // ✅ AJOUT
 ], daos: [
   ProductDao
 ])
@@ -52,7 +54,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 37; // ✅ PASSAGE À LA VERSION 37
+  int get schemaVersion => 38; // ✅ PASSAGE À LA VERSION 38
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -212,6 +214,32 @@ class AppDatabase extends _$AppDatabase {
       final currentTimeStr = "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}";
       return currentTimeStr.compareTo(today.openTime) >= 0 && currentTimeStr.compareTo(today.closeTime) <= 0;
     });
+  }
+
+  // ✅ NOUVEAU: Gestion des favoris
+  Stream<bool> watchIsFavorite(String userId, int productId) {
+    return (select(favorites)..where((f) => f.userId.equals(userId) & f.productId.equals(productId)))
+        .watch()
+        .map((rows) => rows.isNotEmpty);
+  }
+
+  Future<void> addFavorite(String userId, int productId) async {
+    await into(favorites).insert(
+      FavoritesCompanion.insert(userId: userId, productId: productId),
+      mode: InsertMode.replace,
+    );
+  }
+
+  Future<void> removeFavorite(String userId, int productId) async {
+    await (delete(favorites)..where((f) => f.userId.equals(userId) & f.productId.equals(productId))).go();
+  }
+
+  Stream<List<Product>> watchUserFavorites(String userId) {
+    final query = select(products).join([
+      innerJoin(favorites, favorites.productId.equalsExp(products.id))
+    ])..where(favorites.userId.equals(userId));
+    
+    return query.watch().map((rows) => rows.map((row) => row.readTable(products)).toList());
   }
 }
 
