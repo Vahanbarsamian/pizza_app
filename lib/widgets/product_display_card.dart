@@ -21,6 +21,9 @@ class ProductDisplayCard extends StatelessWidget {
     final hasDiscount = product.discountPercentage > 0;
     final reducedPrice = product.basePrice * (1 - product.discountPercentage);
     final isNew = DateTime.now().difference(product.createdAt).inDays <= 15;
+    
+    // ✅ AJOUT : État de rupture de stock
+    final isOutOfStock = product.isOutOfStock;
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -30,7 +33,7 @@ class ProductDisplayCard extends StatelessWidget {
         onTap: () {
           if (product.isDrink) {
             Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => DrinkDetailScreen(product: product, ordersEnabled: ordersEnabled)), // ✅ MODIFIÉ
+              MaterialPageRoute(builder: (_) => DrinkDetailScreen(product: product, ordersEnabled: ordersEnabled)),
             );
           } else {
              Navigator.of(context).push(
@@ -47,13 +50,20 @@ class ProductDisplayCard extends StatelessWidget {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
+                  // ✅ MODIFIÉ : Filtre de couleur grise si épuisé
                   hasImage
-                      ? CachedNetworkImage(
-                          imageUrl: product.image!,
-                          fit: BoxFit.cover,
-                          errorWidget: (context, url, error) => _buildPlaceholderIcon(),
+                      ? ColorFiltered(
+                          colorFilter: isOutOfStock 
+                            ? ColorFilter.mode(Colors.black.withOpacity(0.4), BlendMode.saturation)
+                            : const ColorFilter.mode(Colors.transparent, BlendMode.multiply),
+                          child: CachedNetworkImage(
+                              imageUrl: product.image!,
+                              fit: BoxFit.cover,
+                              errorWidget: (context, url, error) => _buildPlaceholderIcon(),
+                            ),
                         )
                       : _buildPlaceholderIcon(),
+                  
                   if (isAdmin)
                     Positioned(
                       bottom: 0,
@@ -68,10 +78,28 @@ class ProductDisplayCard extends StatelessWidget {
                         },
                       ),
                     ),
+                  
                   if (hasDiscount)
                     _buildBanner('PROMO', Colors.amber, Colors.black, Alignment.topLeft),
+                  
                   if (isNew && !product.isDrink)
                     _buildBanner('NOUVEAU', Colors.blue, Colors.white, Alignment.topRight),
+
+                  // ✅ NOUVEAU : Bandeau ÉPUISÉ
+                  if (isOutOfStock)
+                    Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Text(
+                          'ÉPUISÉ',
+                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -82,7 +110,11 @@ class ProductDisplayCard extends StatelessWidget {
                 children: [
                   Text(
                     product.name,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold, 
+                      fontSize: 16,
+                      color: isOutOfStock ? Colors.grey : Colors.black, // Grise le titre
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -107,7 +139,7 @@ class ProductDisplayCard extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: hasDiscount ? Colors.red : Colors.black,
+                            color: isOutOfStock ? Colors.grey : (hasDiscount ? Colors.red : Colors.black),
                           ),
                           children: [
                             TextSpan(text: (hasDiscount ? reducedPrice : product.basePrice).toStringAsFixed(2)),

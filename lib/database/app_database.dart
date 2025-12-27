@@ -52,7 +52,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 36; // ✅ PASSAGE À LA VERSION 36
+  int get schemaVersion => 37; // ✅ PASSAGE À LA VERSION 37
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

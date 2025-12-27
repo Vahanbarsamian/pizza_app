@@ -26,6 +26,14 @@ class AdminService {
       .eq('id', productId);
   }
 
+  // ✅ NOUVEAU: Basculer l'état de rupture de stock
+  Future<void> toggleProductOutOfStock(int productId, bool isOutOfStock) async {
+    await _supabase
+      .from('products')
+      .update({ 'is_out_of_stock': isOutOfStock })
+      .eq('id', productId);
+  }
+
   Future<LoyaltySetting?> getLoyaltySettings() async {
     final data = await _supabase.from('loyalty_settings').select().eq('id', 1).maybeSingle();
     if (data == null) return null;
@@ -85,11 +93,10 @@ class AdminService {
     await _supabase.from('company_info').update(dataToSave).eq('id', 1);
   }
 
-  // ✅ CORRIGÉ: Ajout de dayName pour que la base accepte la mise à jour
   Future<void> updateOpeningHour(OpeningHour hour) async {
     await _db.saveOpeningHour(OpeningHoursCompanion(
       id: Value(hour.id),
-      dayName: Value(hour.dayName), // Crucial pour le InsertMode.replace
+      dayName: Value(hour.dayName),
       isOpen: Value(hour.isOpen),
       openTime: Value(hour.openTime),
       closeTime: Value(hour.closeTime),
@@ -180,8 +187,6 @@ class AdminService {
     if (info.googleUrl.present) data['google_url'] = info.googleUrl.value;
     if (info.pagesJaunesUrl.present) data['pagesjaunes_url'] = info.pagesJaunesUrl.value;
     if (info.isPaymentEnabled.present) data['is_payment_enabled'] = info.isPaymentEnabled.value;
-    
-    // ✅ CORRIGÉ: Nom du champ exact
     if (info.closureScheduleMessage.present) data['closure_schedule_message'] = info.closureScheduleMessage.value;
 
     await _supabase.from('company_info').update(data).eq('id', info.id.value);

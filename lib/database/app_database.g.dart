@@ -85,6 +85,16 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
       defaultConstraints:
           GeneratedColumn.constraintIsAlways('CHECK ("is_drink" IN (0, 1))'),
       defaultValue: const Constant(false));
+  static const VerificationMeta _isOutOfStockMeta =
+      const VerificationMeta('isOutOfStock');
+  @override
+  late final GeneratedColumn<bool> isOutOfStock = GeneratedColumn<bool>(
+      'is_out_of_stock', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("is_out_of_stock" IN (0, 1))'),
+      defaultValue: const Constant(false));
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -104,6 +114,7 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
         maxSupplements,
         isActive,
         isDrink,
+        isOutOfStock,
         createdAt
       ];
   @override
@@ -171,6 +182,12 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
       context.handle(_isDrinkMeta,
           isDrink.isAcceptableOrUnknown(data['is_drink']!, _isDrinkMeta));
     }
+    if (data.containsKey('is_out_of_stock')) {
+      context.handle(
+          _isOutOfStockMeta,
+          isOutOfStock.isAcceptableOrUnknown(
+              data['is_out_of_stock']!, _isOutOfStockMeta));
+    }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
@@ -208,6 +225,8 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
           .read(DriftSqlType.bool, data['${effectivePrefix}is_active'])!,
       isDrink: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}is_drink'])!,
+      isOutOfStock: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_out_of_stock'])!,
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
     );
@@ -231,6 +250,7 @@ class Product extends DataClass implements Insertable<Product> {
   final int? maxSupplements;
   final bool isActive;
   final bool isDrink;
+  final bool isOutOfStock;
   final DateTime createdAt;
   const Product(
       {required this.id,
@@ -244,6 +264,7 @@ class Product extends DataClass implements Insertable<Product> {
       this.maxSupplements,
       required this.isActive,
       required this.isDrink,
+      required this.isOutOfStock,
       required this.createdAt});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -267,6 +288,7 @@ class Product extends DataClass implements Insertable<Product> {
     }
     map['is_active'] = Variable<bool>(isActive);
     map['is_drink'] = Variable<bool>(isDrink);
+    map['is_out_of_stock'] = Variable<bool>(isOutOfStock);
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
@@ -291,6 +313,7 @@ class Product extends DataClass implements Insertable<Product> {
           : Value(maxSupplements),
       isActive: Value(isActive),
       isDrink: Value(isDrink),
+      isOutOfStock: Value(isOutOfStock),
       createdAt: Value(createdAt),
     );
   }
@@ -311,6 +334,7 @@ class Product extends DataClass implements Insertable<Product> {
       maxSupplements: serializer.fromJson<int?>(json['maxSupplements']),
       isActive: serializer.fromJson<bool>(json['isActive']),
       isDrink: serializer.fromJson<bool>(json['isDrink']),
+      isOutOfStock: serializer.fromJson<bool>(json['isOutOfStock']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -329,6 +353,7 @@ class Product extends DataClass implements Insertable<Product> {
       'maxSupplements': serializer.toJson<int?>(maxSupplements),
       'isActive': serializer.toJson<bool>(isActive),
       'isDrink': serializer.toJson<bool>(isDrink),
+      'isOutOfStock': serializer.toJson<bool>(isOutOfStock),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -345,6 +370,7 @@ class Product extends DataClass implements Insertable<Product> {
           Value<int?> maxSupplements = const Value.absent(),
           bool? isActive,
           bool? isDrink,
+          bool? isOutOfStock,
           DateTime? createdAt}) =>
       Product(
         id: id ?? this.id,
@@ -359,6 +385,7 @@ class Product extends DataClass implements Insertable<Product> {
             maxSupplements.present ? maxSupplements.value : this.maxSupplements,
         isActive: isActive ?? this.isActive,
         isDrink: isDrink ?? this.isDrink,
+        isOutOfStock: isOutOfStock ?? this.isOutOfStock,
         createdAt: createdAt ?? this.createdAt,
       );
   Product copyWithCompanion(ProductsCompanion data) {
@@ -381,6 +408,9 @@ class Product extends DataClass implements Insertable<Product> {
           : this.maxSupplements,
       isActive: data.isActive.present ? data.isActive.value : this.isActive,
       isDrink: data.isDrink.present ? data.isDrink.value : this.isDrink,
+      isOutOfStock: data.isOutOfStock.present
+          ? data.isOutOfStock.value
+          : this.isOutOfStock,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -399,6 +429,7 @@ class Product extends DataClass implements Insertable<Product> {
           ..write('maxSupplements: $maxSupplements, ')
           ..write('isActive: $isActive, ')
           ..write('isDrink: $isDrink, ')
+          ..write('isOutOfStock: $isOutOfStock, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -417,6 +448,7 @@ class Product extends DataClass implements Insertable<Product> {
       maxSupplements,
       isActive,
       isDrink,
+      isOutOfStock,
       createdAt);
   @override
   bool operator ==(Object other) =>
@@ -433,6 +465,7 @@ class Product extends DataClass implements Insertable<Product> {
           other.maxSupplements == this.maxSupplements &&
           other.isActive == this.isActive &&
           other.isDrink == this.isDrink &&
+          other.isOutOfStock == this.isOutOfStock &&
           other.createdAt == this.createdAt);
 }
 
@@ -448,6 +481,7 @@ class ProductsCompanion extends UpdateCompanion<Product> {
   final Value<int?> maxSupplements;
   final Value<bool> isActive;
   final Value<bool> isDrink;
+  final Value<bool> isOutOfStock;
   final Value<DateTime> createdAt;
   const ProductsCompanion({
     this.id = const Value.absent(),
@@ -461,6 +495,7 @@ class ProductsCompanion extends UpdateCompanion<Product> {
     this.maxSupplements = const Value.absent(),
     this.isActive = const Value.absent(),
     this.isDrink = const Value.absent(),
+    this.isOutOfStock = const Value.absent(),
     this.createdAt = const Value.absent(),
   });
   ProductsCompanion.insert({
@@ -475,6 +510,7 @@ class ProductsCompanion extends UpdateCompanion<Product> {
     this.maxSupplements = const Value.absent(),
     this.isActive = const Value.absent(),
     this.isDrink = const Value.absent(),
+    this.isOutOfStock = const Value.absent(),
     required DateTime createdAt,
   })  : name = Value(name),
         basePrice = Value(basePrice),
@@ -491,6 +527,7 @@ class ProductsCompanion extends UpdateCompanion<Product> {
     Expression<int>? maxSupplements,
     Expression<bool>? isActive,
     Expression<bool>? isDrink,
+    Expression<bool>? isOutOfStock,
     Expression<DateTime>? createdAt,
   }) {
     return RawValuesInsertable({
@@ -505,6 +542,7 @@ class ProductsCompanion extends UpdateCompanion<Product> {
       if (maxSupplements != null) 'max_supplements': maxSupplements,
       if (isActive != null) 'is_active': isActive,
       if (isDrink != null) 'is_drink': isDrink,
+      if (isOutOfStock != null) 'is_out_of_stock': isOutOfStock,
       if (createdAt != null) 'created_at': createdAt,
     });
   }
@@ -521,6 +559,7 @@ class ProductsCompanion extends UpdateCompanion<Product> {
       Value<int?>? maxSupplements,
       Value<bool>? isActive,
       Value<bool>? isDrink,
+      Value<bool>? isOutOfStock,
       Value<DateTime>? createdAt}) {
     return ProductsCompanion(
       id: id ?? this.id,
@@ -534,6 +573,7 @@ class ProductsCompanion extends UpdateCompanion<Product> {
       maxSupplements: maxSupplements ?? this.maxSupplements,
       isActive: isActive ?? this.isActive,
       isDrink: isDrink ?? this.isDrink,
+      isOutOfStock: isOutOfStock ?? this.isOutOfStock,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -574,6 +614,9 @@ class ProductsCompanion extends UpdateCompanion<Product> {
     if (isDrink.present) {
       map['is_drink'] = Variable<bool>(isDrink.value);
     }
+    if (isOutOfStock.present) {
+      map['is_out_of_stock'] = Variable<bool>(isOutOfStock.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -594,6 +637,7 @@ class ProductsCompanion extends UpdateCompanion<Product> {
           ..write('maxSupplements: $maxSupplements, ')
           ..write('isActive: $isActive, ')
           ..write('isDrink: $isDrink, ')
+          ..write('isOutOfStock: $isOutOfStock, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -6646,6 +6690,7 @@ typedef $$ProductsTableCreateCompanionBuilder = ProductsCompanion Function({
   Value<int?> maxSupplements,
   Value<bool> isActive,
   Value<bool> isDrink,
+  Value<bool> isOutOfStock,
   required DateTime createdAt,
 });
 typedef $$ProductsTableUpdateCompanionBuilder = ProductsCompanion Function({
@@ -6660,6 +6705,7 @@ typedef $$ProductsTableUpdateCompanionBuilder = ProductsCompanion Function({
   Value<int?> maxSupplements,
   Value<bool> isActive,
   Value<bool> isDrink,
+  Value<bool> isOutOfStock,
   Value<DateTime> createdAt,
 });
 
@@ -6763,6 +6809,9 @@ class $$ProductsTableFilterComposer
 
   ColumnFilters<bool> get isDrink => $composableBuilder(
       column: $table.isDrink, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isOutOfStock => $composableBuilder(
+      column: $table.isOutOfStock, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnFilters(column));
@@ -6878,6 +6927,10 @@ class $$ProductsTableOrderingComposer
   ColumnOrderings<bool> get isDrink => $composableBuilder(
       column: $table.isDrink, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<bool> get isOutOfStock => $composableBuilder(
+      column: $table.isOutOfStock,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnOrderings(column));
 }
@@ -6923,6 +6976,9 @@ class $$ProductsTableAnnotationComposer
 
   GeneratedColumn<bool> get isDrink =>
       $composableBuilder(column: $table.isDrink, builder: (column) => column);
+
+  GeneratedColumn<bool> get isOutOfStock => $composableBuilder(
+      column: $table.isOutOfStock, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -7031,6 +7087,7 @@ class $$ProductsTableTableManager extends RootTableManager<
             Value<int?> maxSupplements = const Value.absent(),
             Value<bool> isActive = const Value.absent(),
             Value<bool> isDrink = const Value.absent(),
+            Value<bool> isOutOfStock = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
           }) =>
               ProductsCompanion(
@@ -7045,6 +7102,7 @@ class $$ProductsTableTableManager extends RootTableManager<
             maxSupplements: maxSupplements,
             isActive: isActive,
             isDrink: isDrink,
+            isOutOfStock: isOutOfStock,
             createdAt: createdAt,
           ),
           createCompanionCallback: ({
@@ -7059,6 +7117,7 @@ class $$ProductsTableTableManager extends RootTableManager<
             Value<int?> maxSupplements = const Value.absent(),
             Value<bool> isActive = const Value.absent(),
             Value<bool> isDrink = const Value.absent(),
+            Value<bool> isOutOfStock = const Value.absent(),
             required DateTime createdAt,
           }) =>
               ProductsCompanion.insert(
@@ -7073,6 +7132,7 @@ class $$ProductsTableTableManager extends RootTableManager<
             maxSupplements: maxSupplements,
             isActive: isActive,
             isDrink: isDrink,
+            isOutOfStock: isOutOfStock,
             createdAt: createdAt,
           ),
           withReferenceMapper: (p0) => p0
